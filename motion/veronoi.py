@@ -14,10 +14,10 @@ class VoronoiGraph:
     def __init__(self, points):
         """
         Inicializa o grafo baseado no diagrama de Voronoi.
-        :param points: Lista de pontos iniciais para o diagrama de Voronoi.
+        :param points: Lista de pontos iniciais para o diagrama de Voronoi (como objetos Pose2D).
         """
-        self.points = np.array(points)
-        self.vor = Voronoi(self.points)
+        self.points = [Pose2D(p.x, p.y) for p in points]
+        self.vor = Voronoi([[p.x, p.y] for p in self.points])
         self.graph = nx.Graph()
         self._build_graph()
 
@@ -35,12 +35,12 @@ class VoronoiGraph:
     def add_point(self, point, point_name):
         """
         Adiciona um ponto externo ao grafo, conectando-o ao vértice mais próximo.
-        :param point: Coordenadas do ponto a ser adicionado.
+        :param point: Objeto Pose2D representando o ponto a ser adicionado.
         :param point_name: Nome do ponto no grafo.
         :return: Índice do vértice mais próximo.
         """
-        closest_vertex = np.argmin([distance.euclidean(point, v) for v in self.vor.vertices])
-        dist_to_vertex = distance.euclidean(point, self.vor.vertices[closest_vertex])
+        closest_vertex = np.argmin([distance.euclidean([point.x, point.y], v) for v in self.vor.vertices])
+        dist_to_vertex = distance.euclidean([point.x, point.y], self.vor.vertices[closest_vertex])
         self.graph.add_node(point_name, pos=point)
         self.graph.add_edge(point_name, closest_vertex, weight=dist_to_vertex)
         return closest_vertex
@@ -54,27 +54,27 @@ class VoronoiGraph:
         """
         shortest_path = nx.shortest_path(self.graph, source=start_name, target=end_name, weight="weight")
         return [
-            Pose2D(*self.graph.nodes[node]["pos"]) if isinstance(node, str) else Pose2D(*self.vor.vertices[node])
+            self.graph.nodes[node]["pos"] if isinstance(node, str) else Pose2D(*self.vor.vertices[node])
             for node in shortest_path
         ]
 
     def visualize(self, start_point, end_point, shortest_path_coords, output_file="voronoi_path_output.png"):
         """
         Visualiza o grafo, os pontos e o menor caminho.
-        :param start_point: Coordenadas do ponto inicial.
-        :param end_point: Coordenadas do ponto final.
-        :param shortest_path_coords: Coordenadas do menor caminho.
+        :param start_point: Objeto Pose2D representando o ponto inicial.
+        :param end_point: Objeto Pose2D representando o ponto final.
+        :param shortest_path_coords: Lista de objetos Pose2D representando o menor caminho.
         :param output_file: Nome do arquivo de saída para salvar a imagem.
         """
-        pos = {i: v for i, v in enumerate(self.vor.vertices)}  # Posições dos vértices do Voronoi
-        pos["start"] = start_point  # Adiciona a posição do ponto inicial
-        pos["end"] = end_point      # Adiciona a posição do ponto final
+        pos = {i: [v[0], v[1]] for i, v in enumerate(self.vor.vertices)}  # Posições dos vértices do Voronoi
+        pos["start"] = [start_point.x, start_point.y]  # Adiciona a posição do ponto inicial
+        pos["end"] = [end_point.x, end_point.y]       # Adiciona a posição do ponto final
 
         fig, ax = plt.subplots(figsize=(10, 6))
         nx.draw(self.graph, pos=pos, with_labels=True, ax=ax, node_color='lightblue')
-        plt.plot(self.points[:, 0], self.points[:, 1], 'ro', label="Pontos Voronoi")
-        plt.plot(start_point[0], start_point[1], 'go', label="Ponto Inicial")
-        plt.plot(end_point[0], end_point[1], 'bo', label="Ponto Final")
+        plt.plot([p.x for p in self.points], [p.y for p in self.points], 'ro', label="Pontos Voronoi")
+        plt.plot(start_point.x, start_point.y, 'go', label="Ponto Inicial")
+        plt.plot(end_point.x, end_point.y, 'bo', label="Ponto Final")
 
         # Extrai os atributos x e y de cada Pose2D no caminho
         path_x = [pose.x for pose in shortest_path_coords]
@@ -92,11 +92,11 @@ class VoronoiGraph:
 
 if __name__ == '__main__':
     # Pontos iniciais do Voronoi
-    points = [[500, 500], [4000, 500], [2000, 2500], [3000, 1000], [1500, 1500], [3500, 2700], [500, 2900]]
+    points = [Pose2D(500, 500), Pose2D(4000, 500), Pose2D(2000, 2500)]
 
     # Pontos de início e fim (fora do Voronoi)
-    start_point = np.array([100, 100])
-    end_point = np.array([4400, 2900])
+    start_point = Pose2D(100, 100)
+    end_point = Pose2D(4400, 2900)
 
     # Cria o grafo baseado no diagrama de Voronoi
     voronoi_graph = VoronoiGraph(points)
@@ -108,11 +108,8 @@ if __name__ == '__main__':
     # Encontra o menor caminho entre os dois pontos
     shortest_path_coords = voronoi_graph.find_shortest_path("start", "end")
 
-    # Converte o caminho para uma lista de Pose2D
-    path_as_pose2d = shortest_path_coords
-
     # Exibe os pontos do caminho como Pose2D
-    for pose in path_as_pose2d:
+    for pose in shortest_path_coords:
         print(f"Pose2D(x={pose.x}, y={pose.y})")
 
     # Visualiza o grafo e o menor caminho

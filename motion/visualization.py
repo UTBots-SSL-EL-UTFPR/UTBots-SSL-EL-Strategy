@@ -2,6 +2,7 @@ import pygame
 import sys
 import random
 from utils.pose2D import Pose2D  # Importa a classe Pose2D
+from motion.veronoi import VoronoiGraph  # Importa a classe VoronoiGraph
 
 # Para rodar usar o comando python3 -m motion.visualization
 # com o terminal na pasta UTBots-SSL-EL-Strategy
@@ -47,10 +48,7 @@ def visualisation():
     linha_grossa = False
     ultima_tecla = False  # Variável para detectar clique único na tecla
 
-    # Pontos das trajetórias
-    pontos1 = [Pose2D(random.randint(0, MUNDO_LARGURA), random.randint(0, MUNDO_ALTURA)) for _ in range(NUM_PONTOS)]
-    pontos2 = []  # Lista vazia
-    pontos3 = []  # Lista vazia
+
 
     # Bobs inimigos
     pontosBobInimigos = [
@@ -67,6 +65,44 @@ def visualisation():
     # Inicializa a fonte para os números
     fonte = pygame.font.Font(None, 36)  # Fonte padrão com tamanho 36
 
+    # Pontos iniciais do Voronoi
+    points = pontosBobInimigos
+    
+    pontos2 = [Pose2D(random.randint(90, MUNDO_LARGURA - 90), random.randint(90, MUNDO_ALTURA - 90))]  # Lista vazia
+    pontos3 = [Pose2D(random.randint(90, MUNDO_LARGURA - 90), random.randint(90, MUNDO_ALTURA - 90))]  # Lista vazia
+
+    if pontos2:
+        points = points + [pontos2[0]]
+    if pontos3:
+        points = points + [pontos3[0]]
+
+    # Pontos de início e fim (fora do Voronoi)
+    start_point = Pose2D(500, 1000)
+    end_point = bola_laranja_pos
+
+    # Cria o grafo baseado no diagrama de Voronoi
+    voronoi_graph = VoronoiGraph(points) 
+
+    # Adiciona os pontos de início e fim ao grafo
+    voronoi_graph.add_point(start_point, "start")
+    voronoi_graph.add_point(end_point, "end")
+
+    # Encontra o menor caminho entre os dois pontos
+    shortest_path_coords = voronoi_graph.find_shortest_path("start", "end")
+
+    # Exibe os pontos do caminho como Pose2D
+    for pose in shortest_path_coords:
+        print(f"Pose2D(x={pose.x}, y={pose.y})")
+
+    # Visualiza o grafo e o menor caminho
+    voronoi_graph.visualize(start_point, end_point, shortest_path_coords)
+    
+    # Gera os pontos do caminho como Pose2D
+    pontos1 = voronoi_graph.find_shortest_path("start", "end")
+    
+
+    
+    
     # Função para desenhar uma trajetória com cor própria
     def desenhar_trajetoria(pontos, cor, largura):
         if not pontos:
