@@ -1,7 +1,7 @@
 import pygame
 import sys
 import random
-from ..utils.pose2D import Pose2D  # Importa a classe Pose2D
+from utils.pose2D import Pose2D  # Importa a classe Pose2D
 
 #Para rodar usar o comando      python3 -m motion.visualization
 #com o terminal na pasta        UTBots-SSL-EL-Strategy
