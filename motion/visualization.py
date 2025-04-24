@@ -1,6 +1,11 @@
 import pygame
 import sys
 import random
+from ..utils.pose2D import Pose2D  # Importa a classe Pose2D
+
+#Para rodar usar o comando      python3 -m motion.visualization
+#com o terminal na pasta        UTBots-SSL-EL-Strategy
+
 
 def visualisation():
     # Inicializa o Pygame
@@ -43,18 +48,18 @@ def visualisation():
     ultima_tecla = False  # Variável para detectar clique único na tecla
 
     # Pontos das trajetórias
-    pontos1 = [(random.randint(0, MUNDO_LARGURA), random.randint(0, MUNDO_ALTURA)) for _ in range(NUM_PONTOS)]
-    pontos2 = [(random.randint(0, MUNDO_LARGURA), random.randint(0, MUNDO_ALTURA)) for _ in range(NUM_PONTOS)]
-    pontos3 = [(random.randint(0, MUNDO_LARGURA), random.randint(0, MUNDO_ALTURA)) for _ in range(NUM_PONTOS)]
+    pontos1 = [Pose2D(random.randint(0, MUNDO_LARGURA), random.randint(0, MUNDO_ALTURA)) for _ in range(NUM_PONTOS)]
+    pontos2 = [Pose2D(random.randint(0, MUNDO_LARGURA), random.randint(0, MUNDO_ALTURA)) for _ in range(NUM_PONTOS)]
+    pontos3 = [Pose2D(random.randint(0, MUNDO_LARGURA), random.randint(0, MUNDO_ALTURA)) for _ in range(NUM_PONTOS)]
 
     # Bobs inimigos
     pontosBobInimigos = [
-        (random.randint(90, MUNDO_LARGURA - 90), random.randint(90, MUNDO_ALTURA - 90))
+        Pose2D(random.randint(90, MUNDO_LARGURA - 90), random.randint(90, MUNDO_ALTURA - 90))
         for _ in range(NUM_BOBS_INIMIGOS)
     ]
 
     # Gera a posição aleatória da bola laranja
-    bola_laranja_pos = (
+    bola_laranja_pos = Pose2D(
         random.randint(0, MUNDO_LARGURA),
         random.randint(0, MUNDO_ALTURA)
     )
@@ -64,7 +69,7 @@ def visualisation():
 
     # Função para desenhar uma trajetória com cor própria
     def desenhar_trajetoria(pontos, cor, largura):
-        ajustados = [(int(x * escala), int(y * escala)) for x, y in pontos]
+        ajustados = [(int(p.x * escala), int(p.y * escala)) for p in pontos]
         if len(ajustados) > 1:
             # Desenha o contorno preto da linha
             pygame.draw.lines(TELA, PRETO, False, ajustados, largura + 2)
@@ -125,23 +130,23 @@ def visualisation():
         desenhar_trajetoria(pontos3, ROXO, largura_linha)
 
         # Adiciona círculos preenchidos nos pontos iniciais das listas com contorno preto
-        pygame.draw.circle(TELA, PRETO, (int(pontos1[0][0] * escala), int(pontos1[0][1] * escala)), int(RAIO_REAL * escala) + 2)
-        pygame.draw.circle(TELA, AZUL, (int(pontos1[0][0] * escala), int(pontos1[0][1] * escala)), int(RAIO_REAL * escala))
+        pygame.draw.circle(TELA, PRETO, (int(pontos1[0].x * escala), int(pontos1[0].y * escala)), int(RAIO_REAL * escala) + 2)
+        pygame.draw.circle(TELA, AZUL, (int(pontos1[0].x * escala), int(pontos1[0].y * escala)), int(RAIO_REAL * escala))
 
-        pygame.draw.circle(TELA, PRETO, (int(pontos2[0][0] * escala), int(pontos2[0][1] * escala)), int(RAIO_REAL * escala) + 2)
-        pygame.draw.circle(TELA, VERDE, (int(pontos2[0][0] * escala), int(pontos2[0][1] * escala)), int(RAIO_REAL * escala))
+        pygame.draw.circle(TELA, PRETO, (int(pontos2[0].x * escala), int(pontos2[0].y * escala)), int(RAIO_REAL * escala) + 2)
+        pygame.draw.circle(TELA, VERDE, (int(pontos2[0].x * escala), int(pontos2[0].y * escala)), int(RAIO_REAL * escala))
 
-        pygame.draw.circle(TELA, PRETO, (int(pontos3[0][0] * escala), int(pontos3[0][1] * escala)), int(RAIO_REAL * escala) + 2)
-        pygame.draw.circle(TELA, ROXO, (int(pontos3[0][0] * escala), int(pontos3[0][1] * escala)), int(RAIO_REAL * escala))
+        pygame.draw.circle(TELA, PRETO, (int(pontos3[0].x * escala), int(pontos3[0].y * escala)), int(RAIO_REAL * escala) + 2)
+        pygame.draw.circle(TELA, ROXO, (int(pontos3[0].x * escala), int(pontos3[0].y * escala)), int(RAIO_REAL * escala))
 
         # Desenha os círculos dos Bobs inimigos com contorno preto
-        for x, y in pontosBobInimigos:
-            pos = (int(x * escala), int(y * escala))
+        for bob in pontosBobInimigos:
+            pos = (int(bob.x * escala), int(bob.y * escala))
             pygame.draw.circle(TELA, PRETO, pos, int(RAIO_REAL * escala) + 2)  # Contorno preto
             pygame.draw.circle(TELA, PRETO, pos, int(RAIO_REAL * escala))  # Círculo principal
 
         # Desenha a bola laranja (ou verde) com contorno preto
-        bola_pos_escalada = (int(bola_laranja_pos[0] * escala), int(bola_laranja_pos[1] * escala))
+        bola_pos_escalada = (int(bola_laranja_pos.x * escala), int(bola_laranja_pos.y * escala))
         pygame.draw.circle(TELA, PRETO, bola_pos_escalada, int(RAIO_BOLA * escala) + 2)  # Contorno preto (raio maior)
         pygame.draw.circle(TELA, LARANJA, bola_pos_escalada, int(RAIO_BOLA * escala))  # Bola principal
 
@@ -151,7 +156,7 @@ def visualisation():
 
         for i, pos in enumerate(posicoes_iniciais):
             texto = fonte.render(numeros[i], True, PRETO)  # Renderiza o número em preto
-            texto_pos = (int(pos[0] * escala) - 10, int(pos[1] * escala) - 10)  # Ajusta a posição do texto
+            texto_pos = (int(pos.x * escala) - 10, int(pos.y * escala) - 10)  # Ajusta a posição do texto
             TELA.blit(texto, texto_pos)  # Desenha o número na tela
 
         pygame.display.flip()
