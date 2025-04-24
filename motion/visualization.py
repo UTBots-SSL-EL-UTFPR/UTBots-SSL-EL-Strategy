@@ -3,8 +3,8 @@ import sys
 import random
 from utils.pose2D import Pose2D  # Importa a classe Pose2D
 
-#Para rodar usar o comando      python3 -m motion.visualization
-#com o terminal na pasta        UTBots-SSL-EL-Strategy
+# Para rodar usar o comando python3 -m motion.visualization
+# com o terminal na pasta UTBots-SSL-EL-Strategy
 
 
 def visualisation():
@@ -49,8 +49,8 @@ def visualisation():
 
     # Pontos das trajetórias
     pontos1 = [Pose2D(random.randint(0, MUNDO_LARGURA), random.randint(0, MUNDO_ALTURA)) for _ in range(NUM_PONTOS)]
-    pontos2 = [Pose2D(random.randint(0, MUNDO_LARGURA), random.randint(0, MUNDO_ALTURA)) for _ in range(NUM_PONTOS)]
-    pontos3 = [Pose2D(random.randint(0, MUNDO_LARGURA), random.randint(0, MUNDO_ALTURA)) for _ in range(NUM_PONTOS)]
+    pontos2 = []  # Lista vazia
+    pontos3 = []  # Lista vazia
 
     # Bobs inimigos
     pontosBobInimigos = [
@@ -69,6 +69,8 @@ def visualisation():
 
     # Função para desenhar uma trajetória com cor própria
     def desenhar_trajetoria(pontos, cor, largura):
+        if not pontos:
+            return  # Não faz nada se a lista estiver vazia
         ajustados = [(int(p.x * escala), int(p.y * escala)) for p in pontos]
         if len(ajustados) > 1:
             # Desenha o contorno preto da linha
@@ -130,14 +132,17 @@ def visualisation():
         desenhar_trajetoria(pontos3, ROXO, largura_linha)
 
         # Adiciona círculos preenchidos nos pontos iniciais das listas com contorno preto
-        pygame.draw.circle(TELA, PRETO, (int(pontos1[0].x * escala), int(pontos1[0].y * escala)), int(RAIO_REAL * escala) + 2)
-        pygame.draw.circle(TELA, AZUL, (int(pontos1[0].x * escala), int(pontos1[0].y * escala)), int(RAIO_REAL * escala))
+        if pontos1:  # Verifica se pontos1 não está vazio
+            pygame.draw.circle(TELA, PRETO, (int(pontos1[0].x * escala), int(pontos1[0].y * escala)), int(RAIO_REAL * escala) + 2)
+            pygame.draw.circle(TELA, AZUL, (int(pontos1[0].x * escala), int(pontos1[0].y * escala)), int(RAIO_REAL * escala))
 
-        pygame.draw.circle(TELA, PRETO, (int(pontos2[0].x * escala), int(pontos2[0].y * escala)), int(RAIO_REAL * escala) + 2)
-        pygame.draw.circle(TELA, VERDE, (int(pontos2[0].x * escala), int(pontos2[0].y * escala)), int(RAIO_REAL * escala))
+        if pontos2:  # Verifica se pontos2 não está vazio
+            pygame.draw.circle(TELA, PRETO, (int(pontos2[0].x * escala), int(pontos2[0].y * escala)), int(RAIO_REAL * escala) + 2)
+            pygame.draw.circle(TELA, VERDE, (int(pontos2[0].x * escala), int(pontos2[0].y * escala)), int(RAIO_REAL * escala))
 
-        pygame.draw.circle(TELA, PRETO, (int(pontos3[0].x * escala), int(pontos3[0].y * escala)), int(RAIO_REAL * escala) + 2)
-        pygame.draw.circle(TELA, ROXO, (int(pontos3[0].x * escala), int(pontos3[0].y * escala)), int(RAIO_REAL * escala))
+        if pontos3:  # Verifica se pontos3 não está vazio
+            pygame.draw.circle(TELA, PRETO, (int(pontos3[0].x * escala), int(pontos3[0].y * escala)), int(RAIO_REAL * escala) + 2)
+            pygame.draw.circle(TELA, ROXO, (int(pontos3[0].x * escala), int(pontos3[0].y * escala)), int(RAIO_REAL * escala))
 
         # Desenha os círculos dos Bobs inimigos com contorno preto
         for bob in pontosBobInimigos:
@@ -149,15 +154,6 @@ def visualisation():
         bola_pos_escalada = (int(bola_laranja_pos.x * escala), int(bola_laranja_pos.y * escala))
         pygame.draw.circle(TELA, PRETO, bola_pos_escalada, int(RAIO_BOLA * escala) + 2)  # Contorno preto (raio maior)
         pygame.draw.circle(TELA, LARANJA, bola_pos_escalada, int(RAIO_BOLA * escala))  # Bola principal
-
-        # Adiciona números aos pontos iniciais das trajetórias
-        numeros = ["1", "2", "3"]
-        posicoes_iniciais = [pontos1[0], pontos2[0], pontos3[0]]
-
-        for i, pos in enumerate(posicoes_iniciais):
-            texto = fonte.render(numeros[i], True, PRETO)  # Renderiza o número em preto
-            texto_pos = (int(pos.x * escala) - 10, int(pos.y * escala) - 10)  # Ajusta a posição do texto
-            TELA.blit(texto, texto_pos)  # Desenha o número na tela
 
         pygame.display.flip()
         clock.tick(60)
