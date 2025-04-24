@@ -3,7 +3,12 @@ from scipy.spatial import Voronoi
 import matplotlib.pyplot as plt
 import networkx as nx
 from scipy.spatial import distance
+from utils.pose2D import Pose2D  # Importa a classe Pose2D
 
+
+
+#Para rodar usar o comando      python3 -m motion.veronoi
+#com o terminal na pasta        UTBots-SSL-EL-Strategy
 
 class VoronoiGraph:
     def __init__(self, points):
@@ -45,11 +50,11 @@ class VoronoiGraph:
         Encontra o menor caminho entre dois pontos no grafo.
         :param start_name: Nome do ponto inicial.
         :param end_name: Nome do ponto final.
-        :return: Lista de coordenadas do menor caminho.
+        :return: Lista de pontos do menor caminho como instâncias de Pose2D.
         """
         shortest_path = nx.shortest_path(self.graph, source=start_name, target=end_name, weight="weight")
         return [
-            self.graph.nodes[node]["pos"] if isinstance(node, str) else self.vor.vertices[node]
+            Pose2D(*self.graph.nodes[node]["pos"]) if isinstance(node, str) else Pose2D(*self.vor.vertices[node])
             for node in shortest_path
         ]
 
@@ -65,13 +70,20 @@ class VoronoiGraph:
         pos["start"] = start_point  # Adiciona a posição do ponto inicial
         pos["end"] = end_point      # Adiciona a posição do ponto final
 
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(10, 6))
         nx.draw(self.graph, pos=pos, with_labels=True, ax=ax, node_color='lightblue')
         plt.plot(self.points[:, 0], self.points[:, 1], 'ro', label="Pontos Voronoi")
         plt.plot(start_point[0], start_point[1], 'go', label="Ponto Inicial")
         plt.plot(end_point[0], end_point[1], 'bo', label="Ponto Final")
-        path_coords = np.array(shortest_path_coords)
-        plt.plot(path_coords[:, 0], path_coords[:, 1], 'r-', label="Menor Caminho")
+
+        # Extrai os atributos x e y de cada Pose2D no caminho
+        path_x = [pose.x for pose in shortest_path_coords]
+        path_y = [pose.y for pose in shortest_path_coords]
+
+        # Plota o menor caminho
+        plt.plot(path_x, path_y, 'r-', label="Menor Caminho")
+        plt.xlim(0, 4500)
+        plt.ylim(0, 3000)
         plt.title("Grafo baseado no Diagrama de Voronoi com Caminho")
         plt.legend()
         plt.savefig(output_file)
@@ -80,11 +92,11 @@ class VoronoiGraph:
 
 if __name__ == '__main__':
     # Pontos iniciais do Voronoi
-    points = [[0, 0], [1, 0], [0, 1], [1, 1], [0.5, 0.5], [0.2, 0.7], [0.1, 0.3]]
+    points = [[500, 500], [4000, 500], [2000, 2500], [3000, 1000], [1500, 1500], [3500, 2700], [500, 2900]]
 
     # Pontos de início e fim (fora do Voronoi)
-    start_point = np.array([2.2, 0.2])
-    end_point = np.array([0, 1.3])
+    start_point = np.array([100, 100])
+    end_point = np.array([4400, 2900])
 
     # Cria o grafo baseado no diagrama de Voronoi
     voronoi_graph = VoronoiGraph(points)
@@ -95,6 +107,13 @@ if __name__ == '__main__':
 
     # Encontra o menor caminho entre os dois pontos
     shortest_path_coords = voronoi_graph.find_shortest_path("start", "end")
+
+    # Converte o caminho para uma lista de Pose2D
+    path_as_pose2d = shortest_path_coords
+
+    # Exibe os pontos do caminho como Pose2D
+    for pose in path_as_pose2d:
+        print(f"Pose2D(x={pose.x}, y={pose.y})")
 
     # Visualiza o grafo e o menor caminho
     voronoi_graph.visualize(start_point, end_point, shortest_path_coords)
