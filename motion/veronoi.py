@@ -1,82 +1,89 @@
+import pygame
 import random
-import numpy as np
 from scipy.spatial import Voronoi
 
-# Parâmetros
-WIDTH, HEIGHT = 1350, 900
-MARGIN = 35
-NUM_OBSTACLES = 5
-OBSTACLE_RADIUS = 18
-EDGE_SAMPLE_DIST = 150
+def venoi():
+    # Inicializa o Pygame
+    pygame.init()
 
-# Gerar obstáculos aleatórios
-obstacles = []
-def random_circle():
-    while True:
-        x = random.randint(MARGIN + OBSTACLE_RADIUS, WIDTH - MARGIN - OBSTACLE_RADIUS)
-        y = random.randint(MARGIN + OBSTACLE_RADIUS, HEIGHT - MARGIN - OBSTACLE_RADIUS)
-        if all(np.hypot(x - cx, y - cy) > 2 * OBSTACLE_RADIUS for cx, cy in obstacles):
-            return (x, y)
-for _ in range(NUM_OBSTACLES):
-    obstacles.append(random_circle())
+    # Configurações da tela visível
+    TELA_LARGURA = 800
+    TELA_ALTURA = 600
+    TELA = pygame.display.set_mode((TELA_LARGURA, TELA_ALTURA))
+    pygame.display.set_caption("Diagrama de Voronoi")
 
-# Amostrar pontos nas paredes
-boundaries = []
-x_min, x_max = MARGIN, WIDTH - MARGIN
-y_min, y_max = MARGIN, HEIGHT - MARGIN
-for x in range(x_min, x_max + 1, EDGE_SAMPLE_DIST):
-    boundaries.extend([(x, y_min), (x, y_max)])
-for y in range(y_min, y_max + 1, EDGE_SAMPLE_DIST):
-    boundaries.extend([(x_min, y), (x_max, y)])
+    # Tamanho do mundo virtual
+    MUNDO_LARGURA = 4500
+    MUNDO_ALTURA = 3000
 
-sites = np.array(obstacles + boundaries)
-vor = Voronoi(sites)
+    # Fator de escala para ajustar o mundo virtual à tela visível
+    escala_x = TELA_LARGURA / MUNDO_LARGURA
+    escala_y = TELA_ALTURA / MUNDO_ALTURA
+    escala = min(escala_x, escala_y)
 
-nodes = []
-edges = []
+    # Cores
+    BRANCO = (255, 255, 255)
+    PRETO = (0, 0, 0)
+    VERDE = (0, 255, 0)
+    VERMELHO = (255, 0, 0)
+    CORES = [
+        (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+        for _ in range(100)
+    ]
 
-# Checar se segmento é inválido
-def segment_invalid(p1, p2):
-    vec = p2 - p1
-    steps = max(1, int(np.linalg.norm(vec)))
-    for i in range(steps + 1):
-        pt = p1 + vec * (i / steps)
-        if not (x_min <= pt[0] <= x_max and y_min <= pt[1] <= y_max):
-            return True
-        if any((pt[0] - cx)**2 + (pt[1] - cy)**2 < OBSTACLE_RADIUS**2 for cx, cy in obstacles):
-            return True
-    return False
+    # Gera pontos aleatórios no espaço do mundo virtual
+    NUM_PONTOS = 10
+    pontos = [(random.randint(0, MUNDO_LARGURA), random.randint(0, MUNDO_ALTURA)) for _ in range(NUM_PONTOS)]
 
-# Adquirir nós válidos
-for v in vor.vertices:
-    if (x_min <= v[0] <= x_max and y_min <= v[1] <= y_max
-        and not any((v[0] - cx)**2 + (v[1] - cy)**2 < OBSTACLE_RADIUS**2 for cx, cy in obstacles)):
-        nodes.append(v)
+    # Define os pontos especiais (inicial e final)
+    ponto_inicial = (random.randint(0, MUNDO_LARGURA), random.randint(0, MUNDO_ALTURA))
+    ponto_final = (random.randint(0, MUNDO_LARGURA), random.randint(0, MUNDO_ALTURA))
 
-# Construir arestas válidas
-def find_index(vec):
-    for i, n in enumerate(nodes):
-        if np.allclose(vec, n):
-            return i
-    return -1
+    # Adiciona os pontos especiais à lista de pontos
+    pontos.append(ponto_inicial)
+    pontos.append(ponto_final)
 
-for ridge in vor.ridge_vertices:
-    if -1 in ridge:
-        continue
-    p1 = vor.vertices[ridge[0]]
-    p2 = vor.vertices[ridge[1]]
-    if list(p1) in nodes and list(p2) in nodes and not segment_invalid(p1, p2):
-        i1 = find_index(p1)
-        i2 = find_index(p2)
-        if i1 != -1 and i2 != -1:
-            edges.append((i1, i2))
-            edges.append((i2, i1))
+    # Função para desenhar o diagrama de Voronoi
+    def desenhar_voronoi(voronoi):
+        # Desenha os pontos
+        for ponto in pontos:
+            ponto_escalado = (int(ponto[0] * escala), int(ponto[1] * escala))
+            pygame.draw.circle(TELA, PRETO, ponto_escalado, 5)  # Desenha os pontos
 
-# Saída: imprimir o grafo
-print("Nós válidos:")
-for i, n in enumerate(nodes):
-    print(f"{i}: {n}")
+        # Desenha as arestas do diagrama de Voronoi
+        for aresta in voronoi.ridge_vertices:
+            if -1 not in aresta:  # Ignora arestas infinitas
+                ponto1 = tuple(map(int, voronoi.vertices[aresta[0]] * escala))
+                ponto2 = tuple(map(int, voronoi.vertices[aresta[1]] * escala))
+                pygame.draw.line(TELA, PRETO, ponto1, ponto2, 2)
 
-print("\nArestas do grafo:")
-for e in edges:
-    print(e)
+        # Desenha os pontos especiais (inicial e final)
+        inicial_escalado = (int(ponto_inicial[0] * escala), int(ponto_inicial[1] * escala))
+        final_escalado = (int(ponto_final[0] * escala), int(ponto_final[1] * escala))
+        pygame.draw.circle(TELA, VERDE, inicial_escalado, 10)  # Ponto inicial (verde)
+        pygame.draw.circle(TELA, VERMELHO, final_escalado, 10)  # Ponto final (vermelho)
+
+    # Loop principal
+    rodando = True
+    while rodando:
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                rodando = False
+
+        # Preenche o fundo
+        TELA.fill(BRANCO)
+
+        # Gera o diagrama de Voronoi
+        voronoi = Voronoi(pontos)
+
+        # Desenha o diagrama de Voronoi
+        desenhar_voronoi(voronoi)
+
+        # Atualiza a tela
+        pygame.display.flip()
+
+    # Encerra o Pygame
+    pygame.quit()
+
+if __name__ == '__main__':
+    venoi()
