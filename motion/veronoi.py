@@ -3,8 +3,7 @@ from scipy.spatial import Voronoi
 import matplotlib.pyplot as plt
 import networkx as nx
 from scipy.spatial import distance
-from utils.pose2D import Pose2D  # Importa a classe Pose2D
-
+from utils.pose2D import Pose2D 
 
 
 #Para rodar usar o comando      python3 -m motion.veronoi
