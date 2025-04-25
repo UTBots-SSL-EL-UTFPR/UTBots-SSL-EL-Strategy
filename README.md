@@ -116,5 +116,5 @@ source venv/bin/activate
 
 ---
 
-Feito com 🦊 por UTBots.
+Feito por 🦊 UTBots.
 
