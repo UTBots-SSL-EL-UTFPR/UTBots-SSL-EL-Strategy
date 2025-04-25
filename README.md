@@ -1,80 +1,120 @@
-# UTBots SSL-EL Strategy
+# UTBots-SSL-EL-Strategy
 
-## 📦 Dependências
+Repositório oficial da equipe UTBots para a competição RoboCup SSL-EL. Este projeto implementa os módulos de comunicação e estratégia entre o software da equipe e o simulador grSim, bem como o Game Controller e o SSL-Vision.
 
-Antes de rodar o projeto, é necessário instalar o compilador do Protocol Buffers:
+---
+
+## 🚀 Requisitos
+
+- Python 3.8+
+- `protoc` (Protocol Buffers Compiler) ≥ 3.21
+- Biblioteca Python `protobuf`
+
+### 📆 Instalação dos requisitos no Ubuntu:
 
 ```bash
 sudo apt update
-sudo apt install protobuf-compiler
-protoc --version
+sudo apt install python3-venv protobuf-compiler
 ```
 
-Se tudo estiver correto, será exibida a versão do `protoc` instalada (de preferência `libprotoc 3.21.12`).
+### 🛠️ Configurando o ambiente virtual e instalando dependências:
+
+```bash
+# Crie o ambiente virtual
+python3 -m venv venv
+
+# Ative o ambiente
+source venv/bin/activate
+
+# Instale as dependências
+pip install protobuf
+```
+
+Se preferir, instale a partir de um `requirements.txt` (se estiver no repositório):
+
+```bash
+pip install -r requirements.txt
+```
 
 ---
 
-## ⚙️ Como configurar o projeto
-
-### 1. Gerar os arquivos Python a partir dos `.proto`
-
-Os arquivos `.proto` definem as estruturas de comunicação com o SSL-Vision, Game Controller e grSim. Para transformá-los em arquivos `.py` que podem ser usados no Python:
-
-#### Método direto (manual):
-
-Dentro da pasta `communication/protobuf`, execute:
-
-```bash
-protoc --proto_path=./proto --python_out=. ./proto/*.proto
-```
-
-Isso irá gerar os arquivos `*_pb2.py` diretamente dentro de `communication/protobuf`.
-
-#### Método automatizado (recomendado):
-
-Execute o script `compile_protos.py` na raiz do projeto:
-
-```bash
-python3 compile_protos.py
-```
-
-Esse script:
-- Cria a pasta `communication/generated/` (se ainda não existir)
-- Garante que haja um `__init__.py` para suportar importações
-- Remove arquivos `.py` antigos gerados automaticamente
-- Compila todos os `.proto` da pasta `communication/protobuf/proto`
-
-Você deve rodar esse script **sempre que adicionar ou modificar** qualquer arquivo `.proto`.
-
----
-
-## 🧠 Estrutura recomendada do projeto
-
-(⚠️ *Em construção. Será adicionado um diagrama visual.*)
+## 📁 Estrutura do Projeto
 
 ```
 UTBots-SSL-EL-Strategy/
 ├── communication/
-│   ├── receiver.py
-│   ├── vision_receiver.py
-│   ├── referee_receiver.py
-│   ├── command_sender.py
-│   ├── generated/                  ← arquivos .py gerados pelo protoc
-│   │   ├── __init__.py
-│   │   └── *_pb2.py
+│   ├── command_builder.py          # Monta pacotes de comando para robôs
+│   ├── command_sender.py           # Envia comandos via UDP
+│   ├── receiver.py                 # Base para recepção UDP
+│   ├── vision_receiver.py          # Recebe pacotes do SSL-Vision
+│   ├── generated/                  # Arquivos *.pb2.py gerados pelo protoc
 │   └── protobuf/
-│       └── proto/                  ← arquivos .proto
-├── strategy/
-│   └── strategy.py
-├── main.py
-├── compile_protos.py              ← script para gerar os .pb2.py
-└── README.md
+│       └── proto/                  # Arquivos .proto (definição das mensagens)
+├── test_sender.py                 # Script de teste para envio de comandos
+├── build_and_fix_protos.py        # Recompila os arquivos .proto e corrige imports
+└── README.md                      # Este arquivo
 ```
 
 ---
 
-## ✅ TODO
+## 🔧 Gerando os arquivos `.pb2.py` (Protocol Buffers)
 
-- [ ] Adicionar diagrama do projeto (pastas e classes)
-- [ ] Documentar a estrutura dos módulos `datatypes/` e `strategy/`
-- [ ] Especificar pontos de entrada e exemplos de execução
+Todos os arquivos `.proto` estão localizados em:
+
+```
+communication/protobuf/proto/
+```
+
+Para compilar os arquivos `.proto` e gerar os equivalentes `.pb2.py`, rode:
+
+```bash
+python3 build_and_fix_protos.py
+```
+
+Este script:
+- Recompila todos os arquivos `.proto`
+- Gera os arquivos `.pb2.py` dentro de `communication/generated/`
+- Corrige automaticamente os `import` para funcionar com o pacote Python `communication.generated`
+
+**Nunca edite arquivos `.pb2.py` manualmente.**
+
+---
+
+## 🧪 Testando o envio de comandos
+
+Com o grSim rodando, você pode testar o envio de comandos com:
+
+```bash
+python3 test_sender.py
+```
+
+O robô de ID 0 deve se mover para frente. Ajuste os parâmetros dentro do script para testar outras velocidades ou robôs.
+
+---
+
+## 🤝 Contribuição
+
+1. Fork o repositório
+2. Crie uma branch com sua feature: `git checkout -b minha-feature`
+3. Commit suas alterações: `git commit -m 'feat: minha feature'`
+4. Push para a branch remota: `git push origin minha-feature`
+5. Abra um Pull Request
+
+---
+
+## 📌 Ambiente Virtual
+
+- Sempre ative seu ambiente virtual antes de rodar os scripts:
+
+```bash
+source venv/bin/activate
+```
+
+- Se der erro de import de `ssl_vision_detection_pb2`, verifique se você recompilou os `.proto` corretamente com o script.
+
+- Adicione a pasta `venv/` ao `.gitignore`. Não envie ambientes virtuais para o repositório!
+
+---
+
+Feito com 🦊 por UTBots.
+
