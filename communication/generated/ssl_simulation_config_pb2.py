@@ -12,7 +12,7 @@ _sym_db = _symbol_database.Default()
 
 
 import ssl_gc_common_pb2 as ssl__gc__common__pb2
-import ssl_vision_geometry_pb2 as ssl__vision__geometry__pb2
+from communication.generated import ssl_vision_geometry_pb2 as ssl__vision__geometry__pb2
 from google.protobuf import any_pb2 as google_dot_protobuf_dot_any__pb2
 
 
