@@ -13,8 +13,8 @@ def visualisation():
     pygame.init()
 
     # Tamanho da tela visível
-    TELA_LARGURA = 4500 * 0.3
-    TELA_ALTURA = 3000 * 0.3
+    TELA_LARGURA = 4500 * 0.2
+    TELA_ALTURA = 3000 * 0.2
     TELA = pygame.display.set_mode((TELA_LARGURA, TELA_ALTURA))
     pygame.display.set_caption("Múltiplas Trajetórias")
 
@@ -48,19 +48,40 @@ def visualisation():
     linha_grossa = False
     ultima_tecla = False  # Variável para detectar clique único na tecla
 
-
-
-    # Bobs inimigos
-    pontosBobInimigos = [
-        Pose2D(random.randint(90, MUNDO_LARGURA - 90), random.randint(90, MUNDO_ALTURA - 90))
-        for _ in range(NUM_BOBS_INIMIGOS)
-    ]
+    # Bobs inimigos (posicionados entre start_point e end_point)
 
     # Gera a posição aleatória da bola laranja
     bola_laranja_pos = Pose2D(
         random.randint(0, MUNDO_LARGURA),
         random.randint(0, MUNDO_ALTURA)
     )
+
+    # Pontos de início e fim (fora do Voronoi)
+    start_point = Pose2D(500, 1000)
+    end_point = bola_laranja_pos
+
+    # Gera os pontos dos Bobs inimigos com uma probabilidade de serem posicionados entre start_point e end_point
+    pontosBobInimigos = []
+    probabilidade_na_aresta = 0.5  # 70% de chance de estar na aresta
+    
+    for _ in range(NUM_BOBS_INIMIGOS):
+        if random.random() < probabilidade_na_aresta:
+            # Posiciona o Bob Inimigo ao longo da aresta
+            t = random.uniform(0, 1)  # Fator aleatório entre 0 e 1
+            x = start_point.x + t * (end_point.x - start_point.x)
+            y = start_point.y + t * (end_point.y - start_point.y)
+        else:
+            # Posiciona o Bob Inimigo em uma posição aleatória no campo
+            x = random.randint(90, MUNDO_LARGURA - 90)
+            y = random.randint(90, MUNDO_ALTURA - 90)
+        
+        pontosBobInimigos.append(Pose2D(x, y))
+
+    # Gera os pontos dos Bobs inimigos aleatórios (padrao)
+    '''pontosBobInimigos = [
+        Pose2D(random.randint(90, MUNDO_LARGURA - 90), random.randint(90, MUNDO_ALTURA - 90))
+        for _ in range(NUM_BOBS_INIMIGOS)
+    ]'''
 
     # Inicializa a fonte para os números
     fonte = pygame.font.Font(None, 36)  # Fonte padrão com tamanho 36
@@ -76,9 +97,6 @@ def visualisation():
     if pontos3:
         points = points + [pontos3[0]]
 
-    # Pontos de início e fim (fora do Voronoi)
-    start_point = Pose2D(500, 1000)
-    end_point = bola_laranja_pos
 
     # Cria o grafo baseado no diagrama de Voronoi
     voronoi_graph = VoronoiGraph(points) 
@@ -86,6 +104,11 @@ def visualisation():
     # Adiciona os pontos de início e fim ao grafo
     voronoi_graph.add_point(start_point, "start")
     voronoi_graph.add_point(end_point, "end")
+
+    # Conecta diretamente start_point a end_point usando o novo método
+
+    print("Chamando connect_external_points para conectar start e end")
+    voronoi_graph.connect_external_points(start_point, end_point, "start", "end")
 
     # Encontra o menor caminho entre os dois pontos
     shortest_path_coords = voronoi_graph.find_shortest_path("start", "end")
