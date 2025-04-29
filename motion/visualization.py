@@ -2,25 +2,66 @@ import pygame
 import sys
 import random
 from utils.pose2D import Pose2D  # Importa a classe Pose2D
-from motion.veronoi import VoronoiGraph  # Importa a classe VoronoiGraph
+from motion.veronoi import VoronoiGraph  # Certifique-se de que a classe VoronoiGraph está implementada corretamente no módulo motion.veronoi
 
 # Para rodar usar o comando python3 -m motion.visualization
 # com o terminal na pasta UTBots-SSL-EL-Strategy
 
+# Gera pontos na borda da imagem, espaçados a cada n pixels
+def gerar_pontos_borda(largura, altura, espacamento=50, limite_maximo=100):
+    """
+    Gera pontos na borda de uma área retangular.
+    :param largura: Largura da área.
+    :param altura: Altura da área.
+    :param espacamento: Distância entre os pontos consecutivos.
+    :param limite_maximo: Número máximo de pontos a serem gerados.
+    :return: Lista de pontos na borda.
+    """
+    pontos_borda = []
+
+    # Pontos na borda superior
+    for x in range(0, largura + 1, espacamento):
+        pontos_borda.append(Pose2D(x, 0))
+        if len(pontos_borda) >= limite_maximo:
+            return pontos_borda
+
+    # Pontos na borda inferior
+    for x in range(0, largura + 1, espacamento):
+        pontos_borda.append(Pose2D(x, altura))
+        if len(pontos_borda) >= limite_maximo:
+            return pontos_borda
+
+    # Pontos na borda esquerda
+    for y in range(0, altura + 1, espacamento):
+        pontos_borda.append(Pose2D(0, y))
+        if len(pontos_borda) >= limite_maximo:
+            return pontos_borda
+
+    # Pontos na borda direita
+    for y in range(0, altura + 1, espacamento):
+        pontos_borda.append(Pose2D(largura, y))
+        if len(pontos_borda) >= limite_maximo:
+            return pontos_borda
+
+    return pontos_borda
 
 def visualisation():
     # Inicializa o Pygame
     pygame.init()
 
     # Tamanho da tela visível
-    TELA_LARGURA = 4500 * 0.3
-    TELA_ALTURA = 3000 * 0.3
+    TELA_LARGURA = 4500 * 0.2
+    TELA_ALTURA = 3000 * 0.2
     TELA = pygame.display.set_mode((TELA_LARGURA, TELA_ALTURA))
     pygame.display.set_caption("Múltiplas Trajetórias")
 
     # Tamanho do mundo virtual
     MUNDO_LARGURA = 4500
     MUNDO_ALTURA = 3000
+    
+    # Gera os pontos na borda da imagem
+    pontos_borda = gerar_pontos_borda(MUNDO_LARGURA, MUNDO_ALTURA, espacamento=200, limite_maximo=300)
+    # Adiciona os pontos da borda à lista de pontos
 
     # Cores
     BRANCO = (255, 255, 255)
@@ -48,13 +89,7 @@ def visualisation():
     linha_grossa = False
     ultima_tecla = False  # Variável para detectar clique único na tecla
 
-
-
-    # Bobs inimigos
-    pontosBobInimigos = [
-        Pose2D(random.randint(90, MUNDO_LARGURA - 90), random.randint(90, MUNDO_ALTURA - 90))
-        for _ in range(NUM_BOBS_INIMIGOS)
-    ]
+    # Bobs inimigos (posicionados entre start_point e end_point)
 
     # Gera a posição aleatória da bola laranja
     bola_laranja_pos = Pose2D(
@@ -62,11 +97,38 @@ def visualisation():
         random.randint(0, MUNDO_ALTURA)
     )
 
+    # Pontos de início e fim (fora do Voronoi)
+    start_point = Pose2D(500, 1000)
+    end_point = bola_laranja_pos
+
+    # Gera os pontos dos Bobs inimigos com uma probabilidade de serem posicionados entre start_point e end_point
+    pontosBobInimigos = []
+    probabilidade_na_aresta = 0.5  # 70% de chance de estar na aresta
+    
+    for _ in range(NUM_BOBS_INIMIGOS):
+        if random.random() < probabilidade_na_aresta:
+            # Posiciona o Bob Inimigo ao longo da aresta
+            t = random.uniform(0, 1)  # Fator aleatório entre 0 e 1
+            x = start_point.x + t * (end_point.x - start_point.x)
+            y = start_point.y + t * (end_point.y - start_point.y)
+        else:
+            # Posiciona o Bob Inimigo em uma posição aleatória no campo
+            x = random.randint(90, MUNDO_LARGURA - 90)
+            y = random.randint(90, MUNDO_ALTURA - 90)
+        
+        pontosBobInimigos.append(Pose2D(x, y))
+
+    # Gera os pontos dos Bobs inimigos aleatórios (padrao)
+    '''pontosBobInimigos = [
+        Pose2D(random.randint(90, MUNDO_LARGURA - 90), random.randint(90, MUNDO_ALTURA - 90))
+        for _ in range(NUM_BOBS_INIMIGOS)
+    ]'''
+
     # Inicializa a fonte para os números
     fonte = pygame.font.Font(None, 36)  # Fonte padrão com tamanho 36
 
     # Pontos iniciais do Voronoi
-    points = pontosBobInimigos
+    points = pontosBobInimigos + pontos_borda  # Adiciona os pontos da borda
     
     pontos2 = [Pose2D(random.randint(90, MUNDO_LARGURA - 90), random.randint(90, MUNDO_ALTURA - 90))]  # Lista vazia
     pontos3 = [Pose2D(random.randint(90, MUNDO_LARGURA - 90), random.randint(90, MUNDO_ALTURA - 90))]  # Lista vazia
@@ -76,9 +138,6 @@ def visualisation():
     if pontos3:
         points = points + [pontos3[0]]
 
-    # Pontos de início e fim (fora do Voronoi)
-    start_point = Pose2D(500, 1000)
-    end_point = bola_laranja_pos
 
     # Cria o grafo baseado no diagrama de Voronoi
     voronoi_graph = VoronoiGraph(points) 
@@ -87,6 +146,11 @@ def visualisation():
     voronoi_graph.add_point(start_point, "start")
     voronoi_graph.add_point(end_point, "end")
 
+    # Conecta diretamente start_point a end_point usando o novo método
+    '''
+    print("Chamando connect_external_points para conectar start e end")
+    voronoi_graph.connect_external_points(start_point, end_point, "start", "end")
+    '''
     # Encontra o menor caminho entre os dois pontos
     shortest_path_coords = voronoi_graph.find_shortest_path("start", "end")
 
