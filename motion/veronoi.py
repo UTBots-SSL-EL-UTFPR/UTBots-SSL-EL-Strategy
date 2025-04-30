@@ -33,16 +33,26 @@ class VoronoiGraph:
 
     def add_point(self, point, point_name):
         """
-        Adiciona um ponto externo ao grafo, conectando-o ao vértice mais próximo.
+        Adiciona um ponto externo ao grafo, conectando-o aos 3 vértices mais próximos.
         :param point: Objeto Pose2D representando o ponto a ser adicionado.
         :param point_name: Nome do ponto no grafo.
-        :return: Índice do vértice mais próximo.
+        :return: Lista de índices dos 3 vértices mais próximos.
         """
-        closest_vertex = np.argmin([distance.euclidean([point.x, point.y], v) for v in self.vor.vertices])
-        dist_to_vertex = distance.euclidean([point.x, point.y], self.vor.vertices[closest_vertex])
+        # Calcula as distâncias do ponto para todos os vértices
+        distances = [distance.euclidean([point.x, point.y], v) for v in self.vor.vertices]
+        
+        # Encontra os índices dos 3 vértices mais próximos
+        closest_vertices = np.argsort(distances)[:3]
+        
+        # Adiciona o ponto ao grafo
         self.graph.add_node(point_name, pos=point)
-        self.graph.add_edge(point_name, closest_vertex, weight=dist_to_vertex)
-        return closest_vertex
+        
+        # Conecta o ponto aos 3 vértices mais próximos
+        for vertex in closest_vertices:
+            dist_to_vertex = distances[vertex]
+            self.graph.add_edge(point_name, vertex, weight=dist_to_vertex)
+        
+        return closest_vertices
 
 
     def find_shortest_path(self, start_node, end_node):
