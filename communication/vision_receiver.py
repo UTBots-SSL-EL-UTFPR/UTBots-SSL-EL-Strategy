@@ -1,7 +1,13 @@
 from .receiver import receiver
 from communication.generated import ssl_vision_wrapper_pb2 as vision_pb
 
-class VisionReceiver(receiver):
+import sys
+import os
+sys.path.append("communication/generated")
+
+
+
+class VisionReceiver(Receiver):
     _instance = None 
 
     def __new__(cls):                             #singleton
