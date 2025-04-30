@@ -2,6 +2,7 @@
 
 # Ambiente virtual
 venv/
+.vscode/
 
 # Cache do Python
 __pycache__/

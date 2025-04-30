@@ -1,7 +1,7 @@
-from .receiver import receiver
-from communication.generated import ssl_gc_referee_message_pb2 as referee_pb
+import receiver as Receiver
+from generated import ssl_gc_referee_message_pb2 as referee_pb
 
-class RefereeReceiver(receiver):
+class RefereeReceiver(Receiver):
     _instance = None 
 
     def __new__(cls):                             #singleton
