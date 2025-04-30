@@ -99,24 +99,25 @@ class VoronoiGraph:
 
         # Plota o menor caminho
         plt.plot(path_x, path_y, 'r-', label="Menor Caminho")
-        plt.xlim(0, 4500)
-        plt.ylim(0, 3000)
+        plt.xlim(-4500, 4500)
+        plt.ylim(-3000, 3000)
         plt.title("Grafo baseado no Diagrama de Voronoi com Caminho")
         plt.legend()
-        plt.savefig(output_file)
+        plt.savefig("test_veronoi")
         plt.show()
 
 
 if __name__ == '__main__':
     # Pontos iniciais do Voronoi
     points = []
-    for i in range(6):
-        x = random.randint(-400,4000)
-        y = random.randint(-400,4000)
-        points.append(Pose2D(x, y))
+    points.append(Pose2D(100, 300))  # Obstáculo em (20, 20)
+    points.append(Pose2D(2000, 1500))  # Obstáculo em (30, 30)
+    points.append(Pose2D(-300, 2000))  # Obstáculo em (40, 40)
+    points.append(Pose2D(0, -2000))  # Obstáculo em (40, 40)
+    points.append(Pose2D(1365, 450))  # Obstáculo em (30, 30)
 
-    start_point = Pose2D(100, 100)
-    end_point = Pose2D(4400, 2900)
+    start_point = Pose2D(-3000, -1000)
+    end_point = Pose2D(3000, 1500)
 
     voronoi_graph = VoronoiGraph(points)
     fig = voronoi_plot_2d(voronoi_graph.vor)
