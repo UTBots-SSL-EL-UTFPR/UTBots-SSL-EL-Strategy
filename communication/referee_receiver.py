@@ -1,5 +1,5 @@
-import receiver as Receiver
-from generated import ssl_gc_referee_message_pb2 as referee_pb
+from .receiver import Receiver
+from .generated import ssl_gc_referee_message_pb2 as referee_pb
 
 class RefereeReceiver(Receiver):
     _instance = None 

@@ -1,4 +1,4 @@
-from .receiver import receiver
+from .receiver import Receiver
 from communication.generated import ssl_vision_wrapper_pb2 as vision_pb
 
 import sys
