@@ -3,6 +3,7 @@ import sys
 import random
 from utils.pose2D import Pose2D  # Importa a classe Pose2D
 from motion.veronoi import VoronoiGraph  # Certifique-se de que a classe VoronoiGraph está implementada corretamente no módulo motion.veronoi
+from motion.bestPath import BestPath  # Importa a classe BestPath
 
 # Para rodar usar o comando python3 -m motion.visualization
 # com o terminal na pasta UTBots-SSL-EL-Strategy
@@ -151,8 +152,15 @@ def visualisation():
     print("Chamando connect_external_points para conectar start e end")
     voronoi_graph.connect_external_points(start_point, end_point, "start", "end")
     '''
+    #====================================================================================================================================================================
     # Encontra o menor caminho entre os dois pontos
-    shortest_path_coords = voronoi_graph.find_shortest_path("start", "end")
+    
+    #utilizando Verenoi
+    #shortest_path_coords = voronoi_graph.find_shortest_path("start", "end")
+
+    #utilizando BestPath
+    best_path = BestPath()
+    shortest_path_coords = best_path.find_shortest_path(start_point, end_point, pontosBobInimigos, RAIO_REAL)
 
     # Exibe os pontos do caminho como Pose2D
     for pose in shortest_path_coords:
@@ -162,13 +170,13 @@ def visualisation():
     voronoi_graph.visualize(start_point, end_point, shortest_path_coords)
     
     # Gera os pontos do caminho como Pose2D
-    pontos1 = voronoi_graph.find_shortest_path("start", "end")
+    pontos1 = shortest_path_coords
     
 
     
     
     # Função para desenhar uma trajetória com cor própria
-    def desenhar_trajetoria(pontos, cor, largura):
+    def desenhar_trajetoria(pontos, cor, largura, exibir_bolinhas):
         if not pontos:
             return  # Não faz nada se a lista estiver vazia
         ajustados = [(int(p.x * escala), int(p.y * escala)) for p in pontos]
@@ -178,13 +186,14 @@ def visualisation():
             # Desenha a linha principal
             pygame.draw.lines(TELA, cor, False, ajustados, largura)
         
-        # Adiciona círculos em todos os pontos com contorno preto
-        for ponto in ajustados:
-            if linha_grossa:
-                # Contorno preto
-                pygame.draw.circle(TELA, PRETO, ponto, int(RAIO_REAL * escala) + 2)
-                # Círculo principal
-                pygame.draw.circle(TELA, cor, ponto, int(RAIO_REAL * escala))
+        # Adiciona círculos em todos os pontos com contorno preto, se exibir_bolinhas for True
+        if exibir_bolinhas:
+            for ponto in ajustados:
+                if linha_grossa:
+                    # Contorno preto
+                    pygame.draw.circle(TELA, PRETO, ponto, int(RAIO_REAL * escala) + 2)
+                    # Círculo principal
+                    pygame.draw.circle(TELA, cor, ponto, int(RAIO_REAL * escala))
 
         for i, ponto in enumerate(ajustados):
             if i == 0:
@@ -194,13 +203,16 @@ def visualisation():
             else:
                 cor_ponto = cor
             # Contorno preto para os círculos menores
-            pygame.draw.circle(TELA, PRETO, ponto, 8)
-            # Círculo menor principal
-            pygame.draw.circle(TELA, cor_ponto, ponto, 6)
+            if exibir_bolinhas or i in (0, len(ajustados) - 1):  # Sempre exibe os pontos inicial e final
+                pygame.draw.circle(TELA, PRETO, ponto, 8)
+                pygame.draw.circle(TELA, cor_ponto, ponto, 6)
 
     # Carrega a imagem de fundo
     imagem_fundo = pygame.image.load("motion/campo.png")  
     imagem_fundo = pygame.transform.scale(imagem_fundo, (TELA_LARGURA, TELA_ALTURA))  # Redimensiona para o tamanho da tela
+
+    # Variável de controle para exibir ou ocultar as bolinhas entre as interseções
+    exibir_bolinhas_intersecoes = True
 
     # Loop principal
     clock = pygame.time.Clock()
@@ -211,25 +223,26 @@ def visualisation():
             if evento.type == pygame.QUIT:
                 rodando = False
 
+            # Detecta o pressionamento da tecla K (evento KEYDOWN)
+            if evento.type == pygame.KEYDOWN:
+                if evento.key == pygame.K_k:
+                    exibir_bolinhas_intersecoes = not exibir_bolinhas_intersecoes  # Alterna entre True e False
+                    print(f"Debug: exibir_bolinhas_intersecoes = {exibir_bolinhas_intersecoes}")  # Debugging
+
+                # Detecta o pressionamento da tecla L para alternar a largura da linha
+                if evento.key == pygame.K_l:
+                    linha_grossa = not linha_grossa  # Alterna entre True e False
+
         # Desenha a imagem de fundo
         TELA.blit(imagem_fundo, (0, 0))
-
-        # Detecta o pressionamento da tecla L e alterna a grosso de linha uma única vez
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_l] and not ultima_tecla:
-            linha_grossa = not linha_grossa  # Alterna entre True e False
-            ultima_tecla = True  # Marca que a tecla foi pressionada
-
-        if not keys[pygame.K_l]:
-            ultima_tecla = False  # Reseta quando a tecla é liberada
 
         # Define a largura da linha
         largura_linha = 2 if not linha_grossa else int(RAIO_REAL / 2)  # Ajuste para uma largura de linha mais proporcional
 
         # Desenha as 3 trajetórias
-        desenhar_trajetoria(pontos1, AZUL, largura_linha)
-        desenhar_trajetoria(pontos2, VERDE, largura_linha)
-        desenhar_trajetoria(pontos3, ROXO, largura_linha)
+        desenhar_trajetoria(pontos1, AZUL, largura_linha, exibir_bolinhas_intersecoes)
+        desenhar_trajetoria(pontos2, VERDE, largura_linha, exibir_bolinhas_intersecoes)
+        desenhar_trajetoria(pontos3, ROXO, largura_linha, exibir_bolinhas_intersecoes)
 
         # Adiciona círculos preenchidos nos pontos iniciais das listas com contorno preto
         if pontos1:  # Verifica se pontos1 não está vazio
