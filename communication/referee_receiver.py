@@ -1,5 +1,6 @@
 from .receiver import Receiver
 from .generated import ssl_gc_referee_message_pb2 as referee_pb
+from communication.parsers import RefereeParser
 import socket
 
 class RefereeReceiver(Receiver):
@@ -24,3 +25,10 @@ class RefereeReceiver(Receiver):
         except socket.timeout: #Mensagem para quando falhar ao receber os dados
             print("Timeout: Nenhum pacote recebido.")
             return None
+        
+    def receive_parsed(self):
+        raw_data = self.receive_raw()
+        if raw_data:
+            parser = RefereeParser()
+            return parser.parse(raw_data)
+        return None
