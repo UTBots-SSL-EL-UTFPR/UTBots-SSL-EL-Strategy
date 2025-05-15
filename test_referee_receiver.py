@@ -1,5 +1,6 @@
 from communication.referee_receiver import RefereeReceiver
 from communication.parsers.referee_parser import RefereeParser
+from pprint import pprint
 
 def test_referee_receiver():
     receiver = RefereeReceiver(interface_ip = "172.17.0.1") # Passa o Ip de interface do docker
@@ -9,15 +10,18 @@ def test_referee_receiver():
 
     if message:
         parser = RefereeParser()
-        parsed = parser.parse(message)
+        parsed = parser.parse_to_dict(message)
 
-        print("=== Mensagem Recebida ===")
-        print(f"Stage: {parsed.stage}")
-        print(f"Command: {parsed.command}")
-        print(f"Command Counter: {parsed.command_counter}")
-        print(f"Packet Timestamp: {parsed.packet_timestamp}")
-        for event in parsed.game_events:
-            print(f"Game Event: {event}")
+        pprint(parsed)
+
+
+        #print("=== Mensagem Recebida ===")
+        #print(f"Stage: {parsed.stage}")
+        #print(f"Command: {parsed.command}")
+        #print(f"Command Counter: {parsed.command_counter}")
+        #print(f"Packet Timestamp: {parsed.packet_timestamp}")
+        #for event in parsed.game_events:
+        #    print(f"Game Event: {event}")
     else:
         print("Nenhum dado recebido.")
 
