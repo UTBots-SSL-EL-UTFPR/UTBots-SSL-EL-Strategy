@@ -7,7 +7,7 @@ class CommandBuilder:
         self.packet.commands.isteamyellow = (team_color == "yellow")
 
     def command_robots(
-                self, id: int, vx: float, vy: float, w: float,
+                self, id: int, vx: float = 0.0, vy: float = 0.0, w: float = 0.0,
                 kick_x: float = 0.0, kick_z: float = 0.0,
                 spinner: bool = False, wheelsspeed: bool = False,
                 wheel1: float = 0.0, wheel2: float = 0.0,
