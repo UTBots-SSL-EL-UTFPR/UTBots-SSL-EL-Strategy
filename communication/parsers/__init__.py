@@ -7,6 +7,6 @@ from .referee_parser import RefereeParser
 
 __all__ = [
     "RefereeParser",
-    # "VisionParser",
+    "VisionParser",
     # "TeamCommParser",
 ]
