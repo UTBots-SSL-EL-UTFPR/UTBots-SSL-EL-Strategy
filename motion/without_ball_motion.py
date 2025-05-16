@@ -6,5 +6,9 @@ from typing import Tuple
 
 class WithoutBallMotionMode(MotionMode):
     def calculate(self, pose1: Pose2D, pose2: Pose2D, delta_t: float) -> Tuple[float, float, float]:
-        pass
+        vx = (pose2.x - pose1.x) / delta_t
+        vy = (pose2.y - pose1.y) / delta_t
+        omega = 0.0 #velocidade angular do robo nao interessa quando nao temos a posse da bola
+        return vx, vy, omega
+
         

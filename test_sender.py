@@ -3,7 +3,7 @@ from communication.command_builder import CommandBuilder
 from communication.command_sender_sim import CommandSenderSim
 
 builder = CommandBuilder(team_color="blue")
-
+'''
 builder.command_robots(
     id=0,
     vx=10.0,    
@@ -15,15 +15,20 @@ builder.command_robots(
 )
 
 builder.command_robots(
-    id=2,
+    id=1,
     vx=10.0,   
     vy=0.0,     
     w=0.0,      
     kick_x=5.0,
     kick_z=5.0,
     spinner=False
-)
+)'''
 
+builder.command_robots(
+    id = 2,
+    wheelsspeed=True,
+    wheel4 = -10
+)
 
 sender = CommandSenderSim()
 
