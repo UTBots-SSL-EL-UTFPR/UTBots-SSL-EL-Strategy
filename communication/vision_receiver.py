@@ -13,7 +13,7 @@ class VisionReceiver(Receiver):
 
     def __init__(self, interface_ip: str):
         if not hasattr(self, "sock"):   #Só cria o socket se ele ainda não existe
-            super().__init__(multicast_ip="224.5.23.1", port=10020, interface_ip=interface_ip) #Configura o IP do grupo Multicast(do SSL Vision) e a porta, além do IP do docker
+            super().__init__(multicast_ip="224.5.23.2", port=10020, interface_ip=interface_ip) #Configura o IP do grupo Multicast(do SSL Vision) e a porta, além do IP do docker
 
     def receive_raw(self):  # Espera e recebe pacotes brutos UDP do Game Controller
         print("Aguardando pacote bruto do SSL vision...")

@@ -3,7 +3,7 @@ from communication.parsers.vision_parser import VisionParser
 from pprint import pprint
 
 def test_vision_receiver():
-    receiver = VisionReceiver(interface_ip="172.17.0.1")  # IP da interface Docker
+    receiver = VisionReceiver(interface_ip="0.0.0.0")  # IP da interface Docker
     message = receiver.receive_raw()  # Recebe pacote bruto do SSL-Vision
 
     if message:
