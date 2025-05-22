@@ -1,4 +1,6 @@
-from .receiver import Receiver
+import sys
+sys.path.append('/home/futebol_de_robos/FutebolDeRobos/UTBots-SSL-EL-Strategy')
+from communication.receiver import Receiver
 from communication.generated import ssl_vision_wrapper_pb2 as vision_pb
 from communication.parsers import VisionParser
 import socket
