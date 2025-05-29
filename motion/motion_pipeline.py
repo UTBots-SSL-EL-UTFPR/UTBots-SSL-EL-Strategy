@@ -27,7 +27,7 @@ class MotionPipeline:
     def run(self, poses: List[Pose2D]) -> List[List[float]]:
         #faz o pipeline completo do calculo 
         wheel_velocities = []
-        robot_velocities = self.trajectory_converter(poses)
+        robot_velocities = self.trajectory_converter.convert(poses)
 
         for vx, vy, omega in robot_velocities:
             wheel_velocities.append(self.inverse_kinematics.compute(vx, vy, omega))
