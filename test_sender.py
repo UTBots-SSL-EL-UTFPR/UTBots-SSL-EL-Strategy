@@ -23,12 +23,9 @@ builder.command_robots(
     wheel1=-16
 )'''
 
-
-
-
 builder.replace_robots(
-        x = 0.0,
-        y = 0.0,
+        x = -1.4300000000000002,
+        y = -0.9,
         dir = 0.0,
         id = 1,
         yellowTeam = False,

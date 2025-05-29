@@ -73,15 +73,9 @@ def visualisation():
 
     # Gera os Bobs inimigos (obstáculos)
     pontosBobInimigos = []
-    probabilidade_na_aresta = 0.5
     for _ in range(NUM_BOBS_INIMIGOS):
-        if random.random() < probabilidade_na_aresta:
-            t = random.uniform(0, 1)
-            x = start_point.x + t * (end_point.x - start_point.x)
-            y = start_point.y + t * (end_point.y - start_point.y)
-        else:
-            x = random.randint(90, MUNDO_LARGURA - 90)
-            y = random.randint(90, MUNDO_ALTURA - 90)
+        x = random.randint(90, MUNDO_LARGURA - 90)
+        y = random.randint(90, MUNDO_ALTURA - 90)
         pontosBobInimigos.append(Pose2D(x, y))
 
     fonte = pygame.font.Font(None, 36)
@@ -115,6 +109,10 @@ def visualisation():
         if pontos2: obstacles_for_p1.append(pontos2[0])
         if pontos3: obstacles_for_p1.append(pontos3[0])
         pontos1 = best_path.find_shortest_path(pontos1[0], end_point1, obstacles_for_p1, RAIO_REAL)
+
+        # Print dos pontos de pontos1 no formato solicitado
+        for p in pontos1:
+            print(f"Pose2D({(p.x/1000) - 2.25},{(p.y/1000) - 1.5},0),")
 
     # Encontra caminho de pontos2
     if pontos2:
