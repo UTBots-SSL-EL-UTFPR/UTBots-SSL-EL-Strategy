@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import socket
 
-class receiver(ABC):    #classe base que configura o socket UDP generico
+class Receiver(ABC):    #classe base que configura o socket UDP generico
     def __init__(self, ip: str, port: int):
         self.ip = ip
         self.port = port

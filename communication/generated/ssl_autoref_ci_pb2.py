@@ -12,8 +12,8 @@ _sym_db = _symbol_database.Default()
 
 
 import ssl_vision_wrapper_tracked_pb2 as ssl__vision__wrapper__tracked__pb2
-import ssl_vision_detection_pb2 as ssl__vision__detection__pb2
-import ssl_vision_geometry_pb2 as ssl__vision__geometry__pb2
+from communication.generated import ssl_vision_detection_pb2 as ssl__vision__detection__pb2
+from communication.generated import ssl_vision_geometry_pb2 as ssl__vision__geometry__pb2
 import ssl_gc_referee_message_pb2 as ssl__gc__referee__message__pb2
 
 
