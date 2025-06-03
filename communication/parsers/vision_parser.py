@@ -14,7 +14,7 @@ class VisionParser:
         vision_dict = MessageToDict(
             vision_msg,
             preserving_proto_field_name=True,        # mantém nomes do .proto
-            including_default_value_fields=True,     # inclui campos default
+            #including_default_value_fields=True,     # inclui campos default
             use_integers_for_enums=True              # enums como inteiros
         )
 
