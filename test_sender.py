@@ -5,30 +5,9 @@ from communication.command_sender_sim import CommandSenderSim
 builder = CommandBuilder(team_color="blue")
 sender = CommandSenderSim()
 
-'''
-builder.command_robots(
-    id = 1,
-    wheelsspeed=True,
-    wheel1 = -16.04,
-    wheel2 = -13.09,
-    wheel3 = 13.09,
-    wheel4 = 16.04
-    )
-'''
-
-'''
-builder.command_robots(
-    id = 1,
-    wheelsspeed=True,
-    wheel1=-16
-)'''
-
-
-
-
 builder.replace_robots(
         x = 0.0,
-        y = 0.0,
+        y = 1.0,
         dir = 0.0,
         id = 1,
         yellowTeam = False,

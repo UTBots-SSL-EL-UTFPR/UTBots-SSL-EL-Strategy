@@ -14,5 +14,8 @@ class WithBallMotionMode(MotionMode):
         omega = dtheta / delta_t #velocidade angular aqui é em rad/s
 
         return vx, vy, omega
+    
+    def requires_orientation(self) -> bool:
+        return True
 
         

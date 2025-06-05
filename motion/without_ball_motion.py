@@ -12,5 +12,8 @@ class WithoutBallMotionMode(MotionMode):
         omega = 0.0 #velocidade angular do robo nao interessa quando nao temos a posse da bola
         
         return vx, vy, omega
+    
+    def requires_orientation(self) -> bool:
+        return False
 
         
