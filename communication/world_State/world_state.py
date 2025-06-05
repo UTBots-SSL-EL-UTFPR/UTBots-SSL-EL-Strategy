@@ -25,7 +25,7 @@ class world_state:
         #Vision/Field_state
         #cria os objetos das classes vision Receiver/parser e field state
         self.vision_receiver = visionR
-        self.vison_parser = visionP
+        self.vision_parser = visionP
         self.vision_data=None
         self.field_state = fs
         
@@ -38,7 +38,7 @@ class world_state:
 
         raw_vision_data = self.vision_receiver.receive_raw()#pego os dados brutos do vision receiver
         if raw_vision_data:
-            self.vision_data = self.vison_parser.parse_to_dict(raw_vision_data)
+            self.vision_data = self.vision_parser.parse_to_dict(raw_vision_data)
             self.field_state.update_from_packet(self.vision_data)
     
     def get_field_state(self):

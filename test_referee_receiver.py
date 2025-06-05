@@ -1,29 +1,28 @@
 from communication.referee_receiver import RefereeReceiver
 from communication.parsers.referee_parser import RefereeParser
 from pprint import pprint
+from time import sleep
+import os
 
 def test_referee_receiver():
-    receiver = RefereeReceiver(interface_ip = "172.17.0.1") # Passa o Ip de interface do docker
-    message = receiver.receive_raw() #Chama o método do Reciver que recebe os dados brutos
+    receiver = RefereeReceiver(interface_ip="172.17.0.1")  # IP da interface Docker
+    parser = RefereeParser()
 
-    #Comando no terminal para estabelecer a conexão do docker com o localhost: sudo docker run --network host robocupssl/ssl-game-controller -address :8081
+    print("Monitorando mensagens do Game Controller...\n")
+    try:
+        while True:
+            message = receiver.receive_raw()
+            if message:
+                parsed = parser.parse_to_dict(message)
+                os.system("clear")  # limpa o terminal para atualizar a visualização
+                print("=== MENSAGEM DO GAME CONTROLLER ===")
+                pprint(parsed)
+            else:
+                print("Nenhuma mensagem recebida.")
+            sleep(0.1)  # pequeno atraso para evitar spam do terminal
 
-    if message:
-        parser = RefereeParser()
-        parsed = parser.parse_to_dict(message)
-
-        pprint(parsed)
-
-
-        #print("=== Mensagem Recebida ===")
-        #print(f"Stage: {parsed.stage}")
-        #print(f"Command: {parsed.command}")
-        #print(f"Command Counter: {parsed.command_counter}")
-        #print(f"Packet Timestamp: {parsed.packet_timestamp}")
-        #for event in parsed.game_events:
-        #    print(f"Game Event: {event}")
-    else:
-        print("Nenhum dado recebido.")
+    except KeyboardInterrupt:
+        print("\nEncerrado pelo usuário.")
 
 if __name__ == "__main__":
     test_referee_receiver()
