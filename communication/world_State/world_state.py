@@ -1,46 +1,51 @@
-from communication.vision_receiver  import VisionReceiver
+from communication.vision_receiver import VisionReceiver
 from communication.referee_receiver import RefereeReceiver
 from communication.referee_receiver import RefereeParser
 from communication.vision_receiver import VisionParser
 from communication.field_state import FieldState
 
-#implementaçao apenas do prototipo da classe world_state que tera os objetos do tipo referee e vision
-#visando um maior desacoplamento do codigo
+from time import time
 
 class world_state:
-    _instance=None
-    
-    def __new__(cls, *args , **kwargs):  #singlenton
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):  # Singleton
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-
-    def __init__(self,refereeP:RefereeParser,refereeR:RefereeReceiver,visionP:VisionParser,visionR:VisionReceiver,fs:FieldState):
-        #Referee
-        self.referee_receiver = refereeR #cria o Objeto da classe referee_receiver
-        self.referee_parser = refereeP #cria o objeto da classe referee_parser
+    def __init__(self, refereeP: RefereeParser, refereeR: RefereeReceiver,
+                 visionP: VisionParser, visionR: VisionReceiver, fs: FieldState):
+        self.referee_receiver = refereeR
+        self.referee_parser = refereeP
         self.referee_data = None
-        
-        #Vision/Field_state
-        #cria os objetos das classes vision Receiver/parser e field state
+
         self.vision_receiver = visionR
         self.vision_parser = visionP
-        self.vision_data=None
+        self.vision_data = None
+
         self.field_state = fs
-        
 
-    def update(self):
-        #Atualiza os dados do referee 
-        raw_ref_data = self.referee_receiver.receive_raw()#pego os dados brutos do refeere receiver
-        if raw_ref_data:
-            self.referee_data = self.referee_parser.parse_to_dict(raw_ref_data)#interpretaçao dos dados brutos atraves do refereee parser e atualizacao do estado interno referee data 
+    def update(self, timeout=0.3):
+        start_time = time()
+        received_cameras = set()
 
-        raw_vision_data = self.vision_receiver.receive_raw()#pego os dados brutos do vision receiver
-        if raw_vision_data:
-            self.vision_data = self.vision_parser.parse_to_dict(raw_vision_data)
-            self.field_state.update_from_packet(self.vision_data)
-    
+        while time() - start_time < timeout:
+            # Atualiza visão (multi-câmera)
+            raw_vision_data = self.vision_receiver.receive_raw()
+            if raw_vision_data:
+                parsed = self.vision_parser.parse_to_dict(raw_vision_data)
+                cam_id = parsed.get("detection", {}).get("camera_id")
+                if cam_id is not None and cam_id not in received_cameras:
+                    self.vision_data = parsed
+                    self.field_state.update_from_packet(parsed)
+                    received_cameras.add(cam_id)
+
+            # Atualiza referee independentemente
+            raw_ref_data = self.referee_receiver.receive_raw()
+            if raw_ref_data:
+                self.referee_data = self.referee_parser.parse_to_dict(raw_ref_data)
+
     def get_field_state(self):
         return self.field_state.get_state()
 
@@ -49,4 +54,3 @@ class world_state:
 
     def get_referee_data(self):
         return self.referee_data
-    
