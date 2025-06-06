@@ -1,34 +1,41 @@
+import threading
+import socket
 from communication.receiver import Receiver
 from communication.generated import ssl_gc_referee_message_pb2 as referee_pb
 from communication.parsers import RefereeParser
-import socket
 
 class RefereeReceiver(Receiver):
-    _instance = None 
+    _instance = None
 
-    def __new__(cls,*args, **kwargs):                             #singleton
+    def __new__(cls, *args, **kwargs):  # singleton
         if cls._instance is None:
-            cls._instance = super().__new__(cls)  # cria uma nova instância
-        return cls._instance    # Isso é útil para evitar múltiplos sockets escutando a mesma porta multicast ao mesmo tempo, o que poderia causar erros.
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __init__(self, interface_ip: str):
-        if not hasattr(self, "sock"):   #Só cria o socket se ele ainda não existe
-            super().__init__(multicast_ip="224.5.23.1", port=10003, interface_ip=interface_ip) #Configura o IP do grupo Multicast( do Game Controller) e a porta, além do IP do docker
+        if not hasattr(self, "sock"):  # só inicializa uma vez
+            super().__init__(multicast_ip="224.5.23.1", port=10003, interface_ip=interface_ip)
+            self.latest_raw = None #guarda o ultimo pacote bruto recebido
+            self.latest_parsed = None #guarda o ultimo objeto protobuf decodificado
+            self.parser = RefereeParser()
 
-    def receive_raw(self):  # Espera e recebe pacotes brutos UDP do Game Controller
-        #print("Aguardando pacote bruto do Game Controller...")
-        self.sock.settimeout(5)  # Definindo um tempo limite de 5 segundos para esperar os dados
-        try:
-            data, _ = self.sock.recvfrom(65535) # Recebe os dados brutos
-            #print(f"Pacote bruto recebido com {len(data)} bytes.")
-            return data
-        except socket.timeout: #Mensagem para quando falhar ao receber os dados
-            print("Timeout: Nenhum pacote recebido.")
-            return None
-        
-    def receive_parsed(self):
-        raw_data = self.receive_raw()
-        if raw_data:
-            parser = RefereeParser()
-            return parser.parse(raw_data)
-        return None
+            self._thread = threading.Thread(target=self._listen_loop, daemon=True) # thread que escuta pacotes em segundo plano
+            self._thread.name = "RefereeReceiverThread"
+            self._thread.daemon = True  # permite que o programa termine mesmo com a thread rodando
+            self._thread.start()
+
+    def _listen_loop(self):
+        while True:
+            try:
+                data, _ = self.sock.recvfrom(65535)
+                self.latest_raw = data #salva o pacote bruto recebido                                                                                                                                                                                                                                                                                                 
+                self.latest_parsed = self.parser.parse(data) #usa o parser para decodificar os bytes do pacote em um objeto pyhton com campos acessiveis
+            except Exception as e:
+                print(f"[RefereeReceiver] Erro ao receber pacote: {e}")
+
+    #2 gets para retornar os dados mais recentes
+    def get_latest_raw(self):
+        return self.latest_raw
+
+    def get_latest_parsed(self):
+        return self.latest_parsed

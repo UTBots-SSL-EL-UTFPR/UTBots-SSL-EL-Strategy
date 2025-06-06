@@ -13,7 +13,7 @@ class RefereeParser:
         referee_dict = MessageToDict(
             referee_msg,
             preserving_proto_field_name=True,  # mantém os nomes originais do .proto (snake_case)
-            including_default_value_fields=True,  # inclui campos com valores default
+            #including_default_value_fields=True,  # inclui campos com valores default
             use_integers_for_enums=True  # enums como inteiros (opcional)
         )
 
