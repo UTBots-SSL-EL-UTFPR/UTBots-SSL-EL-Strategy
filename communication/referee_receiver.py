@@ -12,9 +12,9 @@ class RefereeReceiver(Receiver):
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, interface_ip: str):
+    def __init__(self, interface_ip: str,ip:str,portVision:int):
         if not hasattr(self, "sock"):  # só inicializa uma vez
-            super().__init__(multicast_ip="224.5.23.1", port=10003, interface_ip=interface_ip)
+            super().__init__(multicast_ip=ip, port=portVision, interface_ip=interface_ip)
             self.latest_raw = None #guarda o ultimo pacote bruto recebido
             self.latest_parsed = None #guarda o ultimo objeto protobuf decodificado
             self.parser = RefereeParser()

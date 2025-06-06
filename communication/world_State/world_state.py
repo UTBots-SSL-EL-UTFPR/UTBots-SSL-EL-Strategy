@@ -25,5 +25,16 @@ class WorldState:
         self.vision_parser = vision_parser # armazena o parser do vision. nao é utilizado agora, mas estou deixando disponível aqui pensando em futuras expansões
         self.vision_data: dict = None  # dicionário q armazena todos os objetos presentes dentro do pacote vision, como robôs, bolas, etc.
 
+    def update(self):
+        self.referee_data = self.referee_receiver.get_latest_parsed()
+        if self.referee_data:
+            print(f"Comando atual do árbitro: {self.referee_data.command}")
+        
+        self.vision_data = self.vision_receiver.get_latest_parsed()
+        if self.vision_data:
+            print("Dados de visão recebidos com sucesso!")
+            if(self.vision_receiver.isSimulation):
+                received_cameras = set()#juntar as cameras
 
-   
+
+    #apenas prototipo da update da world_state
