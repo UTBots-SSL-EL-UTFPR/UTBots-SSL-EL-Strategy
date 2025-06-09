@@ -20,7 +20,7 @@ class VisionReceiver(Receiver):
             self.latest_parsed = None #guarda o ultimo objeto protobuf decodificado
             self.parser = VisionParser()
 
-            self._thread = threading.Thread(target=self._listen_loop, daemon=True)
+            self._thread = threading.Thread(target=self.receive_raw, daemon=True)
             self._thread.name = "VisionReceiverThread"
             self._thread.daemon = True  # permite que o programa termine mesmo com a thread rodando
             self._thread.start()
@@ -28,7 +28,7 @@ class VisionReceiver(Receiver):
             self.isSimulation = True
 
 
-    def _listen_loop(self):
+    def receive_raw(self):
         while True:
             try:
                 data, _ = self.sock.recvfrom(65535)

@@ -7,7 +7,7 @@ import os
 
 def test_vision_receiver(interface_ip="0.0.0.0", timeout=0.3):
     # Inicializa o receiver para receber pacotes UDP do SSL-Vision
-    receiver = VisionReceiver(interface_ip=interface_ip)
+    receiver = VisionReceiver(interface_ip=interface_ip,ip="224.5.23.2",portVision=10020)
 
     # Inicializa o parser que traduz os pacotes brutos em dicionários Python
     parser = VisionParser()

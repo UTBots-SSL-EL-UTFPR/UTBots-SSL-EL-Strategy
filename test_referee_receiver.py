@@ -5,7 +5,7 @@ from time import sleep
 import os
 
 def test_referee_receiver():
-    receiver = RefereeReceiver(interface_ip="172.17.0.1")  # IP da interface Docker
+    receiver = RefereeReceiver(interface_ip="172.17.0.1",ip="224.5.23.1",portVision=10003)  # IP da interface Docker
     parser = RefereeParser()
 
     print("Monitorando mensagens do Game Controller...\n")

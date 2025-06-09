@@ -19,12 +19,12 @@ class RefereeReceiver(Receiver):
             self.latest_parsed = None #guarda o ultimo objeto protobuf decodificado
             self.parser = RefereeParser()
 
-            self._thread = threading.Thread(target=self._listen_loop, daemon=True) # thread que escuta pacotes em segundo plano
+            self._thread = threading.Thread(target=self.receive_raw, daemon=True) # thread que escuta pacotes em segundo plano
             self._thread.name = "RefereeReceiverThread"
             self._thread.daemon = True  # permite que o programa termine mesmo com a thread rodando
             self._thread.start()
 
-    def _listen_loop(self):
+    def receive_raw(self):
         while True:
             try:
                 data, _ = self.sock.recvfrom(65535)

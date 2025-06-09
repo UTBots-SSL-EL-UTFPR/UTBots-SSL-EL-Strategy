@@ -2,7 +2,7 @@ from communication.vision_receiver import VisionReceiver
 from communication.vision_receiver import VisionParser
 from communication.referee_receiver import RefereeReceiver, RefereeParser
 from communication.field_state import FieldState
-from communication.world_State.world_state import world_state
+from communication.world_State.world_state import WorldState
 
 import time
 import os
@@ -11,13 +11,13 @@ from pprint import pprint
 def test_world_state(interface_ip_referee="172.17.0.1", interface_ip_vision="0.0.0.0", timeout=0.3):
     print("Iniciando teste do world_state...")
 
-    vision_receiver = VisionReceiver(interface_ip=interface_ip_vision)
+    vision_receiver = VisionReceiver(interface_ip=interface_ip_vision, ip="224.5.23.2",portVision=10020)
     vision_parser = VisionParser()
-    referee_receiver = RefereeReceiver(interface_ip=interface_ip_referee)
+    referee_receiver = RefereeReceiver(interface_ip=interface_ip_referee,ip="224.5.23.1",portVision=10003)
     referee_parser = RefereeParser()
     field_state = FieldState()
 
-    ws = world_state(referee_parser, referee_receiver, vision_parser, vision_receiver, field_state)
+    ws = WorldState(referee_parser, referee_receiver, vision_parser, vision_receiver, field_state)
 
     try:
         while True:
