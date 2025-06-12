@@ -11,15 +11,20 @@ def test_referee_receiver():
     print("Monitorando mensagens do Game Controller...\n")
     try:
         while True:
-            message = receiver.receive_raw()
+            message = receiver.get_latest_raw()
             if message:
-                parsed = parser.parse_to_dict(message)
-                os.system("clear")  # limpa o terminal para atualizar a visualização
-                print("=== MENSAGEM DO GAME CONTROLLER ===")
-                pprint(parsed)
+                parsed = receiver.get_latest_parsed()
+                if parsed:
+                    parsed_dict = parser.parse_to_dict(message)  # ou diretamente do objeto: parser.protobuf_to_dict(parsed)
+                    os.system("clear")  # limpa o terminal para atualizar a visualização
+                    print("=== MENSAGEM DO GAME CONTROLLER ===")
+                    pprint(parsed_dict)
+                else:
+                    print("Mensagem recebida, mas não pôde ser parseada.")
             else:
                 print("Nenhuma mensagem recebida.")
-            sleep(0.1)  # pequeno atraso para evitar spam do terminal
+            sleep(0.1)
+
 
     except KeyboardInterrupt:
         print("\nEncerrado pelo usuário.")

@@ -2,9 +2,12 @@ from communication.vision_receiver import VisionReceiver
 from communication.referee_receiver import RefereeReceiver
 from communication.parsers.vision_parser import VisionParser
 from communication.parsers.referee_parser import RefereeParser
+from communication.field_state import FieldState
 
 from communication.generated import ssl_vision_wrapper_pb2 as vision_pb
 from communication.generated import ssl_gc_referee_message_pb2 as referee_pb
+
+from time import time
 
 class WorldState:
     _instance = None
@@ -15,26 +18,52 @@ class WorldState:
         return cls._instance
 
     def __init__(self, referee_parser: RefereeParser, referee_receiver: RefereeReceiver,
-                 vision_parser: VisionParser, vision_receiver: VisionReceiver):
-        
-        self.referee_receiver = referee_receiver #armazena o objeto q escuta o game controller
-        self.referee_parser = referee_parser #armazena o parser do referee. nao é utilizado agora, mas estou deixando disponível aqui pensando em futuras expansões
-        self.referee_data: referee_pb.Referee = None #vai armazenar o ultimo pacote decodificado. é um objeto protobuf com campos acessíveis, como referee_data.command, referee_data.stage, etc.
+                 vision_parser: VisionParser, vision_receiver: VisionReceiver,
+                 field: FieldState):
 
-        self.vision_receiver = vision_receiver # armazena o objeto que escuta o SSL-Vision ou o vision do grSim (é a msm coisa)
-        self.vision_parser = vision_parser # armazena o parser do vision. nao é utilizado agora, mas estou deixando disponível aqui pensando em futuras expansões
-        self.vision_data: dict = None  # dicionário q armazena todos os objetos presentes dentro do pacote vision, como robôs, bolas, etc.
+        if hasattr(self, "_initialized") and self._initialized:
+            return  # Já inicializado
 
-    def update(self):
+        self.referee_receiver = referee_receiver
+        self.referee_parser = referee_parser
+        self.referee_data: referee_pb.Referee = None
+
+        self.vision_receiver = vision_receiver
+        self.vision_parser = vision_parser
+        self.vision_data: dict = None
+
+        self.field = field
+
+        self._initialized = True
+
+    def update(self, timeout=0.3):
+        """Atualiza estado de árbitro e visão considerando múltiplas câmeras por ciclo."""
+
+        # Atualiza árbitro (1 pacote por ciclo)
         self.referee_data = self.referee_receiver.get_latest_parsed()
-        if self.referee_data:
-            print(f"Comando atual do árbitro: {self.referee_data.command}")
-        
-        self.vision_data = self.vision_receiver.get_latest_parsed()
-        if self.vision_data:
-            print("Dados de visão recebidos com sucesso!")
-            if(self.vision_receiver.isSimulation):
-                received_cameras = set()#juntar as cameras
 
+        # Atualiza visão com múltiplas câmeras
+        last_processed_raw = None
+        received_cameras = set()
+        start_time = time()
 
-    #apenas prototipo da update da world_state
+        while time() - start_time < timeout:
+            raw = self.vision_receiver.get_latest_raw()
+            if raw and raw != last_processed_raw:
+                last_processed_raw = raw
+                parsed = self.vision_parser.parse_to_dict(raw)
+                cam_id = parsed.get("detection", {}).get("camera_id")
+
+                if cam_id is not None and cam_id not in received_cameras:
+                    self.vision_data = parsed
+                    self.field.update_from_packet(parsed)
+                    received_cameras.add(cam_id)
+
+    def get_referee_data(self):
+        return self.referee_data
+
+    def get_vision_data(self):
+        return self.vision_data
+
+    def get_field_state(self):
+        return self.field.get_state()
