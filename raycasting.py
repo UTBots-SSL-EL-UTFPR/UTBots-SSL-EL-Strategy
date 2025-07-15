@@ -1,12 +1,9 @@
 import math
 
-# AINDA FALTA:
-    # Criar uma função no Pygame que torne tudo visível
-
 # FOI FEITO NO ÚLTIMO DIA
-    # Teste do da menor solução
+    # Teste da menor solução
     # Teste da reflexão
-    # Teste da interceção com os robôs inimigos
+    # Teste da interseção com os robôs inimigos
     # Teste da recursão
     
 YMAX_GOL = 0.5      #Segundo meu grSim
