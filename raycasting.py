@@ -101,7 +101,7 @@ def menorSolucao(solucoes, x0, y0, nsol):
 
 # Cria varios raios que saem da bola. Depois de ver se algum acerta o gol, calcula o de menor módulo entre eles. Ainda falta adicionar osbtáculos (última coisa) e refletir quando bate em um aliado)        
 def menorTrajetoria (ymax_gol, ymin_gol, x_gol, x0, y0, coord_aliados, coord_inimigos, lim_refl, xa = None, ya = None): 
-    nraios = 8 
+    nraios = 360
     solucoes = []
     refletiu = []
     raios = []
