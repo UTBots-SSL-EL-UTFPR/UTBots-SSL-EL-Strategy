@@ -35,3 +35,26 @@ TICK -> clock de arvore -> tree.tick()
 -.tick avança até chegar as folhas (behaviors)
 -.exec update ao chegar na folha
 -. caso algum nó tenha running como opc, ele também tera uma "memoria", onde enquanto ele nao for fechado, o tick sera feito a partir dele
+
+#TODO 3. O py_trees.Blackboard: Compartilhando Conhecimento na Árvore
+
+O Blackboard é um conceito fundamental em Behavior Trees para gerenciar e compartilhar dados entre os nós da árvore, sem a necessidade de passar argumentos explicitamente entre eles ou ter variáveis globais espalhadas. Pense nele como um quadro branco onde todos os nós podem ler e escrever informações.
+Por que Usar o Blackboard?
+
+    Compartilhamento de Estado: É o principal mecanismo para que um nó (ex: uma condição) grave informações (ex: ball_position) e outros nós (ex: uma ação de movimento) leiam essas informações para tomar decisões ou executar ações.
+    Desacoplamento: Reduz o acoplamento entre os nós. Em vez de um nó precisar saber sobre a implementação interna de outro para obter dados, ele simplesmente acessa o Blackboard por uma chave.
+    Persistência: O estado no Blackboard persiste entre os ticks da árvore, permitindo que informações calculadas em um tick sejam usadas em ticks subsequentes.
+    Flexibilidade: Permite que você mude a lógica da árvore sem precisar alterar a interface de muitos nós folha, desde que a interface do Blackboard (as chaves usadas) permaneça consistente.
+
+Quando Usar o Blackboard?
+
+Você deve usar o Blackboard para qualquer informação que:
+
+    Precise ser lida ou escrita por múltiplos nós em diferentes partes da árvore.
+    Represente o estado do ambiente (posição da bola, objetos, obstáculos).
+    Represente o estado interno do robô que precisa ser acessado globalmente (energia da bateria, posse da bola, objetivo atual).
+    Seja o resultado de um cálculo de um nó que outro nó precisa.
+
+Como Usar o Blackboard no py_trees:
+
+Cada nó py_trees.behaviour.Behaviour possui um atributo self.blackboard, que é uma instância do py_trees.blackboard.Blackboard.
