@@ -2,8 +2,8 @@
 
 import py_trees
 from robot.bob import Bob
-from ..behaviors.common.actions import move_to_position, kick_ball, Conduz_bola, Stop_robot, Set_posse_bola
-from ..behaviors.common.condition import is_ball_visible, is_ball_reachable, is_goal_open, tem_posse_bola
+from ...behaviors.common.actions import move_to_position, kick_ball, Conduz_bola, Stop_robot, Set_posse_bola
+from ...behaviors.common.condition import is_ball_visible, is_ball_reachable, is_goal_open, tem_posse_bola
 
 class Attacker_tree(py_trees.behaviour.Behaviour):
     """

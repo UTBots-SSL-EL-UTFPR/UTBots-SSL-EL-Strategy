@@ -5,7 +5,7 @@
 from core.Field import Field
 from core.blackboard import Blackboard_Manager
 from core.Field import RobotID
-class BobState:
+class Bob_State:
     """
     Guarda o estado dinâmico do robô e o atualiza a partir das leituras do campo.
     """
