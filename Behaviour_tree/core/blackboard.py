@@ -5,18 +5,18 @@
 import py_trees
 
 
-class BlackboardManager:
+class Blackboard_Manager:
     _instance = None
 
     def __init__(self):
-        if BlackboardManager._instance is not None:
+        if Blackboard_Manager._instance is not None:
             raise Exception("Use BlackboardManager.get() para acessar a instância.")
         self._bb = py_trees.blackboard.Blackboard()
     @staticmethod
     def get_instance():
-        if BlackboardManager._instance is None:
-            BlackboardManager._instance = BlackboardManager()
-        return BlackboardManager._instance
+        if Blackboard_Manager._instance is None:
+            Blackboard_Manager._instance = Blackboard_Manager()
+        return Blackboard_Manager._instance
 
     def set(self, key: str, value):
         self._bb.set(key, value)
@@ -45,5 +45,5 @@ class BlackboardManager:
 
 
 if __name__ == "__main__":
-    bb=BlackboardManager.get_instance()
+    bb=Blackboard_Manager.get_instance()
     print(bb.get("dsdsd"))
