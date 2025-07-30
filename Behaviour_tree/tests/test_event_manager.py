@@ -1,6 +1,6 @@
 import pytest
 
-from Behaviour_tree.core.Field import RobotID
+from Behaviour_tree.core.Field import RobotID #deixa assim, funciona
 from core.event_manager import Event_Manager
 from core.event_manager import EventType
 

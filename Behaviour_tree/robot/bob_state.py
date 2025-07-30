@@ -3,6 +3,7 @@
 # bob_state.py
 
 from core.Field import Field
+from core.blackboard import Blackboard
 
 class BobState:
     """
@@ -10,6 +11,7 @@ class BobState:
     """
 
     def __init__(self, robot_id: str):
+        self.blackboard = Blackboard.get_instance()
         self.robot_id = robot_id
         self.position = (0.0, 0.0)
         self.velocity = (0.0, 0.0)
@@ -28,9 +30,10 @@ class BobState:
         self.velocity = self.field.get_robot_velocity(self.robot_id)
         self.orientation = self.field.get_robot_orientation(self.robot_id)
         self.has_ball = self.field.check_possession(self.robot_id)
+        #gerar flags de mudança
+        #enviar flags para blackboard
 
-        # Opcional: detectar mudanças relevantes
-        # print(f"[{self.robot_id}] Estado atualizado: Pos {self.position}, Vel {self.velocity}, Ori {self.orientation}")
+        
 
 
     def set_position(self, x: float, y: float):

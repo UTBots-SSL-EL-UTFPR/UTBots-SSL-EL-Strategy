@@ -57,14 +57,8 @@ class Bob:
         return True
 
     def set_has_ball(self, status: bool) -> None:
-        """
-        Define a posse de bola.
-
-        :param status: True se o robô tem a bola
-        """
-        self._has_ball = status
-        self.state.has_ball = status
-
+       ...
+        
     def has_ball(self) -> bool:
         """
         Verifica se o robô possui a bola.
