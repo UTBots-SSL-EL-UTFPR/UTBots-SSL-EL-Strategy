@@ -3,7 +3,7 @@
 import time
 from .bob_state import BobState
 from .bob_config import Bob_Config
-
+from core.Field import RobotID
 class Bob:
     """
     Classe que representa um robô SSL.
@@ -14,7 +14,7 @@ class Bob:
     :param robot_id: Identificador único do robô
     """
 
-    def __init__(self, robot_id: str):
+    def __init__(self, robot_id: RobotID):
         self.robot_id = robot_id
         self.config = Bob_Config(robot_id)
         self.state = BobState(robot_id)

@@ -1,41 +1,34 @@
-"""
-Arquivo utilizado como EXECUTORA DA ARVORE
-controlará todos os bobs
-"""
-
-# ssl_robot_controller/main.py
-
-import py_trees
-import py_trees.console as console
 import time
+from core.event_callbacks import subscribe_all
 from robot.bob import Bob
-from bob_trees.attacker_tree import Attacker_tree
-#import field
+import py_trees
 
-def create_robot_and_tree(role: str, robot_id: str):
-    """Cria uma instância de robô e sua árvore de comportamento."""
-    #robot = Robot(robot_id)
-    # if role == "attacker":
-    #     return robot, AttackerTree(f"Attacker Tree ({robot_id})", robot)
+# Supondo que você tenha definido os papéis assim:
+from core.Field import RobotID
 
 def main():
-    """Função principal para execução das árvores de comportamento."""
+    # 1. Inicializa o sistema de eventos
+    subscribe_all()
 
-    # Criação de robôs e suas árvores
-    attacker_robot, attacker_tree_root = create_robot_and_tree("attacker", "Attacker_01")
+    # 2. Cria robô e árvore
+    bob = Bob(robot_id=RobotID.Kamiji)
+    bt_root = create_attacker_tree(bob)
+    behavior_tree = py_trees.trees.BehaviourTree(bt_root)
+    behavior_tree.setup(timeout=15)
 
-    # Configura e executa a árvore do atacante
-    # attacker_tree = py_trees.trees.BehaviourTree(attacker_tree_root)
-    # attacker_tree.setup(timeout=15) # Tempo limite para setup
-    # for i in range(1, 10):
-    #     attacker_tree.tick()
-    #     time.sleep(0.5)
+    # 3. Loop principal
+    while True:
+        # (1) Atualiza percepção (Field → BobState)
+        bob.state.update()
 
-    # Resetar o estado do field e bob para a próxima iteração
-    # world_model.__init__()
-    # attacker_robot.__init__("Attacker_01")
+        # (2) O BobState dispara eventos (se necessário)
+        # → Já integrado no update()
 
-   
+        # (3) Árvores tomam decisão com base no Blackboard
+        behavior_tree.tick()
+
+        # (4) Espera até o próximo ciclo (ex: 20 Hz → 0.05s)
+        time.sleep(0.05)
 
 if __name__ == "__main__":
     main()

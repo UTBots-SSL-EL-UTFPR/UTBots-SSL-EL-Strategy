@@ -28,24 +28,24 @@ class Field:
             Field._instance = Field()
         return Field._instance
 
-    def get_robot_position(self, robot_id: str):
+    def get_robot_position(self, robot_id: RobotID):
         return self._robot_positions.get(robot_id, (0.0, 0.0))
 
-    def get_robot_velocity(self, robot_id: str):
+    def get_robot_velocity(self, robot_id: RobotID):
         return self._robot_velocities.get(robot_id, (0.0, 0.0))
 
-    def get_robot_orientation(self, robot_id: str):
+    def get_robot_orientation(self, robot_id: RobotID):
         return self._robot_orientations.get(robot_id, 0.0)
 
     def get_ball_position(self):
         return self._ball_position
 
-    def check_possession(self, robot_id: str):
+    def check_possession(self, robot_id: RobotID):
         return self._ball_possession.get(robot_id, False)
 
     #TODO FAZER METODOS REAIS DA RECEIVER #CADEDOTO
     
-        def set_robot_data(self, robot_id: str, pos, vel, ori, has_ball=False):
+        def set_robot_data(self, robot_id: RobotID, pos, vel, ori, has_ball=False):
             self._robot_positions[robot_id] = pos
             self._robot_velocities[robot_id] = vel
             self._robot_orientations[robot_id] = ori

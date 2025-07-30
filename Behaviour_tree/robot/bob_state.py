@@ -3,15 +3,15 @@
 # bob_state.py
 
 from core.Field import Field
-from core.blackboard import Blackboard
-
+from core.blackboard import Blackboard_Manager
+from core.Field import RobotID
 class BobState:
     """
     Guarda o estado dinâmico do robô e o atualiza a partir das leituras do campo.
     """
 
-    def __init__(self, robot_id: str):
-        self.blackboard = Blackboard.get_instance()
+    def __init__(self, robot_id: RobotID):
+        self.blackboard = Blackboard_Manager.get_instance()
         self.robot_id = robot_id
         self.position = (0.0, 0.0)
         self.velocity = (0.0, 0.0)
@@ -32,10 +32,6 @@ class BobState:
         self.has_ball = self.field.check_possession(self.robot_id)
         #gerar flags de mudança
         #enviar flags para blackboard
-
-        
-
-
     def set_position(self, x: float, y: float):
         """
         Atualiza a posição atual do robô.
