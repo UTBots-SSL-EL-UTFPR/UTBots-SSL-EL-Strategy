@@ -6,7 +6,7 @@ from .bob_config import Bob_Config
 
 import math
 from math import sqrt
-from utils.pose2D import Pose2D
+from utils.Point2D import Point2D
 
 class Bob:
     """
@@ -77,14 +77,14 @@ class Bob:
         
 
     @staticmethod
-    def is_free(x: float, y: float, obstacules: list[Pose2D], raio: float) -> bool:
+    def is_free(x: float, y: float, obstacules: list[Point2D], raio: float) -> bool:
         # Verifica se (x,y) está distante o suficiente de cada obstáculo
         for obs in obstacules:
             if sqrt((x - obs.x)**2 + (y - obs.y)**2) < raio * 2.2:
                 return False
         return True
-    
-    def find_shortest_path(self, start: Pose2D, end: Pose2D, obstacules: list[Pose2D], raio: float):
+
+    def find_shortest_path(self, start: Point2D, end: Point2D, obstacules: list[Point2D], raio: float):
         from collections import deque
         step = 20  # Resolução da grade (ajuste conforme necessário)
         start_cell = (int(start.x // step), int(start.y // step))
@@ -101,7 +101,7 @@ class Bob:
                 path_rev = []
                 while current is not None:
                     cx, cy = current
-                    path_rev.append(Pose2D(cx*step, cy*step))
+                    path_rev.append(Point2D(cx*step, cy*step))
                     current = visited[current]
                 return list(reversed(path_rev))
 

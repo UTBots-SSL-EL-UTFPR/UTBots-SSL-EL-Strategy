@@ -1,9 +1,8 @@
 
-class Pose2D:
+class Point2D:
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.theta = theta
         
     def distance_to(self, other):
         from math import sqrt
