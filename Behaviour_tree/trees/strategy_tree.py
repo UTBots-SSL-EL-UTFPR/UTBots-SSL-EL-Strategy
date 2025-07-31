@@ -1,1 +1,1 @@
-2
+#estrategia macro time

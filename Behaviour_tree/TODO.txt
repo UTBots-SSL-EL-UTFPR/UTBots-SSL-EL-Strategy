@@ -1,0 +1,31 @@
+
+1. Definir EVENTOS: A e B (core/event_callback) 
+
+2. Definir Condition: X e Y (behaviours/common/Conditions)
+    -> Definir condições ligadas às ações 
+    -> implementar 
+
+5. Definir Ações: Doutor e Wesley (behaviours/common/actions) NÍVEL 2 DE URGẼNCIA (finalizar até 06/08)
+    -> Definir comandos possiveis para BOB
+    -> Implementar oque for possivel
+
+6. acabar Bob_State: Villean  NÍVEL 3 DE URGẼNCIA (finalizar 13/08)
+    -> Fazer Update gerar eventos e reagir ao campo
+    -> atualizar o estado do bob
+
+7. Juntar Branches na main/BT:  NÍVEL 1 DE URGẼNCIA (finalizar até 31/07)
+    -> FIELD para main
+    -> movimentação bobs etc...
+    -> willian jogar com ctrl C ctrl Villean
+    -> Main para BT
+
+8. movimentação Ominidirecional (finalizar 13/08)
+
+9. kalman e predição (finalizar 13/08)
+
+10. Integrar Core com trees (finalizar 04/08) Argenton 
+
+
+
+3. Definir Macro-estratégias
+4. Definir Estratégias BOB
