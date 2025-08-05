@@ -3,6 +3,7 @@
 from .bob_state import Bob_State
 from .bob_config import Bob_Config
 
+import math
 from math import sqrt
 from utils.Point2D import Point2D
 from core.Field import RobotID
@@ -61,7 +62,11 @@ class Bob:
         return True
 
     def set_has_ball(self, status: bool) -> None:
-       ...
+        """
+        Define o estado de posse de bola.
+        """
+        self._has_ball = status
+
         
     def has_ball(self) -> bool:
         """
@@ -117,3 +122,50 @@ class Bob:
                         queue.append((nx, ny))
 
         return [start]  # Caso não encontre caminho
+    
+    def go_to_ball(self, ball_position: Point2D) -> bool:
+        return self.move(ball_position.x, ball_position.y)
+    
+    def go_to_point_avoiding_obstacles(self, dest: Point2D, obstacules: list[Point2D], raio: float) -> bool:
+        start = self.state.get_position()
+        path = self.find_shortest_path(start, dest, obstacules, raio)
+        if path and len(path) > 1:
+            next_step = path[1]
+            return self.move(next_step.x, next_step.y)
+        else:
+            return self.move(dest.x, dest.y)
+        
+    def shoot_to_goal(self, goal_position: Point2D) -> bool:
+        if not self.has_ball():
+            return False
+        my_pos = self.state.get_position()
+        dx = goal_position.x - my_pos.x
+        dy = goal_position.y - my_pos.y
+        angle_to_goal = math.atan2(dy, dx)
+        self.rotate(angle_to_goal)
+        return self.kick_ball()
+    
+    def mark_opponent(self, opponent_pos: Point2D, own_goal: Point2D) -> bool:
+        # Posição entre oponente e o gol (interceptação simples)
+        intercept_x = (opponent_pos.x + own_goal.x) / 2
+        intercept_y = (opponent_pos.y + own_goal.y) / 2
+        return self.move(intercept_x, intercept_y)
+    
+    def pass_to_teammate(self, teammate_pos: Point2D) -> bool:
+        if not self.has_ball():
+            return False
+        my_pos = self.state.get_position()
+        dx = teammate_pos.x - my_pos.x
+        dy = teammate_pos.y - my_pos.y
+        angle = math.atan2(dy, dx)
+        self.rotate(angle)
+        return self.kick_ball()
+
+    def dribble_towards(self, target_pos: Point2D) -> bool:
+        if not self.has_ball():
+            return False
+        return self.move(target_pos.x, target_pos.y)
+
+
+
+

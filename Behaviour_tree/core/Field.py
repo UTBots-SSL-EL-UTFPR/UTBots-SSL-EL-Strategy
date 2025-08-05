@@ -42,6 +42,28 @@ class Field:
 
     def check_possession(self, robot_id: RobotID):
         return self._ball_possession.get(robot_id, False)
+    
+    def update_from_field_state(self, field_state):
+        """
+        Atualiza o estado interno da classe Field com base no FieldState mais recente.
+        """
+        self._robot_positions.clear()
+        self._robot_velocities.clear()
+        self._robot_orientations.clear()
+
+        for robot_id, data in field_state.robots_blue.items():
+            self._robot_positions[robot_id] = (data["x"], data["y"])
+            self._robot_velocities[robot_id] = (data["vx"], data["vy"])
+            self._robot_orientations[robot_id] = data.get("orientation", 0.0)
+
+        for robot_id, data in field_state.robots_yellow.items():
+            self._robot_positions[robot_id] = (data["x"], data["y"])
+            self._robot_velocities[robot_id] = (data["vx"], data["vy"])
+            self._robot_orientations[robot_id] = data.get("orientation", 0.0)
+
+        if field_state.ball:
+            self._ball_position = (field_state.ball["x"], field_state.ball["y"])
+
 
     #TODO FAZER METODOS REAIS DA RECEIVER #CADEDOTO
     
