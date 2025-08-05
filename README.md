@@ -114,6 +114,28 @@ source venv/bin/activate
 
 - Adicione a pasta `venv/` ao `.gitignore`. Não envie ambientes virtuais para o repositório!
 
+## Obs
+
+Para importar corretamente os arquivos, escreva no terminal:
+
+    nano ~/.bashrc 
+
+Vai abrir um editor de texto. Role até a última linha e adicione:
+
+    export PYTHONPATH=$PYTHONPATH:/home/futebol_de_robos/FutebolDeRobos/UTBots-SSL-EL-Strategy
+
+Para salvar as alterações, use:
+
+    Ctrl + O → isso salva o arquivo
+    Pressione Enter para confirmar
+    Ctrl + X → isso fecha o nano
+
+Por fim, aplique as alterações.
+
+    source ~/.bashrc
+
+
+
 ---
 
 Feito por 🦊 UTBots.

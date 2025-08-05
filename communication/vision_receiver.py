@@ -1,28 +1,46 @@
-from communication import Receiver
+import threading
+import socket
+from communication.receiver import Receiver
 from communication.generated import ssl_vision_wrapper_pb2 as vision_pb
-
-import sys
-import os
-sys.path.append("communication/generated")
-
-
+from communication.parsers import VisionParser
 
 class VisionReceiver(Receiver):
-    _instance = None 
+    _instance = None
 
-    def __new__(cls):                             #singleton
+    def __new__(cls, *args, **kwargs):  # singleton
         if cls._instance is None:
-            cls._instance = super().__new__(cls)  # cria uma nova instância
+            cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self):
-        if not hasattr(self, "sock"):
-            super().__init__(ip="0.0.0.0", port=10020) #TODO, coloquei qualquer valor aqui pro ip e port
+    def __init__(self, interface_ip: str,ip:str,portVision:int):
 
-    def receive(self):
-        data, _ = self.sock.recvfrom(65535)     #espera receber um pacote UDP de ate 65535 bytes. data contem bytes brutos recebidos
-        wrapper = vision_pb.SSL_WrapperPacket() #instancia da classe SSL_WrapperPacket definida no .proto
-        wrapper.ParseFromString(data)           #metodo da biblioteca protobuf que decodifica os bytes recebidos em um obj python completo
-        return wrapper                          #wrapper tem todos os atributos uteis acessiveis
+        if not hasattr(self, "sock"):  # só inicializa uma vez
+            super().__init__(multicast_ip=ip, port=portVision, interface_ip=interface_ip)
+            self.latest_raw = None #guarda o ultimo pacote bruto recebido
+            self.latest_parsed = None #guarda o ultimo objeto protobuf decodificado
+            self.parser = VisionParser()
 
-    #TODO
+            self._thread = threading.Thread(target=self.receive_raw, daemon=True)
+            self._thread.name = "VisionReceiverThread"
+            self._thread.daemon = True  # permite que o programa termine mesmo com a thread rodando
+            self._thread.start()
+
+            self.isSimulation = True
+
+
+    def receive_raw(self):
+        while True:
+            try:
+                data, _ = self.sock.recvfrom(65535)
+                self.latest_raw = data # salva o pacote bruto recebido
+                self.latest_parsed = self.parser.parse(data) # usa o parser para decodificar os bytes do pacote em um objeto python com campos acessíveis
+            except Exception as e:
+                print(f"[VisionReceiver] Erro ao receber pacote: {e}")
+
+
+    # 2 gets para retornar os dados mais recentes
+    def get_latest_raw(self):
+        return self.latest_raw
+
+    def get_latest_parsed(self):
+        return self.latest_parsed
