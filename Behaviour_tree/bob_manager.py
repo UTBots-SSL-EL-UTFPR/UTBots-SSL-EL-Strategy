@@ -1,34 +1,48 @@
-import time
-from core.event_callbacks import subscribe_all
+# core/bob_manager.py
+
+from Behaviour_tree.trees.tree import Tree
 from robot.bob import Bob
-import py_trees
-
-# Supondo que você tenha definido os papéis assim:
+from trees.bob_trees.kamiji_tree import KamijiTree
+from trees.bob_trees.defender_tree import Defender_tree
+from trees.bob_trees.goalkeeper_tree import Goalkeeper_tree
 from core.Field import RobotID
+from typing import Dict
 
-def main():
-    # 1. Inicializa o sistema de eventos
-    subscribe_all()
+class BobManager:
+    """
+    Responsável por instanciar e gerenciar todos os robôs e suas árvores de comportamento.
+    """
 
-    # 2. Cria robô e árvore
-    bob = Bob(robot_id=RobotID.Kamiji)
-    bt_root = create_attacker_tree(bob)
-    behavior_tree = py_trees.trees.BehaviourTree(bt_root)
-    behavior_tree.setup(timeout=15)
+    def __init__(self):
+        self.bobs: Dict[RobotID, Bob] = {}
+        self.trees: Dict[RobotID, Tree] = {}
 
-    # 3. Loop principal
-    while True:
-        # (1) Atualiza percepção (Field → BobState)
-        bob.state.update()
+        self._create_bob(RobotID.Kamiji, KamijiTree)
+        self._create_bob(RobotID.Defender, Defender_tree)
+        self._create_bob(RobotID.Goalkeeper, Goalkeeper_tree)
 
-        # (2) O BobState dispara eventos (se necessário)
-        # → Já integrado no update()
+    def _create_bob(self, robot_id, tree):
+        """
+        Cria uma instância de Bob e associa à sua árvore.
 
-        # (3) Árvores tomam decisão com base no Blackboard
-        behavior_tree.tick()
+        Args:
+            robot_id (RobotID): ID do robô.
+            tree (Tree): Classe da árvore associada.
+        """
+        bob = Bob(robot_id=robot_id)
+        self.bobs[robot_id] = bob
+        self.trees[robot_id] = tree(bob)
 
-        # (4) Espera até o próximo ciclo (ex: 20 Hz → 0.05s)
-        time.sleep(0.05)
+    def update_all(self):
+        for bob in self.bobs.values():
+            bob.state.update()
 
-if __name__ == "__main__":
-    main()
+    def tick_all(self):
+        for tree in self.trees.values():
+            tree.tick()
+
+    def get_bob(self, robot_id):
+        return self.bobs.get(robot_id)
+
+    def get_tree(self, robot_id):
+        return self.trees.get(robot_id)

@@ -1,12 +1,11 @@
 # bob.py
 
-import time
-from .bob_state import BobState
+from .bob_state import Bob_State
 from .bob_config import Bob_Config
 
-import math
 from math import sqrt
 from utils.Point2D import Point2D
+from core.Field import RobotID
 
 class Bob:
     """
@@ -18,10 +17,10 @@ class Bob:
     :param robot_id: Identificador único do robô
     """
 
-    def __init__(self, robot_id: str):
+    def __init__(self, robot_id: RobotID):
         self.robot_id = robot_id
         self.config = Bob_Config(robot_id)
-        self.state = BobState(robot_id)
+        self.state = Bob_State(robot_id)
         self._has_ball = False
 
     def move(self, x: float, y: float) -> bool:

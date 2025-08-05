@@ -7,8 +7,8 @@ from enum import Enum
 
 class RobotID(Enum):
     Kamiji = "Kamiji"
-    DEFENDER = "Defender"
-    GOALKEEPER = "GOALKEEPER"
+    Defender = "Defender"
+    Goalkeeper = "GOALKEEPER"
 
 
 class Field:
@@ -45,11 +45,4 @@ class Field:
 
     #TODO FAZER METODOS REAIS DA RECEIVER #CADEDOTO
     
-        def set_robot_data(self, robot_id: RobotID, pos, vel, ori, has_ball=False):
-            self._robot_positions[robot_id] = pos
-            self._robot_velocities[robot_id] = vel
-            self._robot_orientations[robot_id] = ori
-            self._ball_possession[robot_id] = has_ball
-
-        def set_ball_position(self, pos):
-            self._ball_position = pos
+    
