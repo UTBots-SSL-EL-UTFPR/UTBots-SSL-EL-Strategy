@@ -6,6 +6,7 @@ class VisionParser:
         # Pode conter configurações futuras
         pass
 
+
     def parse(self, raw_data: bytes) -> vision_pb.SSL_WrapperPacket: # Converte os dados brutos recebidos (bytes) em um objeto protobuf SSL_WrapperPacket.
 
         # Nesse momento, eu optei por usar o objeto protobuf diretamente,
