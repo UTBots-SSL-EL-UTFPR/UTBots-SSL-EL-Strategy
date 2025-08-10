@@ -1,8 +1,3 @@
-'''
-FEITO NO ÚLTIMO DIA: testes das velocidades linear e angular (estão funcioando)
-AINDA FALTA: arrumar a orientação de {b}
-'''
-
 import time
 import numpy as np
 import math
