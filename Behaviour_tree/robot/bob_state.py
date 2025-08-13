@@ -2,9 +2,9 @@
 
 # bob_state.py
 
-from core.Field import Field
-from core.blackboard import Blackboard_Manager
-from core.Field import RobotID
+from ..core.Field import Field
+from ..core.blackboard import Blackboard_Manager
+from ..core.Field import RobotID
 class Bob_State:
     """
     Guarda o estado dinâmico do robô e o atualiza a partir das leituras do campo.
@@ -20,8 +20,10 @@ class Bob_State:
         self.active_function = None
         self.current_command = None
         self.has_ball = False
-        self.field = Field.get_instance()  # Singleton do campo
+        self.field = Field.get_instance()  
 
+    def get_position(self):
+        return self.position
     def update(self):
         """
         Atualiza o estado com base nos dados fornecidos pela classe Field.

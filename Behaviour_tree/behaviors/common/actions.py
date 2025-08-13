@@ -5,126 +5,97 @@ import py_trees
 from robot.bob import Bob
 from core.blackboard import Blackboard_Manager
 from core.Field import Field
+import time
+from core.event_callbacks import BB_flags_and_values
+
+navigation_flags = BB_flags_and_values.Flags.motion.navigation 
 
 
-class move_to_position(py_trees.behaviour.Behaviour):
+#---------------------------------------------------------------------------------------#
+#                                         MOVIMENTO                                     #
+#---------------------------------------------------------------------------------------#
+
+
+class Move_without_path(py_trees.behaviour.Behaviour):
     """
-    vai até algum lugar
-    """
-    def __init__(self, name: str, bob: Bob, target_x: float, target_y: float):
-        # super(move_to_position, self).__init__(name)
-        # self.bob = bob
-        # self.target_x = target_x
-        # self.target_y = target_y
-        ...
-
-    def update(self) -> py_trees.common.Status:
-        """
-        lógica do  movimento.
-        Retorna RUNNING, SUCCESS ao chegar, FAILURE se falhar.
-        """
-        #chamar metodo classe bob
-        # return py_trees.common.Status.FAILURE
-        ...
-
-           
-
-class kick_ball(py_trees.behaviour.Behaviour):
-    """
-    Chuta
-    """
-    def __init__(self, name: str, robot_instance: Bob):
-        #super(kick_ball, self).__init__(name)
-        #self.robot = robot_instance
-        ...
-    def update(self) -> py_trees.common.Status:
-        """
-        Executa a lógica de chute.
-        Retorna SUCCESS se chutar, FAILURE se não tiver a posse da bola.
-        """
-        # if self.robot.kick_ball():
-        #     return py_trees.common.Status.SUCCESS
-        ...
-
-
-class Conduz_bola(py_trees.behaviour.Behaviour):
-    """
-    nao sei se rola
-    """
-    def __init__(self, name: str, robot_instance: Bob):
-        super(Conduz_bola, self).__init__(name)
-        self.robot = robot_instance
-
-
-    def update(self) -> py_trees.common.Status:
-        """
-        Executa a lógica de drible.
-        Retorna SUCCESS se driblar, FAILURE se não tiver a posse da bola.
-        """
-        # if self.robot.dribble():
-        #     return py_trees.common.Status.SUCCESS
-
-        ...
-
-
-class Stop_robot(py_trees.behaviour.Behaviour):
-    """
-    STOP
-    """
-    def __init__(self, name: str, robot_instance: Bob):
-        # super(Stop_robot, self).__init__(name)
-        # self.robot = robot_instance
-         ...
-
-    def update(self) -> py_trees.common.Status:
-        """
-        para o bob. Sempre retorna SUCCESS.
-        """
-        #self.bob.stop()?
-        #return py_trees.common.Status.SUCCESS
-        ...
-
-class Set_posse_bola(py_trees.behaviour.Behaviour):
-    """
-    verifica posse de bola e seta bob
-    """
-    def __init__(self, name: str, robot_instance: Bob, status: bool):
-        # super(Set_posse_bola, self).__init__(name)
-        # self.robot = robot_instance
-        # self.status = status
-        ...
-
-    def update(self):
-        # self.robot.set_has_ball(self.status)
-        # return py_trees.common.Status.SUCCESS
-        ...
-    import py_trees
-
-#-------------------------------------------------------------------------#
-#                                Coisas Reais                             #
-#-------------------------------------------------------------------------#
-
-class SetTeamStrategy(py_trees.behaviour.Behaviour):
-    """
-    Define a estratégia global do time com base na posição da bola.
-    Escreve em 'team_strategy' no blackboard.
+    Move até um ponto único definido no Blackboard.
+    Retorna RUNNING até 'at_target' ser True, SUCCESS quando chegar, FAILURE se bloqueado.
     """
 
-    def __init__(self, name="SetTeamStrategy"):
+    def __init__(self, name, Robot:Bob):
         super().__init__(name)
+        self.robot = Robot
+        self.target: tuple[float, float]
         self.bb = Blackboard_Manager.get_instance()
 
     def update(self):
-        ball_pos = Field.get_ball_position()
+        #preso ou  sla, tem q ver isso ai
+        if self.bb.get(
+            f"{self.robot.robot_id}{navigation_flags.is_stuck}"
+            ):
+            return py_trees.common.Status.FAILURE
 
-        if ball_pos[0] < -0.5:
-            strategy = "attack"
-        elif ball_pos[0] > 0.5:
-            strategy = "defend"
-        else:
-            strategy = "hold"
+        #chegou
+        if self.bb.get(
+            f"{self.robot.robot_id}{navigation_flags.target_reached}"
+            ):
+            return py_trees.common.Status.SUCCESS
 
-        self.bb.set("team_strategy", strategy)
-        return py_trees.common.Status.SUCCESS
+        # Ainda não chegou — controlador de movimento vai ler target e agir
+        self.robot.move() 
+        return py_trees.common.Status.RUNNING
 
+class Move_oriented(py_trees.behaviour.Behaviour):
 
+    def __init__(self, name, Robot:Bob):
+        super().__init__(name)
+        self.robot = Robot
+        self.target: tuple[float, float]
+        self.teta: float
+        self.bb = Blackboard_Manager.get_instance()
+
+    def update(self):
+        #preso ou  sla, tem q ver isso ai
+        if self.bb.get(
+            f"{self.robot.robot_id}{navigation_flags.is_stuck}"
+            ):
+            return py_trees.common.Status.FAILURE
+
+        #chegou
+        if self.bb.get(
+            f"{self.robot.robot_id}{navigation_flags.target_reached}"
+            ):
+            return py_trees.common.Status.SUCCESS
+
+        # Ainda não chegou — controlador de movimento vai ler target e agir
+        self.robot.move_oriented() 
+        return py_trees.common.Status.RUNNING
+
+class Move_follow_Path(py_trees.behaviour.Behaviour):
+
+    def __init__(self, name, Robot:Bob):
+        super().__init__(name)
+        self.robot = Robot
+        self.target: tuple[float, float]
+        self.teta: float
+        self.bb = Blackboard_Manager.get_instance()
+
+    def update(self):
+        #preso ou  sla, tem q ver isso ai
+        if self.bb.get(
+            f"{self.robot.robot_id}{navigation_flags.is_stuck}"
+            ):
+            return py_trees.common.Status.FAILURE
+        if self.bb.get(
+            f"{self.robot.robot_id}{navigation_flags.lost_path}"       
+        ):
+            return py_trees.common.Status.FAILURE
+        #chegou
+        if self.bb.get(
+            f"{self.robot.robot_id}{navigation_flags.target_reached}"
+            ):
+            return py_trees.common.Status.SUCCESS
+
+        # Ainda não chegou — controlador de movimento vai ler target e agir
+        self.robot.move()
+        return py_trees.common.Status.RUNNING

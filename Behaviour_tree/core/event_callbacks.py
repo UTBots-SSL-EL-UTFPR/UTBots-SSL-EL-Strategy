@@ -1,5 +1,5 @@
-from core.event_manager import Event_Manager
-from core.blackboard import Blackboard_Manager
+from .event_manager import Event_Manager
+from .blackboard import Blackboard_Manager
 
 from enum import Enum
 #----------------------------------------------------------------------------#
@@ -24,17 +24,42 @@ from enum import Enum
 # PADRÃO: use nomes padronizados para facilitar leitura e manutenção
 
 #----------------------------------------------------------------------------#
-#                    Class enum para definir possiveis eventos               #
+#               CLASSES PARA ACOMODAR FLAGS, MAIS FACIL DE USAR              #
 #----------------------------------------------------------------------------#
-class EventType(Enum):
-    ROBOT_STUCK = "robot_stuck"
-    BALL_POSSESSION_CHANGE = "ball_possession_change"
-    TARGET_REACHED = "target_reached"
-    GOAL_OPEN = "goal_open"
-    ENTERED_ZONE = "entered_zone"
-    COLLISION_DETECTED = "collision_detected"
-    PASS_RECEIVED = "pass_received"
-    ...
+class StaticBuilder:
+    def __init__(self, path):
+        self._path = path
+    
+    def __str__(self):
+        return self._path
+    
+    def __repr__(self):
+        return f"<Flag: '{self._path}'>"
+
+class BB_flags_and_values:
+    class Flags:
+        class Team_Flags:
+            class Context:
+                is_simple_atack = StaticBuilder("is_simple_atack")
+                is_atack_from_recovery = StaticBuilder("is_atack_from_recovery")
+                is_defense_exemple = StaticBuilder("is_defense_exemple")
+                is_slow_attack = StaticBuilder("is_slow_attack")
+            class Ball_posetion:
+                team_has_ball = StaticBuilder("team_has_ball")
+                foes_have_ball = StaticBuilder("foes_have_ball")
+        class motion:
+            class ball:
+                has_ball = StaticBuilder("has_ball")
+                is_close = StaticBuilder("is_close")
+            
+            class navigation:
+                target_reached = StaticBuilder("target_reached")
+                path_blocked = StaticBuilder("path_blocked")
+                is_stuck = StaticBuilder("is_stuck")
+                lost_path = StaticBuilder("lost_path")
+    class Values:
+        class Positions:
+            quadrant = StaticBuilder("quadrant")
 
 #----------------------------------------------------------------------------#
 #                                 CALLBACKS                                  #
@@ -42,19 +67,15 @@ class EventType(Enum):
 _bb = Blackboard_Manager.get_instance()
 
 def on_robot_stuck(robot_id):
-    _bb.set(f"{robot_id.value}_is_stuck", True)
+    _bb.set(f"{robot_id.value}{BB_flags_and_values.Flags.motion.navigation.is_stuck}", True)
 
 def on_target_reached(robot_id):
-    _bb.set(f"{robot_id.value}_at_target", True)
-
-def on_goal_open(robot_id):
-    _bb.set("goal_open", True)
+    _bb.set(f"{robot_id.value}{BB_flags_and_values.Flags.motion.navigation.target_reached}", True)
 
 #----------------------------------------------------------------------------#
 #                               super subscribe                              #
 #----------------------------------------------------------------------------#
 
 def subscribe_all():
-    Event_Manager.subscribe(EventType.ROBOT_STUCK.value, on_robot_stuck)
-    Event_Manager.subscribe(EventType.TARGET_REACHED.value, on_target_reached)
-    Event_Manager.subscribe(EventType.GOAL_OPEN.value, on_goal_open)
+    Event_Manager.subscribe(str(BB_flags_and_values.Flags.motion.navigation.is_stuck), on_robot_stuck)
+    Event_Manager.subscribe(str(BB_flags_and_values.Flags.motion.navigation.target_reached), on_target_reached)

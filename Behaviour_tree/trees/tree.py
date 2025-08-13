@@ -2,7 +2,7 @@
 
 import abc
 import py_trees
-from core.blackboard import Blackboard_Manager
+from ..core.blackboard import Blackboard_Manager
 
 class Tree(abc.ABC):
     """

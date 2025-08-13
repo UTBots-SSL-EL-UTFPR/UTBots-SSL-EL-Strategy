@@ -6,7 +6,7 @@ from .bob_config import Bob_Config
 import math
 from math import sqrt
 from utils.Point2D import Point2D
-from core.Field import RobotID
+from ..core.Field import RobotID
 
 class Bob:
     """
@@ -19,7 +19,7 @@ class Bob:
     """
 
     def __init__(self, robot_id: RobotID):
-        self.robot_id = robot_id
+        self.robot_id = robot_id.value
         self.config = Bob_Config(robot_id)
         self.state = Bob_State(robot_id)
         self._has_ball = False

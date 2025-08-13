@@ -13,19 +13,30 @@
     -> Fazer Update gerar eventos e reagir ao campo
     -> atualizar o estado do bob
 
-7. Juntar Branches na main/BT:  NÍVEL 1 DE URGẼNCIA (finalizar até 31/07)
-    -> FIELD para main
-    -> movimentação bobs etc...
-    -> willian jogar com ctrl C ctrl Villean
-    -> Main para BT
 
 8. movimentação Ominidirecional (finalizar 13/08)
 
 9. kalman e predição (finalizar 13/08)
 
-10. Integrar Core com trees (finalizar 04/08) Argenton 
-
 
 
 3. Definir Macro-estratégias
 4. Definir Estratégias BOB
+
+
+11. TODO -> converter dados encoders em variação de teta !!!!
+
+
+WILLIAN:
+    -> preciso de um sistema de quadrantes do jeito que conversamos
+    -> preciso gerar eventos na Update
+    -> preciso que a update dos bobs tb atualizem coisas gerais
+        -> Exemplo: Posse de bola:
+            -> assume que não é nossa
+            -> se algum robo encontrar, agora é 
+            -> ajeitar isso pra não ser redundante
+            -> OLHAR strategy.conditions.py -> funções de bola
+    -> mudar esquema classe state 
+        -> vamos fazer uma classe pai, que tem coisas basicas como posição etc...
+        -> 2 classes herdam ela, uma de inimigo (foe_state) e outra (Bob_State) que ja esta pseudo implementada 
+        -> assim podemos gerar eventos como: time inimigo atacando, time inimigo com bola, time inimigo chuta etc...
