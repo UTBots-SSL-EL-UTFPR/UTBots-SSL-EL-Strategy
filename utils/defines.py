@@ -28,7 +28,6 @@ BALL_POSSESSION_DISTANCE = BOB_RADIUS + BALL_RADIUS + 0.01  # Distância de poss
 # -4500+--------+-------+--------+-------+ -4500
 #    -6000    -3000     0      +3000   +6000
 #
-r
 # Definições dos quadrantes
 
 # Quadrantes individuais (x_min, x_max, y_min, y_max)
@@ -53,3 +52,25 @@ ALL_QUADRANTS = [
     QUADRANT_5, QUADRANT_6, QUADRANT_7, QUADRANT_8,
     QUADRANT_9, QUADRANT_10, QUADRANT_11, QUADRANT_12
 ]
+
+from enum import Enum
+
+class Quadrant_type(Enum):
+    Q1 = 1; Q2 = 2; Q3 = 3; Q4 = 4
+    Q5 = 5; Q6 = 6; Q7 = 7; Q8 = 8
+    Q9 = 9; Q10 = 10; Q11 = 11; Q12 = 12
+
+class RoleType(Enum):
+    ATTACK = "attack"
+    MIDFIELD = "midfield"
+    DEFENSE = "defense"
+    GOALKEEPER = "goalkeeper"
+    SUPPORT = "support"
+
+# Conjuntos de quadrantes por função tática (mantidos como constantes)
+ATTACK_QUADRANTS = {Quadrant_type.Q1, Quadrant_type.Q2, Quadrant_type.Q3, Quadrant_type.Q4}
+MIDFIELD_QUADRANTS = {Quadrant_type.Q5, Quadrant_type.Q6, Quadrant_type.Q7, Quadrant_type.Q8}
+DEFENSE_QUADRANTS = {Quadrant_type.Q9, Quadrant_type.Q10, Quadrant_type.Q11, Quadrant_type.Q12}
+
+# Zona estática do goleiro (constante)
+GOALKEEPER_ZONE = (-1000, 1000, -4500, -3000)
