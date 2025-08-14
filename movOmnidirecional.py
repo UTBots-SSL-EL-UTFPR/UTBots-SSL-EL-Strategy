@@ -10,10 +10,10 @@ from communication.command_sender_sim import CommandSenderSim
 {s} = referencial do mundo
 '''
 
-wheels_angles = [math.radians(150), # Ângulos das rodas a partir de y-
-                 math.radians(-135),
-                 math.radians(-45),
-                 math.radians(30)]
+wheels_angles = [math.radians(330),
+                 math.radians(45),
+                 math.radians(135),
+                 math.radians(210)]
 gamma = [0, 0, 0, 0]
 wheel_radius = 0.027
 robot_radius = 0.09
@@ -52,10 +52,10 @@ if __name__ == "__main__":
     builder.command_robots(
         id = 0,
         wheelsspeed= True,
-        wheel1= u[0].item(),
-        wheel2= u[1].item(),
-        wheel3= u[2].item(),
-        wheel4= u[3].item(),
+        wheel1= -u[0].item(),
+        wheel2= -u[1].item(),
+        wheel3= -u[2].item(),
+        wheel4= -u[3].item(),
     )
 
     sender = CommandSenderSim()
