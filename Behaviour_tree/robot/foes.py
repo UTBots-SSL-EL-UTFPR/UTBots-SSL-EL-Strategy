@@ -13,8 +13,8 @@ from utils.defines import (
 )
 
 
-class Bob_State:
-    """Estado dinâmico do robô (posição, velocidade, posse, quadrante e role)."""
+class Foes_State:
+    #ESTADO SIMPLIFICADO DOS ROBOS INIMIGOS
 
     def __init__(self, robot_id: RobotID):
         self.blackboard = Blackboard_Manager.get_instance()
@@ -22,9 +22,6 @@ class Bob_State:
         self.position: tuple[float, float] = (0.0, 0.0)
         self.velocity: tuple[float, float] = (0.0, 0.0)
         self.orientation: float = 0.0
-        self.target_position: tuple[float, float] | None = None
-        self.active_function = None
-        self.current_command = None
         self.has_ball = False
         self.field = Field.get_instance()  # Singleton do campo
 
@@ -92,12 +89,6 @@ class Bob_State:
                 return i
         return 0  # fora do campo
 
-    def get_role(self) -> RoleType | None:
-        """Retorna o RoleType atual; recalcula se ainda não definido."""
-        if self.role is None:
-            self.role = self._infer_role_from_position(*self.position)
-        return self.role
-    
     # =================== Internos de classificação ===================
     def _is_attack_quadrant(self, q: Quadrant_type) -> bool:
         """True se o quadrante pertence à faixa ofensiva."""

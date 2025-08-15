@@ -61,10 +61,12 @@ class BB_flags_and_values:
         class Positions:
             quadrant = StaticBuilder("quadrant")
 
+
 #----------------------------------------------------------------------------#
 #                                 CALLBACKS                                  #
 #----------------------------------------------------------------------------#
 _bb = Blackboard_Manager.get_instance()
+
 
 def on_robot_stuck(robot_id):
     _bb.set(f"{robot_id.value}{BB_flags_and_values.Flags.motion.navigation.is_stuck}", True)

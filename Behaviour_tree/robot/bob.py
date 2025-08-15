@@ -2,12 +2,15 @@
 
 from .bob_state import Bob_State
 from .bob_config import Bob_Config
-
+from ...utils import utilsp
+from foes import Foes_State
 import math
 from math import sqrt
 from utils.Point2D import Point2D
 from ..core.Field import RobotID
-
+#--------------------------------------------DEFINES--------------------------------------------#
+LOWER = 0
+UPPER = 1
 class Bob:
     """
     Classe que representa um robô SSL.
@@ -23,6 +26,7 @@ class Bob:
         self.config = Bob_Config(robot_id)
         self.state = Bob_State(robot_id)
         self._has_ball = False
+        self.foes: list[Foes_State] #TODO
 
     def move(self, vel_x: float, vel_y: float) -> bool:
         """
@@ -158,5 +162,19 @@ class Bob:
         return self.move(target_pos.x, target_pos.y)
 
 
+    def is_visible(self):
+        #TODO
+        pass
 
 
+    def valid_range(self, position1:tuple[float, float], position2:tuple[float, float], limit:tuple[float, float]):
+        distance = utilsp.get_distance(position1, position2)
+        if distance > limit[LOWER]  and distance < limit[UPPER]:
+            return True
+        return False
+
+    def distance_nearest_foe(self):
+        distances =[]
+        for foe in  self.foes:
+            distances.append(utilsp.get_distance(self.state.position, foe.position))
+        self.nearest_foe = utilsp.min(distances)

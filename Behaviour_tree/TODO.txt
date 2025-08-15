@@ -1,22 +1,12 @@
 
 1. Definir EVENTOS: A e B (core/event_callback) 
 
-2. Definir Condition: X e Y (behaviours/common/Conditions)
-    -> Definir condições ligadas às ações 
-    -> implementar 
-
-5. Definir Ações: Doutor e Wesley (behaviours/common/actions) NÍVEL 2 DE URGẼNCIA (finalizar até 06/08)
-    -> Definir comandos possiveis para BOB
-    -> Implementar oque for possivel
-
-6. acabar Bob_State: Villean  NÍVEL 3 DE URGẼNCIA (finalizar 13/08)
-    -> Fazer Update gerar eventos e reagir ao campo
-    -> atualizar o estado do bob
 
 
-8. movimentação Ominidirecional (finalizar 13/08)
 
-9. kalman e predição (finalizar 13/08)
+8. movimentação Ominidirecional (finalizar 13/08) -> EM TESTES ||
+
+9. kalman e predição (finalizar 13/08) -> testar qualidade / aplicar no programa ||
 
 
 
@@ -27,16 +17,60 @@
 11. TODO -> converter dados encoders em variação de teta !!!!
 
 
-WILLIAN:
-    -> preciso de um sistema de quadrantes do jeito que conversamos
-    -> preciso gerar eventos na Update
-    -> preciso que a update dos bobs tb atualizem coisas gerais
-        -> Exemplo: Posse de bola:
-            -> assume que não é nossa
-            -> se algum robo encontrar, agora é 
-            -> ajeitar isso pra não ser redundante
-            -> OLHAR strategy.conditions.py -> funções de bola
-    -> mudar esquema classe state 
-        -> vamos fazer uma classe pai, que tem coisas basicas como posição etc...
-        -> 2 classes herdam ela, uma de inimigo (foe_state) e outra (Bob_State) que ja esta pseudo implementada 
-        -> assim podemos gerar eventos como: time inimigo atacando, time inimigo com bola, time inimigo chuta etc...
+//---------------------------------13/08------------------------------------------//
+//COISAS A FAZER:
+
+    1. Criar função em BOB.py para saber se a bola tem visão para o gol (podemos chutar)
+        -> Criar nó de condição em Behaviour_tree/behaviors/common/condition.py para chute
+
+        1. verifico se tenho Posse
+        2. verifico se tem linha de chute
+        2.1 nao tenho -> me movo 
+        2.2.1 pra onde() 
+        2.2.2 retorna running pra 2
+        2.2 tenho, chuto
+
+    
+    2. Implementar sequencia de passe (ações e condições) em  Behaviour_tree/behaviors/common/condition.py
+
+    3. Posicionamento
+
+    4. sequencia para interceptar a bola/adversario 
+
+    5. Definir EVENTOS: A e B (core/event_callback) 
+
+    6. Definir Condition: X e Y (behaviours/common/Conditions)
+        -> Definir condições ligadas às ações 
+        -> implementar 
+
+    7. acabar Bob_State: Villean  NÍVEL 3 DE URGẼNCIA (finalizar 13/08)
+        -> Fazer Update gerar eventos e reagir ao campo
+        -> atualizar o estado do bob
+
+    8. Firmware do bob 
+        -> definir mensagens
+        -> definir envio e recep
+        -> organizar 
+
+    
+
+// YUJI:
+    -> MOVIMENTAÇÃO X
+
+//WILLIAN
+    -> 7.1
+
+// VINI:
+    -> 4.
+
+// GRACIA:
+    -> 1.
+
+//DANILO: 
+    -> 7.2
+
+//Luzzi: 
+    -> 8.
+
+// Wesley: -> organizar receive. -> jogar wd_state denrto da field -> transf field.py em wdtste.py ||  2. Implementar sequencia de passe (ações e condições) em  Behaviour_tree/behaviors/common/condition.py
+
