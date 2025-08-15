@@ -1,6 +1,6 @@
-from communication.vision_receiver import VisionReceiver
+from communication.receiver.vision_receiver import VisionReceiver
 from communication.parsers.vision_parser import VisionParser
-from communication.referee_receiver import RefereeReceiver
+from communication.receiver.referee_receiver import RefereeReceiver
 from communication.parsers.referee_parser import RefereeParser
 from communication.field_state import FieldState
 from Behaviour_tree.core.World_State import World_State, RobotID
@@ -41,11 +41,12 @@ def test_World_State(interface_ip_referee="172.17.0.1", interface_ip_vision="0.0
 
             # Detalhes granulares de robôs
             print("\n[ROBÔS - POSIÇÕES, VELOCIDADES E ORIENTAÇÕES]")
-            for robot_id in ws._robot_positions.keys():
-                pos = ws.get_robot_position(robot_id)
-                vel = ws.get_robot_velocity(robot_id)
-                ori = ws.get_robot_orientation(robot_id)
-                print(f"{robot_id}: Pos={pos}, Vel={vel}, Ori={ori:.2f}")
+            for team in ["blue", "yellow"]:
+                for rid in ws._robot_positions[team].keys():
+                    pos = ws.get_robot_position(team, rid)
+                    vel = ws.get_robot_velocity(team, rid)
+                    ori = ws.get_robot_orientation(team, rid)
+                    print(f"{team.upper()} {rid}: Pos={pos}, Vel={vel}, Ori={ori:.2f}")
 
             # Dados do árbitro
             print("\n[REFEREE]")
