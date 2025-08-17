@@ -1,6 +1,7 @@
 from ..core.Field import Field
 from ..core.blackboard import Blackboard_Manager
 from ..core.Field import RobotID
+from .all_bob_states import AllBobStates
 from utils.defines import (
     ALL_QUADRANTS,
     Quadrant_type,
@@ -27,6 +28,11 @@ class Bob_State:
         self.current_command = None
         self.has_ball = False
         self.field = Field.get_instance()  # Singleton do campo
+        self.quadrant_index: int | None = None
+        self.role: RoleType | None = None
+        # Registrar no singleton agregador
+        self.get_all_bobs = AllBobStates.get_instance()fr
+        self.get_all_bobs.register(self)
 
     def update(self):
         """Atualiza todos os dados (posição, velocidade, orientação, posse, quadrante e role)."""
@@ -97,6 +103,13 @@ class Bob_State:
         if self.role is None:
             self.role = self._infer_role_from_position(*self.position)
         return self.role
+
+    # =================== Getters simples para agregador ===================
+    def get_position(self) -> tuple[float, float]:
+        return self.position
+
+    def get_velocity(self) -> tuple[float, float]:
+        return self.velocity
     
     # =================== Internos de classificação ===================
     def _is_attack_quadrant(self, q: Quadrant_type) -> bool:
