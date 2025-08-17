@@ -1,8 +1,8 @@
 from enum import Enum
 from time import time
 
-from communication.vision_receiver import VisionReceiver
-from communication.referee_receiver import RefereeReceiver
+from communication.receiver.vision_receiver import VisionReceiver
+from communication.receiver.referee_receiver import RefereeReceiver
 from communication.parsers.vision_parser import VisionParser
 from communication.parsers.referee_parser import RefereeParser
 from communication.field_state import FieldState
@@ -47,9 +47,9 @@ class World_State:
         self.field = field
 
         # Dados granulares
-        self._robot_positions = {}
-        self._robot_velocities = {}
-        self._robot_orientations = {}
+        self._robot_positions = {"blue": {}, "yellow": {}}
+        self._robot_velocities = {"blue": {}, "yellow": {}}
+        self._robot_orientations = {"blue": {}, "yellow": {}}
         self._ball_position = (0.0, 0.0)
         self.last_camera_frames = {}
 
@@ -104,10 +104,18 @@ class World_State:
             self._ball_position = (balls[0]["x"], balls[0]["y"])
 
         # Atualiza posições, velocidades e orientações
-        for bot_id, bot in {**robots_blue, **robots_yellow}.items():
-            self._robot_positions[bot_id] = (bot.get("x", 0.0), bot.get("y", 0.0))
-            self._robot_velocities[bot_id] = (bot.get("vx", 0.0), bot.get("vy", 0.0))
-            self._robot_orientations[bot_id] = bot.get("orientation", 0.0)
+        for bot in detection.get("robots_blue", []):
+            rid = bot["robot_id"]
+            self._robot_positions["blue"][rid] = (bot.get("x", 0.0), bot.get("y", 0.0))
+            self._robot_velocities["blue"][rid] = (bot.get("vx", 0.0), bot.get("vy", 0.0))
+            self._robot_orientations["blue"][rid] = bot.get("orientation", 0.0)
+
+        for bot in detection.get("robots_yellow", []):
+            rid = bot["robot_id"]
+            self._robot_positions["yellow"][rid] = (bot.get("x", 0.0), bot.get("y", 0.0))
+            self._robot_velocities["yellow"][rid] = (bot.get("vx", 0.0), bot.get("vy", 0.0))
+            self._robot_orientations["yellow"][rid] = bot.get("orientation", 0.0)
+
 
     def get_referee_data(self):
         return self.referee_data
@@ -122,13 +130,20 @@ class World_State:
             "robots_yellow": self.field.robots_yellow,
             "ball_position": self._ball_position,
             "frames_metadata": self.last_camera_frames,
+            "granular": {
+                "positions": self._robot_positions,
+                "velocities": self._robot_velocities,
+                "orientations": self._robot_orientations,
+            }
         }
 
-    def get_robot_position(self, robot_id: RobotID):
-        return self._robot_positions.get(robot_id, (0.0, 0.0))
+    def get_robot_position(self, team: str, robot_id: int):
+        return self._robot_positions.get(team, {}).get(robot_id, (0.0, 0.0))
 
-    def get_robot_velocity(self, robot_id: RobotID):
-        return self._robot_velocities.get(robot_id, (0.0, 0.0))
+    def get_robot_velocity(self, team: str, robot_id: int):
+        return self._robot_velocities.get(team, {}).get(robot_id, (0.0, 0.0))
 
-    def get_robot_orientation(self, robot_id: RobotID):
-        return self._robot_orientations.get(robot_id, 0.0)
+    def get_robot_orientation(self, team: str, robot_id: int):
+        return self._robot_orientations.get(team, {}).get(robot_id, 0.0)
+
+

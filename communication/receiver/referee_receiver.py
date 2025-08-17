@@ -1,6 +1,6 @@
 import threading
 import socket
-from communication.receiver import Receiver
+from communication.receiver.receiver import Receiver
 from communication.generated import ssl_gc_referee_message_pb2 as referee_pb
 from communication.parsers import RefereeParser
 

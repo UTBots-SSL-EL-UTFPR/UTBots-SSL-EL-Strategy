@@ -1,6 +1,6 @@
 import threading
 import socket
-from communication.receiver import Receiver
+from communication.receiver.receiver import Receiver
 from communication.generated import ssl_vision_wrapper_pb2 as vision_pb
 from communication.parsers import VisionParser
 
