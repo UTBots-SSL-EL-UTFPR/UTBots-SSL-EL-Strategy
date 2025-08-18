@@ -7,7 +7,7 @@ from foes import Foes_State
 import math
 from math import sqrt
 from utils.Point2D import Point2D
-from ..core.Field import RobotID
+from ..core.World_State import RobotID
 #--------------------------------------------DEFINES--------------------------------------------#
 LOWER = 0
 UPPER = 1

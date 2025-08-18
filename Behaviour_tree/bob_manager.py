@@ -5,7 +5,7 @@ from robot.bob import Bob
 from trees.bob_trees.kamiji_tree import KamijiTree
 from trees.bob_trees.defender_tree import Defender_tree
 from trees.bob_trees.goalkeeper_tree import Goalkeeper_tree
-from core.Field import RobotID
+#from core.Field import RobotID
 from typing import Dict
 
 class BobManager:

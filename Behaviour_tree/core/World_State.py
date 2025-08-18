@@ -1,11 +1,11 @@
 from enum import Enum
 from time import time
 
-from communication.vision_receiver import VisionReceiver
-from communication.referee_receiver import RefereeReceiver
-from communication.parsers.vision_parser import VisionParser
-from communication.parsers.referee_parser import RefereeParser
-from communication.field_state import FieldState
+from ...communication.receiver.vision_receiver import VisionReceiver
+from ...communication.receiver.referee_receiver import RefereeReceiver
+from ...communication.parsers.vision_parser import VisionParser
+from ...communication.parsers.referee_parser import RefereeParser
+from ...communication.field_state import FieldState
 
 from communication.generated import ssl_vision_wrapper_pb2 as vision_pb
 from communication.generated import ssl_gc_referee_message_pb2 as referee_pb
@@ -37,11 +37,11 @@ class World_State:
         # Receivers e parsers
         self.referee_receiver = referee_receiver
         self.referee_parser = referee_parser
-        self.referee_data: referee_pb.Referee = None
+        self.referee_data: referee_pb.Referee = None #????
 
         self.vision_receiver = vision_receiver
         self.vision_parser = vision_parser
-        self.vision_data: dict = None
+        self.vision_data: dict = {}
 
         # FieldState
         self.field = field
