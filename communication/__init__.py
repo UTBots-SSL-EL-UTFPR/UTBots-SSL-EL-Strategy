@@ -1,7 +1,7 @@
-from communication.receiver import Receiver
-from communication.vision_receiver import VisionReceiver
-from communication.referee_receiver import RefereeReceiver
-from communication.command_sender_sim import CommandSenderSim
+from communication.receiver.receiver import Receiver
+from communication.receiver.vision_receiver import VisionReceiver
+from communication.receiver.referee_receiver import RefereeReceiver
+from communication.sender.command_sender_sim import CommandSenderSim
 
 __all__ = [
     "Receiver",
