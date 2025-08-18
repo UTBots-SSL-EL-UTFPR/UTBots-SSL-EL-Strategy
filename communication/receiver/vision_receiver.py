@@ -3,7 +3,7 @@ import socket
 from communication.receiver.receiver import Receiver
 from communication.generated import ssl_vision_wrapper_pb2 as vision_pb
 from communication.parsers import VisionParser
-
+from SSL_configuration.configuration import Configuration
 class VisionReceiver(Receiver):
     _instance = None
 
@@ -12,20 +12,20 @@ class VisionReceiver(Receiver):
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, interface_ip: str,ip:str,portVision:int):
+    def __init__(self):
+        if  hasattr(self, "sock"): return
+        config = Configuration.getObject()
+        super().__init__(multicast_ip=config.vision_receiver_ip, port=config.vision, interface_ip=config.interface_ip_vision)
+        self.latest_raw = None #guarda o ultimo pacote bruto recebido
+        self.latest_parsed = None #guarda o ultimo objeto protobuf decodificado
+        self.parser = VisionParser()
 
-        if not hasattr(self, "sock"):  # só inicializa uma vez
-            super().__init__(multicast_ip=ip, port=portVision, interface_ip=interface_ip)
-            self.latest_raw = None #guarda o ultimo pacote bruto recebido
-            self.latest_parsed = None #guarda o ultimo objeto protobuf decodificado
-            self.parser = VisionParser()
+        self._thread = threading.Thread(target=self.receive_raw, daemon=True)
+        self._thread.name = "VisionReceiverThread"
+        self._thread.daemon = True  # permite que o programa termine mesmo com a thread rodando
+        self._thread.start()
 
-            self._thread = threading.Thread(target=self.receive_raw, daemon=True)
-            self._thread.name = "VisionReceiverThread"
-            self._thread.daemon = True  # permite que o programa termine mesmo com a thread rodando
-            self._thread.start()
-
-            self.isSimulation = True
+        self.isSimulation = True
 
 
     def receive_raw(self):

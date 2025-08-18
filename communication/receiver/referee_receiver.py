@@ -3,7 +3,7 @@ import socket
 from communication.receiver.receiver import Receiver
 from communication.generated import ssl_gc_referee_message_pb2 as referee_pb
 from communication.parsers import RefereeParser
-
+from SSL_configuration.configuration import Configuration
 class RefereeReceiver(Receiver):
     _instance = None
 
@@ -12,17 +12,19 @@ class RefereeReceiver(Receiver):
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, interface_ip: str,ip:str,portVision:int):
-        if not hasattr(self, "sock"):  # só inicializa uma vez
-            super().__init__(multicast_ip=ip, port=portVision, interface_ip=interface_ip)
-            self.latest_raw = None #guarda o ultimo pacote bruto recebido
-            self.latest_parsed = None #guarda o ultimo objeto protobuf decodificado
-            self.parser = RefereeParser()
+    def __init__(self):
+        if hasattr(self, "sock"): 
+            return
+        config = Configuration.getObject()
+        super().__init__(multicast_ip=config.referee_receiver_ip, port=config.referee, interface_ip=config.interface_ip_referee)
+        self.latest_raw = None #guarda o ultimo pacote bruto recebido
+        self.latest_parsed = None #guarda o ultimo objeto protobuf decodificado
+        self.parser = RefereeParser()
 
-            self._thread = threading.Thread(target=self.receive_raw, daemon=True) # thread que escuta pacotes em segundo plano
-            self._thread.name = "RefereeReceiverThread"
-            self._thread.daemon = True  # permite que o programa termine mesmo com a thread rodando
-            self._thread.start()
+        self._thread = threading.Thread(target=self.receive_raw, daemon=True) # thread que escuta pacotes em segundo plano
+        self._thread.name = "RefereeReceiverThread"
+        self._thread.daemon = True  # permite que o programa termine mesmo com a thread rodando
+        self._thread.start()
 
     def receive_raw(self):
         while True:

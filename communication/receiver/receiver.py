@@ -3,7 +3,7 @@ import struct # permite empacotar dados binários, usado aqui para configurar o 
 import socket
 
 class Receiver(ABC):    #classe base que configura o socket UDP generico
-    def __init__(self, multicast_ip: str, port: int, interface_ip: str): #argumentos considerando o docker por interface ip
+    def __init__(self, multicast_ip, port, interface_ip): #argumentos considerando o docker por interface ip
         self.multicast_ip = multicast_ip
         self.port = port
         self.interface_ip = interface_ip

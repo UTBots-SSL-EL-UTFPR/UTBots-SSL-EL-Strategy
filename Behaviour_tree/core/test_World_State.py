@@ -11,18 +11,10 @@ import os
 
 # Comando pra rodar python3 -m Behaviour_tree.core.test_World_State
 
-def test_World_State(interface_ip_referee="172.17.0.1", interface_ip_vision="0.0.0.0", timeout=0.3):
+def test_World_State(timeout=0.3):
     print(f"Iniciando teste do WorldState com timeout de {timeout:.1f}s por ciclo...")
-
-    # Inicializa os componentes
-    vision_receiver = VisionReceiver(interface_ip=interface_ip_vision, ip="224.5.23.2", portVision=10020)
-    vision_parser = VisionParser()
-    referee_receiver = RefereeReceiver(interface_ip=interface_ip_referee, ip="224.5.23.1", portVision=10003)
-    referee_parser = RefereeParser()
-    field_state = FieldState()
-
-    # Inicializa estado global (singleton)
-    ws = World_State(referee_receiver, referee_parser, vision_receiver, vision_parser, field_state)
+    sleep(1)
+    ws = World_State()
 
     try:
         while True:
@@ -65,10 +57,11 @@ def test_World_State(interface_ip_referee="172.17.0.1", interface_ip_vision="0.0
                 print("Nenhum dado de visão disponível.")
 
             print("\n" + "="*50)
-            sleep(0.1)
+            sleep(0.5)
 
     except KeyboardInterrupt:
         print("\nTeste encerrado pelo usuário.")
 
 if __name__ == "__main__":
     test_World_State()
+

@@ -1,7 +1,6 @@
 # TODO
-
+from Behaviour_tree.core.test_World_State import test_World_State
 
 def main():
-    tree_tick = 0
-
+    test_World_State()
     return 0 

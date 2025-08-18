@@ -1,11 +1,13 @@
 from enum import Enum
 from time import time
 
-from ...communication.receiver.vision_receiver import VisionReceiver
-from ...communication.receiver.referee_receiver import RefereeReceiver
-from ...communication.parsers.vision_parser import VisionParser
-from ...communication.parsers.referee_parser import RefereeParser
-from ...communication.field_state import FieldState
+from SSL_configuration.configuration import Configuration
+
+from communication.receiver.vision_receiver import VisionReceiver
+from communication.receiver.referee_receiver import RefereeReceiver
+from communication.parsers.vision_parser import VisionParser
+from communication.parsers.referee_parser import RefereeParser
+from communication.field_state import FieldState
 
 from communication.generated import ssl_vision_wrapper_pb2 as vision_pb
 from communication.generated import ssl_gc_referee_message_pb2 as referee_pb
@@ -27,24 +29,22 @@ class World_State:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, referee_receiver: RefereeReceiver, referee_parser: RefereeParser,
-                 vision_receiver: VisionReceiver, vision_parser: VisionParser,
-                 field: FieldState):
+    def __init__(self):
 
         if hasattr(self, "_initialized") and self._initialized:
             return
-
-        # Receivers e parsers
-        self.referee_receiver = referee_receiver
-        self.referee_parser = referee_parser
-        self.referee_data: referee_pb.Referee = None #????
-
-        self.vision_receiver = vision_receiver
-        self.vision_parser = vision_parser
+        #self.configuration = Configuration.getObject()
+        try:
+            self.vision_receiver = VisionReceiver()
+            self.vision_parser = VisionParser()
+            self.referee_receiver = RefereeReceiver()
+            self.referee_parser = RefereeParser()
+            self.field = FieldState()
+        except KeyError as e:
+            print(e)
+            
+        self.referee_data: referee_pb.Referee = None
         self.vision_data: dict = {}
-
-        # FieldState
-        self.field = field
 
         # Dados granulares
         self._robot_positions = {"blue": {}, "yellow": {}}
@@ -55,11 +55,10 @@ class World_State:
 
         self._initialized = True
 
+
     def update(self, timeout=0.3):
         """Atualiza árbitro e visão considerando múltiplas câmeras por ciclo."""
-        # Árbitro
         self.referee_data = self.referee_receiver.get_latest_parsed()
-
         # Visão
         last_processed_raw = None
         received_cameras = set()
@@ -145,5 +144,4 @@ class World_State:
 
     def get_robot_orientation(self, team: str, robot_id: int):
         return self._robot_orientations.get(team, {}).get(robot_id, 0.0)
-
 
