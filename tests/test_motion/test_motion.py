@@ -4,7 +4,7 @@ import math
 from typing import List
 from communication.sender.command_builder import CommandBuilder
 from communication.sender.command_sender_sim import CommandSenderSim
-from communication.field_state import FieldState
+from Behaviour_tree.core.field_state import FieldState
 from communication.receiver.vision_receiver import VisionReceiver
 from communication.parsers.vision_parser import VisionParser
 
@@ -54,10 +54,10 @@ def calculaVelMundo(
     yaw_deadband: float = math.radians(3.0),  # [rad] ignora correções muito pequenas
 ):
     """
-    Retorna (vx_s, vy_s, w) em {s} segundo o modo escolhido:
+    Retorna (vx_s, vy_s, w) em {s} seguindo uma das 3 opcoes:
       - maintain_orientation: translada ignorando orientação (w = 0).
       - face_target: olha para a direção do objetivo o tempo todo.
-      - goal_orientation: 2 etapas -> (1) translada até pos_tol; (2) gira parado até ang_tol.
+      - goal_orientation: olha para a orientação desejada.
     """
 
     # erro de posicao para o controle P
@@ -235,7 +235,7 @@ if __name__ == "__main__":
     # Inicializa os componentes pra visao------------------------------------------------------------------------
     interface_ip_vision="0.0.0.0"
     interface_ip_referee="172.17.0.1"
-    receiver = VisionReceiver(interface_ip="0.0.0.0", ip="224.5.23.2", portVision=10020)
+    receiver = VisionReceiver()
     parser   = VisionParser()
     field = FieldState()
     last_processed_raw = None
