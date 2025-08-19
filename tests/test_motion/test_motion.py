@@ -30,7 +30,7 @@ THETA_OFFSET = math.pi
 THETA_SIGN   = +1.0
 
 
-def normaliza_para_pi(a: float) -> float:
+def normalize_angle_to_pi(a: float) -> float:
     return (a + math.pi) % (2*math.pi) - math.pi
 
 def calculaVelMundo(
@@ -102,7 +102,7 @@ def calculaVelMundo(
     elif mode == "face_target":
         # olha para na direcao do ponto desejado o tempo todo (mesmo durante a translação).
         theta_des = math.atan2(dy, dx) if dist > 1e-6 else goal.theta
-        ang_err = normaliza_para_pi(theta_des - theta_meas)
+        ang_err = normalize_angle_to_pi(theta_des - theta_meas)
 
         # controle P no yaw agr
         if abs(ang_err) >= yaw_deadband:
@@ -114,7 +114,7 @@ def calculaVelMundo(
     elif mode == "goal_orientation":
         # olha para um angulo passado q nao necessariamente é na direcao do ponto desejado
         
-        ang_err = normaliza_para_pi(goal.theta - theta_meas)
+        ang_err = normalize_angle_to_pi(goal.theta - theta_meas)
 
         if abs(ang_err) >= yaw_deadband:
             w = k_ang * ang_err * 3
@@ -129,9 +129,9 @@ def calculaVelMundo(
         # para decidir se zera tudo: depende do modo
         if mode == "face_target":
             theta_des = math.atan2(dy, dx) if dist > 1e-6 else goal.theta
-            ang_err = normaliza_para_pi(theta_des - theta_meas)
+            ang_err = normalize_angle_to_pi(theta_des - theta_meas)
         elif mode == "goal_orientation":
-            ang_err = normaliza_para_pi(goal.theta - theta_meas)
+            ang_err = normalize_angle_to_pi(goal.theta - theta_meas)
         else:
             ang_err = 0.0  # maintain_orientation não exige yaw especifico, ent fds
 

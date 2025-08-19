@@ -1,3 +1,4 @@
+import math
 from utils.defines import (
     ALL_QUADRANTS,
     Quadrant_type,
@@ -113,3 +114,6 @@ class Pose2D:
             return Quadrant_type(idx)
         except ValueError:
             return None
+        
+    def normalize_angle_to_pi(a: float) -> float:
+        return (a + math.pi) % (2*math.pi) - math.pi
