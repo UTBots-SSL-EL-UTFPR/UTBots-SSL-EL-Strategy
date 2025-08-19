@@ -11,6 +11,9 @@ from ..core.World_State import RobotID
 #--------------------------------------------DEFINES--------------------------------------------#
 LOWER = 0
 UPPER = 1
+THETA_SIGN = +1.0
+THETA_OFFSET = math.pi
+
 class Bob:
 
     def __init__(self, robot_id: RobotID):
@@ -38,6 +41,115 @@ class Bob:
     def rotate(self, angle: float) -> bool:
         #TODO ENVIAR COMANDO ROTATE (é melhor controlar com encoders)
         return True
+    
+    def compute_world_velocity(
+        current,                    # Pose2D(x,y,theta) atual em {s}
+        goal,                       # Pose2D(x,y,theta) alvo em {s}
+        mode: str = "maintain_orientation",  # 3 opções diferentes de movimento q eu fiz pra testar "maintain_orientation" | "face_target" | "goal_orientation"
+        
+        # ganhos e limites
+        k_pos: float = 1.4,         # 1/s ganho linear
+        k_ang: float = 0.9,         # 1/s ganho angular (para face_target e etapa 2)
+        vmax: float = 1.5,          # m/s saturação linear
+        wmax: float = 2.5,          # rad/s saturação angular
+        
+        # zonas e tolerâncias, isso é ajutavel e pode ate ser tirado
+        slow_radius: float = 0.02,   # m começa a frear ao se aproximar
+        pos_tol: float = 0.03,      # m tolerância de posição (chegada de posição)
+        ang_tol: float = math.radians(2.0),  # rad tolerância angular (chegada de orientação)
+
+        # deadbands, ajustavel tmb
+        v_min: float = 0.10,        # [m/s] piso de velocidade (vencer atrito)
+        yaw_deadband: float = math.radians(3.0),  # [rad] ignora correções muito pequenas
+    ):
+        """
+        Retorna (vx_s, vy_s, w) em {s} seguindo uma das 3 opcoes:
+        - maintain_orientation: translada ignorando orientação (w = 0).
+        - face_target: olha para a direção do objetivo o tempo todo.
+        - goal_orientation: olha para a orientação desejada.
+        """
+
+        # erro de posicao para o controle P
+        dx = goal.x - current.x
+        dy = goal.y - current.y
+        dist = math.hypot(dx, dy)
+
+        # ================= VELOCIDADES LINEARES (em {s}) =================
+        if dist < pos_tol:
+            vx_s = 0.0
+            vy_s = 0.0
+        else:
+            # controle proporcional em {s}
+            vx_s = k_pos * dx
+            vy_s = k_pos * dy
+
+            # rampa suave (linear) perto do alvo. para freiar o robo linearmente quando se chega perto do objetivo. Da pra tirar isso aqui tranquilamente tmb
+            # ou fazer ele so atuar quando for o ultimo movimento msm.
+            if slow_radius > 1e-6 and dist < slow_radius:
+                scale = dist / slow_radius
+                vx_s *= scale
+                vy_s *= scale
+
+            # saturação e piso, ajustavel tmb, eh so pra garantir uma velocidade minima e maxima do robo
+            v = math.hypot(vx_s, vy_s)
+            if v > vmax:
+                vx_s *= vmax / v
+                vy_s *= vmax / v
+                v = vmax
+            if 0.0 < v < v_min:
+                vx_s *= v_min / v
+                vy_s *= v_min / v
+
+        # ================= CONTROLE DE ORIENTAÇÃO =================
+        w = 0.0
+        theta_meas = THETA_SIGN * (current.theta + THETA_OFFSET)
+
+        if mode == "maintain_orientation":
+            # nunca gira; só translada.
+            w = 0.0
+
+        elif mode == "face_target":
+            # olha para na direcao do ponto desejado o tempo todo (mesmo durante a translação).
+            theta_des = math.atan2(dy, dx) if dist > 1e-6 else goal.theta
+            ang_err = normaliza_para_pi(theta_des - theta_meas)
+
+            # controle P no yaw agr
+            if abs(ang_err) >= yaw_deadband:
+                w = k_ang * ang_err
+                w = max(-wmax, min(w, wmax))
+            else:
+                w = 0.0
+
+        elif mode == "goal_orientation":
+            # olha para um angulo passado q nao necessariamente é na direcao do ponto desejado
+            
+            ang_err = normaliza_para_pi(goal.theta - theta_meas)
+
+            if abs(ang_err) >= yaw_deadband:
+                w = k_ang * ang_err * 3
+                w = max(-wmax, min(w, wmax))
+            else:
+                w = 0.0
+        else:
+            raise ValueError(f"mode inválido: {mode!r}. Use 'maintain_orientation', 'face_target' ou 'goal_orientation'.")
+
+        # ================= CONDIÇÃO DE CHEGADA GLOBAL =================
+        if dist < pos_tol:
+            # para decidir se zera tudo: depende do modo
+            if mode == "face_target":
+                theta_des = math.atan2(dy, dx) if dist > 1e-6 else goal.theta
+                ang_err = normaliza_para_pi(theta_des - theta_meas)
+            elif mode == "goal_orientation":
+                ang_err = normaliza_para_pi(goal.theta - theta_meas)
+            else:
+                ang_err = 0.0  # maintain_orientation não exige yaw especifico, ent fds
+
+            if abs(ang_err) < ang_tol:
+                vx_s = 0.0
+                vy_s = 0.0
+                w = 0.0
+
+        return vx_s, vy_s, w
 
 
 

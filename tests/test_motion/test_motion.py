@@ -33,7 +33,7 @@ THETA_SIGN   = +1.0
 def normalize_angle_to_pi(a: float) -> float:
     return (a + math.pi) % (2*math.pi) - math.pi
 
-def calculaVelMundo(
+def compute_world_velocity(
     current,                    # Pose2D(x,y,theta) atual em {s}
     goal,                       # Pose2D(x,y,theta) alvo em {s}
     mode: str = "maintain_orientation",  # 3 opções diferentes de movimento q eu fiz pra testar "maintain_orientation" | "face_target" | "goal_orientation"
@@ -282,7 +282,7 @@ if __name__ == "__main__":
 
         if pose is not None:
             x, y, phi = pose
-            vx_s, vy_s, w = calculaVelMundo(
+            vx_s, vy_s, w = compute_world_velocity(
                 current=Pose2D(x, y, phi),
                 goal=Pose2D(xg, yg, theta_g),
                 mode=MODE
