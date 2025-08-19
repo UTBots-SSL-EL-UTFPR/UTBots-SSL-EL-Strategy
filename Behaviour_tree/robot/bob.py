@@ -5,6 +5,7 @@ from .bob_config import Bob_Config
 from ...utils import utilsp
 from foes import Foes_State
 import math
+import numpy as np
 from math import sqrt
 from utils.pose2D import Pose2D
 from ..core.World_State import RobotID
@@ -13,6 +14,15 @@ LOWER = 0
 UPPER = 1
 THETA_SIGN = +1.0
 THETA_OFFSET = math.pi
+N_RODAS = 4
+WHEELS_ANGLES = [math.radians(-30), 
+                 math.radians(45),
+                 math.radians(135),
+                 math.radians(-150)]
+GAMMA = [0, 0, 0, 0]
+ROBOT_RADIUS = 0.09
+WHEEL_RADIUS = 0.027
+
 
 class Bob:
 
@@ -151,6 +161,41 @@ class Bob:
 
         return vx_s, vy_s, w
 
+    def motorVel (q, phi):
+
+        """
+        Aqui é o modelo cinematico da gracia.
+        {w} = referencial da roda
+        {b} = referencial do robô
+        {s} = referencial do mundo
+
+        phi é o angulo atual do robo em relação a {s}
+
+        essa funcao tem q receber um vetor com as velocidades em {s}: 
+            q = np.array([[w], [vx_s], [vy_s]], dtype=float)
+        com isso, ela monta a matriz de transformação H e resolve:
+            u = H @ q
+        depois satura em [-u_max, u_max].
+
+        retorna um vetor com as velocidades das rodas
+
+        """
+
+        h = np.zeros((N_RODAS, 3))
+        for i in range(N_RODAS):
+            Bi = WHEELS_ANGLES[i]   # Ângulo entre {w} e {b}
+            gammai = GAMMA[i]
+            hi = np.array([ROBOT_RADIUS,
+                        np.cos(Bi+phi+gammai),
+                        np.sin(Bi+phi+gammai)])
+            hi /= (WHEEL_RADIUS*np.cos(gammai))  # Operações compactadas
+            h[i][0] = hi[0]
+            h[i][1] = hi[1]
+            h[i][2] = hi[2]
+        u = h @ q
+        u = np.clip(u, -120.0, 120.0)
+
+        return u
 
 
 
