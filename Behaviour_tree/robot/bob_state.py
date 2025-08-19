@@ -1,7 +1,10 @@
-from ..core.World_State import World_State
+from ..core.World_State import World_State, RobotID
 from ..core.blackboard import Blackboard_Manager
-from ..core.World_State import RobotID
-from .all_bob_states import AllBobStates
+
+from .all_bob_states import AllBobs_State
+
+from utils.pose2D import Pose2D
+
 from utils.defines import (
     ALL_QUADRANTS,
     Quadrant_type,
@@ -16,60 +19,54 @@ from utils.defines import (
 
 class Bob_State:
     """Estado dinâmico do robô (posição, velocidade, posse, quadrante e role)."""
-
     def __init__(self, robot_id: RobotID):
         self.blackboard = Blackboard_Manager.get_instance()
         self.robot_id = robot_id
-        self.position: tuple[float, float] = (0.0, 0.0)
-        self.velocity: tuple[float, float] = (0.0, 0.0)
-        self.orientation: float = 0.0
-        self.target_position: tuple[float, float] | None = None
+        self.position: Pose2D = Pose2D()
+        self.velocity: Pose2D = Pose2D()
+        self.target_position: Pose2D = Pose2D()
         self.active_function = None
         self.current_command = None
         self.has_ball = False
-        self.field = Field.get_instance()  # Singleton do campo
+        self.world_state = World_State()  # Singleton do campo
         self.quadrant_index: int | None = None
         self.role: RoleType | None = None
+
         # Registrar no singleton agregador
-        self.get_all_bobs = AllBobStates.get_instance()fr
+        self.get_all_bobs = AllBobs_State.get_instance()
         self.get_all_bobs.register(self)
 
     def update(self):
-        """Atualiza todos os dados (posição, velocidade, orientação, posse, quadrante e role)."""
-        self.field.get_ball_position()  # garantir cache interno atualizado
-        self.position = self.field.get_robot_position(self.robot_id)
-        self.velocity = self.field.get_robot_velocity(self.robot_id)
-        self.orientation = self.field.get_robot_orientation(self.robot_id)
-        self.has_ball = self.field.check_possession(self.robot_id)
+        self.ball = self.world_state.get_ball_position()  
+        self.position = self.world_state.get_team_robot_pose(self.robot_id.value)
+        self.velocity = self.world_state.get_team_robot_velocity(self.robot_id.value)
+
+        #self.has_ball = self.world_state.check_possession(self.robot_id.value)
         self.quadrant_index = self.get_quadrant()
-        self.role = self._infer_role_from_position(*self.position)
-        # TODO: gerar flags e publicar no blackboard quando quadrant_index ou role mudarem
 
     # =================== Setters básicos ===================
-    def set_position(self, x: float, y: float):
+    def set_position(self, position: Pose2D):
         """Define manualmente a posição e recalcula quadrante e role."""
-        self.position = (x, y)
+        self.position = position
         self.quadrant_index = self.get_quadrant()
-        self.role = self._infer_role_from_position(x, y)
 
-    def set_velocity(self, vx: float, vy: float):
+    def set_velocity(self, velocity: Pose2D):
         """Atualiza o vetor de velocidade (vx, vy)."""
-        self.velocity = (vx, vy)
+        self.velocity = velocity
 
     def set_orientation(self, angle: float):
         """Define a orientação atual do robô."""
         self.orientation = angle
 
-    def set_target_position(self, x: float, y: float):
+    def set_target_position(self, position: Pose2D):
         """Define uma posição alvo (goal) para planejamento de movimento."""
-        self.target_position = (x, y)
+        self.target_position = position
 
     def reset(self):
         """Restaura o estado para valores padrão (limpa alvo, role e quadrante)."""
-        self.position = (0.0, 0.0)
-        self.velocity = (0.0, 0.0)
-        self.orientation = 0.0
-        self.target_position = None
+        self.position = Pose2D()
+        self.velocity = Pose2D()
+        self.target_position = Pose2D()
         self.active_function = None
         self.current_command = None
         self.has_ball = False
@@ -78,16 +75,10 @@ class Bob_State:
 
     # =================== Métricas / consultas ===================
     def check_ball_possession(self) -> bool:
-        """Retorna True se a distância robô-bola estiver dentro do raio de posse.
-
-        Usa a constante BALL_POSSESSION_DISTANCE (raio robô + bola + margem).
-        """
-        ball_position = self.field.get_ball_position()
+        ball_position = self.world_state.get_ball_position()
         if self.position and ball_position:
-            dx = self.position[0] - ball_position[0]
-            dy = self.position[1] - ball_position[1]
-            distance = (dx**2 + dy**2) ** 0.5
-            return distance <= BALL_POSSESSION_DISTANCE
+            return self.position.distance_to(ball_position) <= BALL_POSSESSION_DISTANCE
+        print("ERRO, POS da BOLA OU do ROBO NULOS")
         return False
 
     def get_quadrant(self) -> int:
@@ -105,10 +96,10 @@ class Bob_State:
         return self.role
 
     # =================== Getters simples para agregador ===================
-    def get_position(self) -> tuple[float, float]:
+    def get_position(self)-> Pose2D:
         return self.position
 
-    def get_velocity(self) -> tuple[float, float]:
+    def get_velocity(self)-> Pose2D:
         return self.velocity
     
     # =================== Internos de classificação ===================

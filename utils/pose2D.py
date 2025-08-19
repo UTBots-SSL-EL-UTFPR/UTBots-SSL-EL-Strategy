@@ -10,10 +10,10 @@ from utils.defines import (
 )
 
 class Pose2D:
-    def __init__(self, x=0, y=0, teta=0):
+    def __init__(self, x=0, y=0, theta=0):
         self.x = x if x is not None else 0
         self.y = y if y is not None else 0
-        self.teta = teta if teta is not None else 0
+        self.theta = theta if theta is not None else 0
 
     #---------------------------------------------------------------------------------------#
     #                                       SOBRECARGAS                                     #
@@ -22,10 +22,10 @@ class Pose2D:
     def __iter__(self): #DESEMPACOTAMENTO 
         yield self.x
         yield self.y
-        yield self.teta
+        yield self.theta
 
     def __repr__(self):
-        return f"Point2D(x={self.x}, y={self.y}), "
+        return f"Point2D(x={self.x}, y={self.y}), theta = {self.theta} "
 
     def __add__(self, other):
         if not isinstance(other, Pose2D):

@@ -1,3 +1,6 @@
+from dataclasses import dataclass, field
+@dataclass
+
 
 class FieldState:
     def __init__(self):

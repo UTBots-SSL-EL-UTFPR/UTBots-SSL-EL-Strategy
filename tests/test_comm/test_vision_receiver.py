@@ -1,6 +1,6 @@
 from communication.vision_receiver import VisionReceiver
 from communication.parsers.vision_parser import VisionParser
-from communication.field_state import FieldState
+from Behaviour_tree.core.field_state import FieldState
 from time import time, sleep
 from pprint import pprint
 import os

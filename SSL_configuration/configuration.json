@@ -1,4 +1,23 @@
 {
+    "Robots":
+    {
+        "team":
+        {
+            "collor": "yellow",
+            "robot_id_1": 0,
+            "robot_id_2": 1,
+            "robot_id_3": 2
+        },
+        "foes":
+        {
+            "collor": "blue",
+            "robot_id_1": 0,
+            "robot_id_2": 1,
+            "robot_id_3": 2
+        }
+
+
+    },
     "Communication":
     {
         "Receive":

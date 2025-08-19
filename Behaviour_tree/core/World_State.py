@@ -1,13 +1,13 @@
 from enum import Enum
 from time import time
-
+from utils.pose2D import Pose2D
 from SSL_configuration.configuration import Configuration
 
 from communication.receiver.vision_receiver import VisionReceiver
 from communication.receiver.referee_receiver import RefereeReceiver
 from communication.parsers.vision_parser import VisionParser
 from communication.parsers.referee_parser import RefereeParser
-from communication.field_state import FieldState
+from Behaviour_tree.core.field_state import FieldState
 
 from communication.generated import ssl_vision_wrapper_pb2 as vision_pb
 from communication.generated import ssl_gc_referee_message_pb2 as referee_pb
@@ -16,24 +16,16 @@ from communication.generated import ssl_gc_referee_message_pb2 as referee_pb
 # Enum de IDs de robôs
 # =====================================================
 class RobotID(Enum):
-    Kamiji = "Kamiji"
-    Defender = "Defender"
-    Goalkeeper = "GOALKEEPER"
+    Kamiji = 1
+    Defender = 2 
+    Goalkeeper = 3
 
 
 class World_State:
     _instance = None
 
-    def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
-
     def __init__(self):
-
-        if hasattr(self, "_initialized") and self._initialized:
-            return
-        #self.configuration = Configuration.getObject()
+        self.configuration = Configuration.getObject()
         try:
             self.vision_receiver = VisionReceiver()
             self.vision_parser = VisionParser()
@@ -43,7 +35,7 @@ class World_State:
         except KeyError as e:
             print(e)
             
-        self.referee_data: referee_pb.Referee = None
+        self.referee_data: referee_pb.Referee = None # type: ignore
         self.vision_data: dict = {}
 
         # Dados granulares
@@ -55,6 +47,11 @@ class World_State:
 
         self._initialized = True
 
+    @staticmethod
+    def get_instance():
+        if not World_State._instance:
+            World_State._instance = World_State()
+        return World_State._instance
 
     def update(self, timeout=0.3):
         """Atualiza árbitro e visão considerando múltiplas câmeras por ciclo."""
@@ -136,12 +133,46 @@ class World_State:
             }
         }
 
-    def get_robot_position(self, team: str, robot_id: int):
-        return self._robot_positions.get(team, {}).get(robot_id, (0.0, 0.0))
 
-    def get_robot_velocity(self, team: str, robot_id: int):
-        return self._robot_velocities.get(team, {}).get(robot_id, (0.0, 0.0))
+    def get_ball_position(self):
+        return self._ball_position
+    
+    #team
+    def get_team_robot_pose(self, robot_id: int) -> Pose2D:
+        team_color = self.configuration.team_collor
+        if not team_color:
+            return Pose2D()
+        
+        position_tuple = self._robot_positions.get(team_color, {}).get(robot_id, (0.0, 0.0))
+        x, y = position_tuple
+        theta = self._robot_orientations.get(team_color, {}).get(robot_id, 0.0)
 
-    def get_robot_orientation(self, team: str, robot_id: int):
-        return self._robot_orientations.get(team, {}).get(robot_id, 0.0)
+        return Pose2D(int(x), int(y), theta)
 
+    def get_team_robot_velocity(self, robot_id: int) -> Pose2D:
+        team_color = self.configuration.team_collor
+        if not team_color:
+            return Pose2D()
+        vx, vy = self._robot_velocities.get(team_color, {}).get(robot_id, (0.0, 0.0))
+        theta = self._robot_orientations.get(team_color, {}).get(robot_id, 0.0)
+        return Pose2D(int(vx), int(vy), theta)
+    
+    #foes
+    def get_foe_robot_pose(self, robot_id: int) -> Pose2D:
+        foes_collor = self.configuration.foes_collor
+        if not foes_collor:
+            return Pose2D()
+        
+        position_tuple = self._robot_positions.get(foes_collor, {}).get(robot_id, (0.0, 0.0))
+        x, y = position_tuple
+        theta = self._robot_orientations.get(foes_collor, {}).get(robot_id, 0.0)
+
+        return Pose2D(int(x), int(y), theta)        
+
+    def get_foe_robot_velocity(self, robot_id: int) -> Pose2D:
+        foes_collor = self.configuration.foes_collor
+        if not foes_collor:
+            return Pose2D()
+        vx, vy = self._robot_velocities.get(foes_collor, {}).get(robot_id, (0.0, 0.0))
+        theta = self._robot_orientations.get(foes_collor, {}).get(robot_id, 0.0)
+        return Pose2D(int(vx), int(vy), theta)

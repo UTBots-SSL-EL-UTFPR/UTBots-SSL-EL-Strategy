@@ -2,7 +2,7 @@ from communication.receiver.vision_receiver import VisionReceiver
 from communication.parsers.vision_parser import VisionParser
 from communication.receiver.referee_receiver import RefereeReceiver
 from communication.parsers.referee_parser import RefereeParser
-from communication.field_state import FieldState
+from Behaviour_tree.core.field_state import FieldState
 from Behaviour_tree.core.World_State import World_State, RobotID
 
 from time import time, sleep
@@ -28,19 +28,17 @@ def test_World_State(timeout=0.3):
             print("=== ESTADO GLOBAL DO CAMPO ===\n")
 
             # Snapshot do FieldState
-            print("[FIELD SNAPSHOT]")
-            pprint(ws.get_field_snapshot())
+            # print("[FIELD SNAPSHOT]")
+            # pprint(ws.get_field_snapshot())
 
             # Detalhes granulares de robôs
             print("\n[ROBÔS - POSIÇÕES, VELOCIDADES E ORIENTAÇÕES]")
-            for team in ["blue", "yellow"]:
-                for rid in ws._robot_positions[team].keys():
-                    pos = ws.get_robot_position(team, rid)
-                    vel = ws.get_robot_velocity(team, rid)
-                    ori = ws.get_robot_orientation(team, rid)
-                    print(f"{team.upper()} {rid}: Pos={pos}, Vel={vel}, Ori={ori:.2f}")
+        
+            for rid in [1,2,3]:
+                pos = ws.get_team_robot_pose(rid)
+                vel = ws.get_team_robot_velocity(rid)
+                print(f"{rid}: Pos={pos}, Vel={vel}")
 
-            # Dados do árbitro
             print("\n[REFEREE]")
             referee_data = ws.get_referee_data()
             if referee_data:
@@ -48,7 +46,6 @@ def test_World_State(timeout=0.3):
             else:
                 print("Nenhum dado recebido do árbitro.")
 
-            # Última câmera de visão
             print("\n[ÚLTIMA CÂMERA VISÃO]")
             vision_data = ws.get_vision_data()
             if vision_data:

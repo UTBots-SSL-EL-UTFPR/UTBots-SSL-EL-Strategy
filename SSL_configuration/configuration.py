@@ -16,6 +16,16 @@ class Configuration:
         self.vision_receiver_ip = None
         self.referee_receiver_ip = None
 
+        self.team_collor = None
+        self.team_robot_1 = None
+        self.team_robot_2 = None
+        self.team_robot_3 = None
+
+        self.foes_collor = None
+        self.foe_robot_1 = None
+        self.foe_robot_2 = None
+        self.foe_robot_3 = None
+
     @staticmethod
     def loadFromJson():
         with open('SSL_configuration/configuration.json', 'r') as file:
@@ -35,5 +45,17 @@ class Configuration:
             instance.interface_ip_vision = data["Communication"]["Receive"]["IP_Addrs"]["interface_ip_vision"]
             instance.vision_receiver_ip = data["Communication"]["Receive"]["IP_Addrs"]["vision_receiver_ip"]
             instance.referee_receiver_ip = data["Communication"]["Receive"]["IP_Addrs"]["referee_receiver_ip"]
+            
+            instance.team_collor = data["Robots"]["team"]["collor"]
+            instance.team_robot_1 = data["Robots"]["team"]["robot_id_1"]
+            instance.team_robot_2 = data["Robots"]["team"]["robot_id_2"]
+            instance.team_robot_3 = data["Robots"]["team"]["robot_id_3"]
+
+            instance.foes_collor = data["Robots"]["foes"]["collor"]
+            instance.foe_robot_1 = data["Robots"]["foes"]["robot_id_1"]
+            instance.foe_robot_2 = data["Robots"]["foes"]["robot_id_2"]
+            instance.foe_robot_3 = data["Robots"]["foes"]["robot_id_3"]
+
         return Configuration._instance  
+    
     

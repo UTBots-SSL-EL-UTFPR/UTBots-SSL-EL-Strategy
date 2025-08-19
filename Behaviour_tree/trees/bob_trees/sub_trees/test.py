@@ -1,4 +1,7 @@
 #teste movimentação
+from core.World_State import World_State, RobotID
+from robot.bob import Bob
+
 """Testa a árvore de comportamento para movimentação do robô em quadrantes.
 
 Este script é responsável por inicializar e executar um teste específico
@@ -46,9 +49,11 @@ class Test_tree(Tree):
         
 
 def main():
-    # Lógica do seu teste
-    print("Iniciando teste de movimentação por quadrantes...")
-    # ...
+    robot = Bob(RobotID.Kamiji)
+    
+    while True:
+        robot.update()
+        print(robot.state.position)
 
 if __name__ == "__main__":
     main()
