@@ -2,6 +2,7 @@
 from core.World_State import World_State, RobotID
 from robot.bob import Bob
 
+from time import time, sleep
 """Testa a árvore de comportamento para movimentação do robô em quadrantes.
 
 Este script é responsável por inicializar e executar um teste específico
@@ -35,25 +36,47 @@ import py_trees as pt
 from ....behaviors.common import condition as condition_nodes
 from ....behaviors.common import actions as action_nodes
 from ...tree import Tree
+
+TICK_INTERVAL = 0.1  # X = 100ms. A árvore será chamada 10 vezes por segundo.
+UPDATE_INTERVAL = TICK_INTERVAL / 2  # X/2 = 50ms. O robô será atualizado 20 vezes por segundo.
+
 class Test_tree(Tree):
     def __init__(self):
-        super().__init__(name="StrategyTree")
+        super().__init__(name="test")
         self.current_context = ""
 
-    def crate_tree(self):
+    def create_tree(self):
         root = pt.composites.Sequence(
             "andar de canto a canto",
             True,
             children=[]
         )
+        return root
         
 
 def main():
     robot = Bob(RobotID.Kamiji)
-    
+    tree = Test_tree()
+    root = tree.create_tree()
+    delta = time()
     while True:
+        
+        loop_start_time = time.time()
         robot.update()
-        print(robot.state.position)
+
+        print(f"Posição do Robô: {robot.state.position}")
+        if iteration_counter % 2 == 0:
+            print("--- Tick da Árvore ---")
+            root.tick()
+        iteration_counter += 1
+
+        execution_time = time.time() - loop_start_time
+        
+        sleep_time = UPDATE_INTERVAL - execution_time
+        
+        if sleep_time > 0:
+            time.sleep(sleep_time)
+        
 
 if __name__ == "__main__":
     main()

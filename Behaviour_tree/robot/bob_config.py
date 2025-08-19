@@ -1,5 +1,5 @@
 # bob_config.py
-from ..core.Field import RobotID
+from ..core.World_State import RobotID
 class Bob_Config:
     """
     Classe que representa as configurações fixas de um robô.

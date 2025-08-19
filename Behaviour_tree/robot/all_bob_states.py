@@ -51,5 +51,6 @@ class AllBobs_State:
 
     def get_bobs_roles(self, caller: "Bob_State") -> List[object]:
         return [s.get_role() for s in self._others(caller)]
+    
 
 __all__ = ["AllBobs_State"]

@@ -2,7 +2,7 @@
 import py_trees
 from ...robot.bob import Bob
 from ...core.blackboard import Blackboard_Manager
-from ...core.Field import Field
+from ...core.World_State import World_State
 from ...core.event_callbacks import BB_flags_and_values
 
 navigation_flags = BB_flags_and_values.Flags.motion.navigation 

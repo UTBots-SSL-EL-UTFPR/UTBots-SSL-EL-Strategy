@@ -40,7 +40,9 @@ class Move_without_path(py_trees.behaviour.Behaviour):
             f"{self.robot.robot_id}{navigation_flags.target_reached}"
             ):
             return py_trees.common.Status.SUCCESS
+        
         #chamar função que calcula onde deve ir e retorna velocidade das rodas
+
         self.robot.move(0,0) 
         return py_trees.common.Status.RUNNING
     

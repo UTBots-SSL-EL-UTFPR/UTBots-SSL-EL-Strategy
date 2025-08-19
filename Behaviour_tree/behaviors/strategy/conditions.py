@@ -1,7 +1,7 @@
 #strategy/conditions
 import py_trees
 from ...robot.bob import Bob
-from ...core.Field import RobotID
+from ...core.World_State import RobotID
 from ...core.blackboard import Blackboard_Manager
 from ...core.event_callbacks import BB_flags_and_values
 

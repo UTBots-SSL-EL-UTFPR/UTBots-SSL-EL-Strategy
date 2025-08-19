@@ -1,4 +1,3 @@
-from .event_manager import Event_Manager
 from .blackboard import Blackboard_Manager
 
 from enum import Enum
@@ -15,11 +14,6 @@ from enum import Enum
 #       "attacker_on_1st_quadrant"
 #  - O callback correspondente define a flag no Blackboard:
 #       Blackboard.set("ATTACKER_on_1st_quadrant", True)
-#
-# COMO ADICIONAR UM NOVO EVENTO:
-#   1. Registre-o no Enum `EventType`
-#   2. Crie a função callback correspondente
-#   3. Adicione a função em `subscribe_all()`
 #
 # PADRÃO: use nomes padronizados para facilitar leitura e manutenção
 
@@ -59,25 +53,42 @@ class BB_flags_and_values:
                 lost_path = StaticBuilder("lost_path")
     class Values:
         class Positions:
-            quadrant = StaticBuilder("quadrant")
+            quadrant = StaticBuilder("quadrant") #1, ... ,12
+            zone = StaticBuilder("zone")#atack, defense
 
 
 #----------------------------------------------------------------------------#
 #                                 CALLBACKS                                  #
 #----------------------------------------------------------------------------#
+
 _bb = Blackboard_Manager.get_instance()
 
+#----------------------------------ball posetion----------------------------------#
+def team_got_ball_posetion(robot_id: str):
+    _bb.set(f"{robot_id}{BB_flags_and_values.Flags.motion.ball.has_ball}", True)
+    _bb.set(f"{robot_id}{BB_flags_and_values.Flags.Team_Flags.Ball_posetion.team_has_ball}", True)
+    _bb.set(f"{robot_id}{BB_flags_and_values.Flags.Team_Flags.Ball_posetion.foes_have_ball}", False)
+
+def lost_ball_posetion(robot_id: str):
+    _bb.set(f"{robot_id}{BB_flags_and_values.Flags.motion.ball.has_ball}", False)
+    _bb.set(f"{robot_id}{BB_flags_and_values.Flags.Team_Flags.Ball_posetion.team_has_ball}", False)
+    _bb.set(f"{robot_id}{BB_flags_and_values.Flags.Team_Flags.Ball_posetion.foes_have_ball}", False)
+
+def foes_got_ball_posetion(robot_id: str):
+    _bb.set(f"{robot_id}{BB_flags_and_values.Flags.motion.ball.has_ball}", True)
+    _bb.set(f"{robot_id}{BB_flags_and_values.Flags.Team_Flags.Ball_posetion.team_has_ball}", False)
+    _bb.set(f"{robot_id}{BB_flags_and_values.Flags.Team_Flags.Ball_posetion.foes_have_ball}", True)
+
+#----------------------------------   MOTION   ----------------------------------#
 
 def on_robot_stuck(robot_id):
-    _bb.set(f"{robot_id.value}{BB_flags_and_values.Flags.motion.navigation.is_stuck}", True)
+    _bb.set(f"{robot_id}{BB_flags_and_values.Flags.motion.navigation.is_stuck}", True)
 
 def on_target_reached(robot_id):
-    _bb.set(f"{robot_id.value}{BB_flags_and_values.Flags.motion.navigation.target_reached}", True)
+    _bb.set(f"{robot_id}{BB_flags_and_values.Flags.motion.navigation.target_reached}", True)
 
-#----------------------------------------------------------------------------#
-#                               super subscribe                              #
-#----------------------------------------------------------------------------#
+def new_quadrant(robot_id, new_quadrant):
+    _bb.set(f"{robot_id}{BB_flags_and_values.Values.Positions.quadrant}", new_quadrant)
 
-def subscribe_all():
-    Event_Manager.subscribe(str(BB_flags_and_values.Flags.motion.navigation.is_stuck), on_robot_stuck)
-    Event_Manager.subscribe(str(BB_flags_and_values.Flags.motion.navigation.target_reached), on_target_reached)
+def new_zone(robot_id, new_zone):
+    _bb.set(f"{robot_id}{BB_flags_and_values.Values.Positions.zone}", new_zone)

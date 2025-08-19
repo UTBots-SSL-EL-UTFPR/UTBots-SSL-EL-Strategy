@@ -18,6 +18,10 @@
 
 
     },
+    "Motion":
+    {
+        "threshould_arrived_target" : 10
+    },
     "Communication":
     {
         "Receive":

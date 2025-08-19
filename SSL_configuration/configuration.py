@@ -11,8 +11,10 @@ class Configuration:
     def __init__(self):
         self.vision = None
         self.referee= None
+
         self.interface_ip_referee = None
         self.interface_ip_vision = None
+        
         self.vision_receiver_ip = None
         self.referee_receiver_ip = None
 
@@ -25,6 +27,8 @@ class Configuration:
         self.foe_robot_1 = None
         self.foe_robot_2 = None
         self.foe_robot_3 = None
+
+        self.threshould_arrived_target = None
 
     @staticmethod
     def loadFromJson():
@@ -41,8 +45,10 @@ class Configuration:
             instance = Configuration._instance
             instance.vision = data["Communication"]["Receive"]["Ports"]["vision"]
             instance.referee= data["Communication"]["Receive"]["Ports"]["referee"]
+
             instance.interface_ip_referee = data["Communication"]["Receive"]["IP_Addrs"]["interface_ip_referee"]
             instance.interface_ip_vision = data["Communication"]["Receive"]["IP_Addrs"]["interface_ip_vision"]
+
             instance.vision_receiver_ip = data["Communication"]["Receive"]["IP_Addrs"]["vision_receiver_ip"]
             instance.referee_receiver_ip = data["Communication"]["Receive"]["IP_Addrs"]["referee_receiver_ip"]
             
@@ -55,6 +61,8 @@ class Configuration:
             instance.foe_robot_1 = data["Robots"]["foes"]["robot_id_1"]
             instance.foe_robot_2 = data["Robots"]["foes"]["robot_id_2"]
             instance.foe_robot_3 = data["Robots"]["foes"]["robot_id_3"]
+
+            instance.threshould_arrived_target = data["Motion"]["threshould_arrived_target"]
 
         return Configuration._instance  
     

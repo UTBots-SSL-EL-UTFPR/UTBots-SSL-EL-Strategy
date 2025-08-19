@@ -1,54 +1,100 @@
 from ..core.World_State import World_State, RobotID
-from ..core.blackboard import Blackboard_Manager
+from ..core import event_callbacks
 
 from .all_bob_states import AllBobs_State
 
 from utils.pose2D import Pose2D
-
+from SSL_configuration.configuration import Configuration
 from utils.defines import (
     ALL_QUADRANTS,
     Quadrant_type,
     RoleType,
-    ATTACK_QUADRANTS,
-    MIDFIELD_QUADRANTS,
-    DEFENSE_QUADRANTS,
-    GOALKEEPER_ZONE,
-    BALL_POSSESSION_DISTANCE,
+    BALL_POSSESSION_DISTANCE, #verificar om configuration
 )
+#TODO
+#   linha 82
+#
 
 
 class Bob_State:
     """Estado dinâmico do robô (posição, velocidade, posse, quadrante e role)."""
     def __init__(self, robot_id: RobotID):
-        self.blackboard = Blackboard_Manager.get_instance()
         self.robot_id = robot_id
+
+        self.world_state = World_State.get_object()
+        self.configuration = Configuration.getObject()
+
         self.position: Pose2D = Pose2D()
         self.velocity: Pose2D = Pose2D()
-        self.target_position: Pose2D = Pose2D()
+
+        self.target_position: Pose2D | None = Pose2D()
+
         self.active_function = None
         self.current_command = None
-        self.has_ball = False
-        self.world_state = World_State()  # Singleton do campo
-        self.quadrant_index: int | None = None
         self.role: RoleType | None = None
 
-        # Registrar no singleton agregador
-        self.get_all_bobs = AllBobs_State.get_instance()
-        self.get_all_bobs.register(self)
+        self.has_ball = False
+        self.position_rept = 0
+
+    #---------------------------------------------------------------------------------------#
+    #                                       UPDATE                                          #
+    # temos os seguintes eventos:                                                           #
+    #   1. Mudança de posse de bola                                                         #
+    #   3. Verifica target_position + repetição de target
+    #---------------------------------------------------------------------------------------#
 
     def update(self):
-        self.ball = self.world_state.get_ball_position()  
-        self.position = self.world_state.get_team_robot_pose(self.robot_id.value)
+        ################# Verifica se a posse de bola foi alterada #################
+        if self.has_ball != self.check_ball_possession():
+            #evento em bob_manager/strategy tree
+            if(self.has_ball):
+                event_callbacks.lost_ball_posetion(self.robot_id.name)
+            else:
+                event_callbacks.team_got_ball_posetion(self.robot_id.name)
+            self.has_ball = not self.has_ball
+
+        #################   Verifica se preso na mesma pos e verifica quadrante   #################
+        new_pos = self.world_state.get_team_robot_pose(self.robot_id.value)
+        if  self.position ==  new_pos:
+            self.position_rept +=1
+        else:
+            self.position_rept = 0
+            #---------------------quadrante---------------------#
+            if new_pos.get_quadrant() != self.position.quadrant:
+                event_callbacks.new_quadrant(self.robot_id.name, new_pos.quadrant)
+                if new_pos.get_zone() != self.position.get_zone():
+                    event_callbacks.new_zone(self.robot_id.name, new_pos.get_zone())
+            self.position = new_pos
+
+        if self.position_rept >= 15:
+            self.position_rept = 0
+            event_callbacks.on_robot_stuck(self.robot_id)
+
+        #################   Verifica se chegou ao destino   #################
+        if(self.target_position):
+            if self.target_position.is_in_range(self.position, self.configuration.threshould_arrived_target):
+                self.target_position = None
+                event_callbacks.on_target_reached(self.robot_id.name)
+
+        #TODO CHAMAR FUNÇÃO PARA VERIFICAR VISIBILIDADE BOLA - GOL
+        #TODO CHAMAR FUNÇÃO PARA VISIBILIDADE DE PASSE 
+        #TODO IMPLEMENTAR MOVIMENTAÇÃO
+        #   -> TEMSO QUE ACOMPANHAR O MOVIMENTO DO BOB, MAS O TICK DA ARVORE VAI SER LENTO
+        #   -> PODEMOS OU CHAMAR UMA THREAD OU FAZER UM ESQUEMA DE MOVIMENTAÇÃO DENTRO DA UPDATE
+        #   -> PODEMOS FAZER ELE SEMPRE SEGUIR O OBJETIVO DELE, EM UMA LISTA DE POS
+        #   -> A UPDATE VAI SER CHAMADA TODOS OS CICLOS, ENTÃO PODEMOS USA-LA PARA MOV.
+
+        
         self.velocity = self.world_state.get_team_robot_velocity(self.robot_id.value)
 
-        #self.has_ball = self.world_state.check_possession(self.robot_id.value)
-        self.quadrant_index = self.get_quadrant()
-
-    # =================== Setters básicos ===================
+        
+    #---------------------------------------------------------------------------------------#
+    #                                         Setters                                       #
+    #---------------------------------------------------------------------------------------#
     def set_position(self, position: Pose2D):
         """Define manualmente a posição e recalcula quadrante e role."""
         self.position = position
-        self.quadrant_index = self.get_quadrant()
+        self.quadrant_index = self.position.get_quadrant()
 
     def set_velocity(self, velocity: Pose2D):
         """Atualiza o vetor de velocidade (vx, vy)."""
@@ -73,28 +119,15 @@ class Bob_State:
         self.quadrant_index = None
         self.role = None
 
-    # =================== Métricas / consultas ===================
+    #---------------------------------------------------------------------------------------#
+    #                                   METRICAS/CONSULTAS                                  #
+    #---------------------------------------------------------------------------------------#
     def check_ball_possession(self) -> bool:
         ball_position = self.world_state.get_ball_position()
         if self.position and ball_position:
             return self.position.distance_to(ball_position) <= BALL_POSSESSION_DISTANCE
         print("ERRO, POS da BOLA OU do ROBO NULOS")
         return False
-
-    def get_quadrant(self) -> int:
-        """Calcula e retorna o índice (1..12) do quadrante atual ou 0 se fora do campo."""
-        x, y = self.position
-        for i, (x_min, x_max, y_min, y_max) in enumerate(ALL_QUADRANTS, 1):
-            if x_min <= x <= x_max and y_min <= y <= y_max:
-                return i
-        return 0  # fora do campo
-
-    def get_role(self) -> RoleType | None:
-        """Retorna o RoleType atual; recalcula se ainda não definido."""
-        if self.role is None:
-            self.role = self._infer_role_from_position(*self.position)
-        return self.role
-
     # =================== Getters simples para agregador ===================
     def get_position(self)-> Pose2D:
         return self.position
@@ -103,49 +136,4 @@ class Bob_State:
         return self.velocity
     
     # =================== Internos de classificação ===================
-    def _is_attack_quadrant(self, q: Quadrant_type) -> bool:
-        """True se o quadrante pertence à faixa ofensiva."""
-        return q in ATTACK_QUADRANTS
-
-    def _is_midfield_quadrant(self, q: Quadrant_type) -> bool:
-        """True se o quadrante pertence à faixa de meio-campo."""
-        return q in MIDFIELD_QUADRANTS
-
-    def _is_defense_quadrant(self, q: Quadrant_type) -> bool:
-        """True se o quadrante pertence à faixa defensiva."""
-        return q in DEFENSE_QUADRANTS
-
-    def _is_in_goalkeeper_zone(self, x: float, y: float) -> bool:
-        """Retorna True se (x,y) estiver dentro da zona retangular reservada ao goleiro."""
-        xmin, xmax, ymin, ymax = GOALKEEPER_ZONE
-        return xmin <= x <= xmax and ymin <= y <= ymax
-
-    def _get_quadrant_type_by_index(self, idx: int):
-        """Converte índice num Enum Quadrant_type ou None se inválido."""
-        try:
-            return Quadrant_type(idx)
-        except ValueError:
-            return None
-
-    def _get_role_by_quadrant(self, q: Quadrant_type, x: float | None = None, y: float | None = None) -> RoleType:
-        """Determina o RoleType base usando agrupamentos e zona do goleiro."""
-        if x is not None and y is not None and self._is_in_goalkeeper_zone(x, y):
-            return RoleType.GOALKEEPER
-        if self._is_attack_quadrant(q):
-            return RoleType.ATTACK
-        if self._is_midfield_quadrant(q):
-            return RoleType.MIDFIELD
-        if self._is_defense_quadrant(q):
-            return RoleType.DEFENSE
-        return RoleType.SUPPORT
-
-    def _infer_role_from_position(self, x: float, y: float) -> RoleType:
-        """Inferência completa: encontra quadrante e converte para RoleType apropriado."""
-        for i, (xmin, xmax, ymin, ymax) in enumerate(ALL_QUADRANTS, 1):
-            if xmin <= x <= xmax and ymin <= y <= ymax:
-                q = self._get_quadrant_type_by_index(i)
-                return self._get_role_by_quadrant(q, x, y) if q else RoleType.SUPPORT
-        return RoleType.SUPPORT
-    
-    
     

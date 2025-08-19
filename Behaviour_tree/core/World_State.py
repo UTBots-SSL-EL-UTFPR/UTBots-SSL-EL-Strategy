@@ -48,7 +48,7 @@ class World_State:
         self._initialized = True
 
     @staticmethod
-    def get_instance():
+    def get_object():
         if not World_State._instance:
             World_State._instance = World_State()
         return World_State._instance
