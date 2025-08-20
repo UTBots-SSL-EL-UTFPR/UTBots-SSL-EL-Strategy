@@ -115,5 +115,6 @@ class Pose2D:
         except ValueError:
             return None
         
+    @staticmethod
     def normalize_angle_to_pi(a: float) -> float:
         return (a + math.pi) % (2*math.pi) - math.pi
