@@ -9,6 +9,8 @@ import numpy as np
 from math import sqrt
 from utils.pose2D import Pose2D
 from ..core.World_State import RobotID
+from communication.sender.command_builder import CommandBuilder
+from communication.sender.command_sender_sim import CommandSenderSim
 #--------------------------------------------DEFINES--------------------------------------------#
 LOWER = 0
 UPPER = 1
@@ -39,10 +41,26 @@ class Bob:
     def update(self):
         self.state.update()
 
-    def move_oriented(self, pose: Pose2D):
+    def move_oriented(self, robot_id, builder: CommandBuilder, sender: CommandSenderSim, current_pose: Pose2D, goal_pose: Pose2D):
+        """
+        Move o bob de sua pose2d atual ate outra pose2d
+        """
 
-        self.state.set_target_position(pose)
+        #velocidade no referencial do mundo
+        vx_s, vy_s, w = self.compute_world_velocity(current_pose, goal_pose)
+        q = np.array([[w], [vx_s], [vy_s]], dtype=float)
 
+        #velocidade individual de cada roda
+        u = self.motorVel(q, current_pose.theta)
+        u = np.clip(u, -120.0, 120.0)
+
+        #envia um pacote
+        builder.command_robots(
+            id=robot_id, wheelsspeed=True,
+            wheel1=-u[0].item(), wheel2=-u[1].item(),
+            wheel3=-u[2].item(), wheel4=-u[3].item()
+        )
+        sender.send_command(builder)
 
     def kick_ball(self) -> bool:
         #TODO enviar comando para simulação
@@ -162,7 +180,7 @@ class Bob:
 
         return vx_s, vy_s, w
 
-    def motorVel (q, phi):
+    def motorVel (self, q, phi):
 
         """
         Aqui é o modelo cinematico da gracia.
