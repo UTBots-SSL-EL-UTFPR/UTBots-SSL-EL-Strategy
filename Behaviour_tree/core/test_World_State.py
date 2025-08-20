@@ -39,12 +39,12 @@ def test_World_State(timeout=0.3):
                 vel = ws.get_team_robot_velocity(rid)
                 print(f"{rid}: Pos={pos}, Vel={vel}")
 
-            print("\n[REFEREE]")
-            referee_data = ws.get_referee_data()
-            if referee_data:
-                print(f"Stage: {referee_data.stage}, Command: {referee_data.command}")
-            else:
-                print("Nenhum dado recebido do árbitro.")
+            # print("\n[REFEREE]")
+            # referee_data = ws.get_referee_data()
+            # if referee_data:
+            #     print(f"Stage: {referee_data.stage}, Command: {referee_data.command}")
+            # else:
+            #     print("Nenhum dado recebido do árbitro.")
 
             print("\n[ÚLTIMA CÂMERA VISÃO]")
             vision_data = ws.get_vision_data()

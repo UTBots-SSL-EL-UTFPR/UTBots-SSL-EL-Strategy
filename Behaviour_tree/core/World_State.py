@@ -166,8 +166,9 @@ class World_State:
         position_tuple = self._robot_positions.get(foes_collor, {}).get(robot_id, (0.0, 0.0))
         x, y = position_tuple
         theta = self._robot_orientations.get(foes_collor, {}).get(robot_id, 0.0)
-
-        return Pose2D(int(x), int(y), theta)        
+        pos  = Pose2D(int(x), int(y), theta)
+        pos.get_quadrant()
+        return pos
 
     def get_foe_robot_velocity(self, robot_id: int) -> Pose2D:
         foes_collor = self.configuration.foes_collor

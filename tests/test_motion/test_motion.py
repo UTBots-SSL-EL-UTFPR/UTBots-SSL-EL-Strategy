@@ -8,7 +8,7 @@ from Behaviour_tree.core.field_state import FieldState
 from communication.receiver.vision_receiver import VisionReceiver
 from communication.parsers.vision_parser import VisionParser
 
-from utils.pose2D import Pose2D
+
 
 from dataclasses import dataclass
 

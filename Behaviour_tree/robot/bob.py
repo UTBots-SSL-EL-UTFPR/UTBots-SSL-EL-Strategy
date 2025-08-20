@@ -53,6 +53,7 @@ class Bob:
         return True
     
     def compute_world_velocity(
+        self,
         current,                    # Pose2D(x,y,theta) atual em {s}
         goal,                       # Pose2D(x,y,theta) alvo em {s}
         mode: str = "maintain_orientation",  # 3 opções diferentes de movimento q eu fiz pra testar "maintain_orientation" | "face_target" | "goal_orientation"
@@ -121,7 +122,7 @@ class Bob:
         elif mode == "face_target":
             # olha para na direcao do ponto desejado o tempo todo (mesmo durante a translação).
             theta_des = math.atan2(dy, dx) if dist > 1e-6 else goal.theta
-            ang_err = normaliza_para_pi(theta_des - theta_meas)
+            ang_err = Pose2D.normalize_angle_to_pi(theta_des - theta_meas)
 
             # controle P no yaw agr
             if abs(ang_err) >= yaw_deadband:
@@ -133,7 +134,7 @@ class Bob:
         elif mode == "goal_orientation":
             # olha para um angulo passado q nao necessariamente é na direcao do ponto desejado
             
-            ang_err = normaliza_para_pi(goal.theta - theta_meas)
+            ang_err = Pose2D.normalize_angle_to_pi(goal.theta - theta_meas)
 
             if abs(ang_err) >= yaw_deadband:
                 w = k_ang * ang_err * 3
@@ -148,9 +149,9 @@ class Bob:
             # para decidir se zera tudo: depende do modo
             if mode == "face_target":
                 theta_des = math.atan2(dy, dx) if dist > 1e-6 else goal.theta
-                ang_err = normaliza_para_pi(theta_des - theta_meas)
+                ang_err = Pose2D.normalize_angle_to_pi(theta_des - theta_meas)
             elif mode == "goal_orientation":
-                ang_err = normaliza_para_pi(goal.theta - theta_meas)
+                ang_err = Pose2D.normalize_angle_to_pi(goal.theta - theta_meas)
             else:
                 ang_err = 0.0  # maintain_orientation não exige yaw especifico, ent fds
 
