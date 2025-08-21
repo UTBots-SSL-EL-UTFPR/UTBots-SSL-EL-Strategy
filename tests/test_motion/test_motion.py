@@ -241,7 +241,7 @@ if __name__ == "__main__":
     last_processed_raw = None
 
     #inicializa os builders------------------------------------------------------------------------------------------
-    builder = CommandBuilder(team_color="blue")
+    builder = CommandBuilder()
     sender = CommandSenderSim()
 
     #destino ---------------------------------------------------------------------------------------------------------

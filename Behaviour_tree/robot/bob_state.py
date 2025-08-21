@@ -36,6 +36,13 @@ class Bob_State:
         self.has_ball = False
         self.position_rept = 0
 
+    
+    def setup_callbacks(self):
+
+        event_callbacks.lost_ball_posetion(self.robot_id.name)
+        event_callbacks.new_quadrant(self.robot_id.name, 0)
+        event_callbacks.new_zone(self.robot_id.name, 0)
+        event_callbacks.on_robot_stuck(self.robot_id.name)
     #---------------------------------------------------------------------------------------#
     #                                       UPDATE                                          #
     # temos os seguintes eventos:                                                           #
@@ -44,6 +51,7 @@ class Bob_State:
     #---------------------------------------------------------------------------------------#
 
     def update(self):
+        
         ################# Verifica se a posse de bola foi alterada #################
         if self.has_ball != self.check_ball_possession():
             #evento em bob_manager/strategy tree
@@ -68,11 +76,12 @@ class Bob_State:
 
         if self.position_rept >= 15:
             self.position_rept = 0
-            event_callbacks.on_robot_stuck(self.robot_id)
+            event_callbacks.on_robot_stuck(self.robot_id.name)
 
         #################   Verifica se chegou ao destino   #################
         if(self.target_position):
             if self.target_position.is_in_range(self.position, self.configuration.threshould_arrived_target):
+                print(f"merda {self.configuration.threshould_arrived_target}")
                 self.target_position = None
                 event_callbacks.on_target_reached(self.robot_id.name)
 
@@ -118,6 +127,7 @@ class Bob_State:
         self.has_ball = False
         self.quadrant_index = None
         self.role = None
+        self.setup_callbacks()
 
     #---------------------------------------------------------------------------------------#
     #                                   METRICAS/CONSULTAS                                  #

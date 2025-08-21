@@ -31,7 +31,7 @@ class VisionReceiver(Receiver):
     def receive_raw(self):
         while True:
             try:
-                data, _ = self.sock.recvfrom(65535)
+                data = self.sock.recv(2048)
                 self.latest_raw = data # salva o pacote bruto recebido
                 self.latest_parsed = self.parser.parse(data) # usa o parser para decodificar os bytes do pacote em um objeto python com campos acessíveis
             except Exception as e:

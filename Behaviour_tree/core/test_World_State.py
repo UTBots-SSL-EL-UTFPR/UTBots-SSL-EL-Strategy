@@ -21,9 +21,7 @@ def test_World_State(timeout=0.3):
             # Atualiza estado completo do mundo (árbitro + visão múltiplas câmeras)
             ws.update(timeout=timeout)
 
-            # Limpa terminal
-            os.system("clear")
-
+            
             # Exibe estado do mundo
             print("=== ESTADO GLOBAL DO CAMPO ===\n")
 
@@ -34,7 +32,7 @@ def test_World_State(timeout=0.3):
             # Detalhes granulares de robôs
             print("\n[ROBÔS - POSIÇÕES, VELOCIDADES E ORIENTAÇÕES]")
         
-            for rid in [1,2,3]:
+            for rid in [0,1,2]:
                 pos = ws.get_team_robot_pose(rid)
                 vel = ws.get_team_robot_velocity(rid)
                 print(f"{rid}: Pos={pos}, Vel={vel}")

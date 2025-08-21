@@ -1,8 +1,8 @@
 import py_trees
-from robot.bob import Bob
-from core.Field import RobotID
-from core.blackboard import Blackboard_Manager
-from core.event_callbacks import BB_flags_and_values
+from Behaviour_tree.robot.bob import Bob
+from Behaviour_tree.core.World_State import RobotID
+from Behaviour_tree.core.blackboard import Blackboard_Manager
+from Behaviour_tree.core.event_callbacks import BB_flags_and_values
 
 ball_flags = BB_flags_and_values.Flags.motion.ball
 positions_values = BB_flags_and_values.Values.Positions

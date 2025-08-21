@@ -65,6 +65,8 @@ class Pose2D:
     #---------------------------------------------------------------------------------------#
 
     def distance_to(self, other):
+        if not isinstance(other, Pose2D):
+            return NotImplemented
         from math import sqrt
         return sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
         

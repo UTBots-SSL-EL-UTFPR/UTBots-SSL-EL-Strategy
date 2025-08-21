@@ -16,9 +16,9 @@ from communication.generated import ssl_gc_referee_message_pb2 as referee_pb
 # Enum de IDs de robôs
 # =====================================================
 class RobotID(Enum):
-    Kamiji = 1
-    Defender = 2 
-    Goalkeeper = 3
+    Kamiji = 0
+    Defender = 1 
+    Goalkeeper = 2
 
 
 class World_State:
@@ -42,7 +42,7 @@ class World_State:
         self._robot_positions = {"blue": {}, "yellow": {}}
         self._robot_velocities = {"blue": {}, "yellow": {}}
         self._robot_orientations = {"blue": {}, "yellow": {}}
-        self._ball_position = (0.0, 0.0)
+        self._ball_position: tuple['float','float'] = (0,0)
         self.last_camera_frames = {}
 
         self._initialized = True
@@ -53,7 +53,7 @@ class World_State:
             World_State._instance = World_State()
         return World_State._instance
 
-    def update(self, timeout=0.3):
+    def update(self, timeout=0.01):
         """Atualiza árbitro e visão considerando múltiplas câmeras por ciclo."""
         self.referee_data = self.referee_receiver.get_latest_parsed()
         # Visão
@@ -135,16 +135,17 @@ class World_State:
 
 
     def get_ball_position(self):
-        return self._ball_position
+        position = self._ball_position
+        return Pose2D(int(position[0]), int(position[1]))
     
     #team
     def get_team_robot_pose(self, robot_id: int) -> Pose2D:
         team_color = self.configuration.team_collor
         if not team_color:
             return Pose2D()
-        
         position_tuple = self._robot_positions.get(team_color, {}).get(robot_id, (0.0, 0.0))
         x, y = position_tuple
+
         theta = self._robot_orientations.get(team_color, {}).get(robot_id, 0.0)
 
         return Pose2D(int(x), int(y), theta)

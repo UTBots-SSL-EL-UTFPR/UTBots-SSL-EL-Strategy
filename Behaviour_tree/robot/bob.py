@@ -2,13 +2,18 @@
 
 from .bob_state import Bob_State
 from .bob_config import Bob_Config
-from ...utils import utilsp
-from foes import Foes_State
+from utils import utilsp
+from .foes import Foes_State
 import math
 import numpy as np
 from math import sqrt
 from utils.pose2D import Pose2D
 from ..core.World_State import RobotID
+from ..core.blackboard import Blackboard_Manager
+from Behaviour_tree.core.event_callbacks import BB_flags_and_values
+navigation_flags = BB_flags_and_values.Flags.motion.navigation 
+positions = BB_flags_and_values.Values.Positions
+
 from communication.sender.command_builder import CommandBuilder
 from communication.sender.command_sender_sim import CommandSenderSim
 #--------------------------------------------DEFINES--------------------------------------------#
@@ -29,38 +34,52 @@ WHEEL_RADIUS = 0.027
 class Bob:
 
     def __init__(self, robot_id: RobotID):
+        self._bb = Blackboard_Manager.get_instance()
         self.robot_id = robot_id
         self.config = Bob_Config(robot_id)
-        self.state = Bob_State(robot_id)
+        self.state: Bob_State | None = Bob_State(robot_id)
         self._has_ball = False
         self.foes: list[Foes_State] #TODO
+        self.cmd_builder = CommandBuilder()
+        self.cmd_sender = CommandSenderSim()
+        self.cmd : bytes | None = None
 
     def move(self, vel_x: float, vel_y: float) -> bool:
         return True
     
     def update(self):
-        self.state.update()
+        if(self.state):
+            self._bb.set(f"{self.robot_id.name}{navigation_flags.target_reached}", False)
+            self.state.update()
+            print(1)
 
-    def move_oriented(self, robot_id, builder: CommandBuilder, sender: CommandSenderSim, current_pose: Pose2D, goal_pose: Pose2D):
+            
+
+    def set_movment(self, target: Pose2D):
+        if(self.state):
+            self.state.target_position = target
+
+    def move_oriented(self):
+        if self.state is None:
+            return
         """
         Move o bob de sua pose2d atual ate outra pose2d
         """
-
-        #velocidade no referencial do mundo
-        vx_s, vy_s, w = self.compute_world_velocity(current_pose, goal_pose)
+        vx_s, vy_s, w = self.compute_world_velocity(self.state.position, self.state.target_position)
         q = np.array([[w], [vx_s], [vy_s]], dtype=float)
 
         #velocidade individual de cada roda
-        u = self.motorVel(q, current_pose.theta)
+        u = self.motorVel(q, self.state.position.theta)
         u = np.clip(u, -120.0, 120.0)
 
         #envia um pacote
-        builder.command_robots(
-            id=robot_id, wheelsspeed=True,
+        self.cmd_builder.command_robots(
+            id=self.robot_id.value, wheelsspeed=True,
             wheel1=-u[0].item(), wheel2=-u[1].item(),
             wheel3=-u[2].item(), wheel4=-u[3].item()
         )
-        sender.send_command(builder)
+        self.cmd = self.cmd_builder.build()
+        self.cmd_sender.send(self.cmd)
 
     def kick_ball(self) -> bool:
         #TODO enviar comando para simulação
@@ -178,6 +197,7 @@ class Bob:
                 vy_s = 0.0
                 w = 0.0
 
+        print(vx_s, vy_s, w)
         return vx_s, vy_s, w
 
     def motorVel (self, q, phi):
@@ -268,6 +288,8 @@ class Bob:
         return self.move(ball_position.x, ball_position.y)
     
     def go_to_point_avoiding_obstacles(self, dest: Pose2D, obstacules: list[Pose2D], raio: float) -> bool:
+        if self.state is None:
+            return False
         start = self.state.get_position()
         path = self.find_shortest_path(start, dest, obstacules, raio)
         if path and len(path) > 1:
@@ -277,6 +299,8 @@ class Bob:
             return self.move(dest.x, dest.y)
         
     def shoot_to_goal(self, goal_position: Pose2D) -> bool:
+        if self.state is None:
+            return False
         if not self._has_ball:
             return False
         my_pos = self.state.get_position()
@@ -293,6 +317,8 @@ class Bob:
         return self.move(intercept_x, intercept_y)
     
     def pass_to_teammate(self, teammate_pos: Pose2D) -> bool:
+        if self.state is None:
+            return False
         my_pos = self.state.get_position()
         dx = teammate_pos.x - my_pos.x
         dy = teammate_pos.y - my_pos.y
@@ -318,6 +344,8 @@ class Bob:
         return False
 
     def distance_nearest_foe(self):
+        if self.state is None:
+            return False
         distances =[]
         for foe in  self.foes:
             distances.append(self.state.position.distance_to(foe.position))

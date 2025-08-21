@@ -5,9 +5,9 @@ from utils.defines import (
     ALL_QUADRANTS,
     Quadrant_type,
     RoleType,
-    ATTACK_QUADRANTS,
-    MIDFIELD_QUADRANTS,
-    DEFENSE_QUADRANTS,
+    ATTACK_ZONE,
+    MIDFIELD_ZONE,
+    DEFENSE_ZONE,
     GOALKEEPER_ZONE,
     BALL_POSSESSION_DISTANCE,
 )
