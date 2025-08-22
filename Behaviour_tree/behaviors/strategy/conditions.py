@@ -82,7 +82,7 @@ class Foes_Have_ball_posetion(py_trees.behaviour.Behaviour):
         return py_trees.common.Status.FAILURE
     
 #---------------------------------------------------------------------------------------#
-#                                    POSICIONAMENTO                                      #
+#                                    POSICIONAMENTO                                     #
 #---------------------------------------------------------------------------------------#
 class is_in_left_side(py_trees.behaviour.Behaviour):
     """

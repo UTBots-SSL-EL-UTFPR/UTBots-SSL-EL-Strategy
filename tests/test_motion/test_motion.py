@@ -8,7 +8,7 @@ from Behaviour_tree.core.field_state import FieldState
 from communication.receiver.vision_receiver import VisionReceiver
 from communication.parsers.vision_parser import VisionParser
 
-from utils.pose2D import Pose2D
+
 
 from dataclasses import dataclass
 
@@ -241,7 +241,7 @@ if __name__ == "__main__":
     last_processed_raw = None
 
     #inicializa os builders------------------------------------------------------------------------------------------
-    builder = CommandBuilder(team_color="blue")
+    builder = CommandBuilder()
     sender = CommandSenderSim()
 
     #destino ---------------------------------------------------------------------------------------------------------

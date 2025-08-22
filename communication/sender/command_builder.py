@@ -1,10 +1,12 @@
 from communication.generated import grSim_Packet_pb2
+from SSL_configuration.configuration import Configuration
 import time
 
 class CommandBuilder:
-    def __init__(self, team_color: str = "blue"):
-        self.packet = grSim_Packet_pb2.grSim_Packet()   # cria o pacote de comandos grSim
-        self.packet.commands.isteamyellow = (team_color == "yellow")
+    def __init__(self):
+        self.packet = grSim_Packet_pb2.grSim_Packet()   # type: ignore
+        self.conf = Configuration.getObject()
+        self.packet.commands.isteamyellow = (self.conf.team_collor == "yellow")
 
     def command_robots(
                 self, id: int, vx: float = 0.0, vy: float = 0.0, w: float = 0.0,
@@ -51,7 +53,11 @@ class CommandBuilder:
 
     def build(self) -> bytes:
         self.packet.commands.timestamp = time.time()    # preenche o campo obrigatório 'timestamp'
-        return self.packet.SerializeToString()
+        data = self.packet.SerializeToString()
+        self.packet = grSim_Packet_pb2.grSim_Packet() # type: ignore
+        self.packet.commands.isteamyellow = (self.conf.team_collor == "yellow")
+
+        return data
 
 
 '''

@@ -21,7 +21,6 @@ class Pose2D:
     #---------------------------------------------------------------------------------------#
     #                                       SOBRECARGAS                                     #
     #---------------------------------------------------------------------------------------#
-    
     def __iter__(self): #DESEMPACOTAMENTO 
         yield self.x
         yield self.y
@@ -66,6 +65,8 @@ class Pose2D:
     #---------------------------------------------------------------------------------------#
 
     def distance_to(self, other):
+        if not isinstance(other, Pose2D):
+            return NotImplemented
         from math import sqrt
         return sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
         
@@ -115,5 +116,6 @@ class Pose2D:
         except ValueError:
             return None
         
+    @staticmethod
     def normalize_angle_to_pi(a: float) -> float:
         return (a + math.pi) % (2*math.pi) - math.pi

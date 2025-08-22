@@ -3,6 +3,7 @@
 import abc
 import py_trees
 from ..core.blackboard import Blackboard_Manager
+from Behaviour_tree.robot.bob import Bob
 
 class Tree(abc.ABC):
     """
@@ -16,9 +17,10 @@ class Tree(abc.ABC):
         tree (py_trees.trees.BehaviourTree): Instância da árvore executável.
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, bob : Bob):
 
         self.name = name
+        self.bob = bob
         self.root = self.create_tree()
         self._bb = Blackboard_Manager.get_instance()
         self.tree = py_trees.trees.BehaviourTree(self.root)

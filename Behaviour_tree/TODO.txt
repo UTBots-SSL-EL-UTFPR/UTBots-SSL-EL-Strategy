@@ -74,3 +74,8 @@
 
 // Wesley: -> organizar receive. -> jogar wd_state denrto da field -> transf field.py em wdtste.py ||  2. Implementar sequencia de passe (ações e condições) em  Behaviour_tree/behaviors/common/condition.py
 
+
+
+Behaviour_tree.trees.bob_trees.sub_trees.test
+
+python3 -m Behaviour_tree.trees.bob_trees.sub_trees.test

@@ -6,7 +6,6 @@ from Behaviour_tree.core.field_state import FieldState
 from Behaviour_tree.core.World_State import World_State, RobotID
 
 from time import time, sleep
-from pprint import pprint
 import os
 
 # Comando pra rodar python3 -m Behaviour_tree.core.test_World_State
@@ -21,9 +20,7 @@ def test_World_State(timeout=0.3):
             # Atualiza estado completo do mundo (árbitro + visão múltiplas câmeras)
             ws.update(timeout=timeout)
 
-            # Limpa terminal
-            os.system("clear")
-
+            
             # Exibe estado do mundo
             print("=== ESTADO GLOBAL DO CAMPO ===\n")
 
@@ -34,17 +31,17 @@ def test_World_State(timeout=0.3):
             # Detalhes granulares de robôs
             print("\n[ROBÔS - POSIÇÕES, VELOCIDADES E ORIENTAÇÕES]")
         
-            for rid in [1,2,3]:
+            for rid in [0,1,2]:
                 pos = ws.get_team_robot_pose(rid)
                 vel = ws.get_team_robot_velocity(rid)
                 print(f"{rid}: Pos={pos}, Vel={vel}")
 
-            print("\n[REFEREE]")
-            referee_data = ws.get_referee_data()
-            if referee_data:
-                print(f"Stage: {referee_data.stage}, Command: {referee_data.command}")
-            else:
-                print("Nenhum dado recebido do árbitro.")
+            # print("\n[REFEREE]")
+            # referee_data = ws.get_referee_data()
+            # if referee_data:
+            #     print(f"Stage: {referee_data.stage}, Command: {referee_data.command}")
+            # else:
+            #     print("Nenhum dado recebido do árbitro.")
 
             print("\n[ÚLTIMA CÂMERA VISÃO]")
             vision_data = ws.get_vision_data()

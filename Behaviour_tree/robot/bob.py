@@ -2,13 +2,20 @@
 
 from .bob_state import Bob_State
 from .bob_config import Bob_Config
-from ...utils import utilsp
-from foes import Foes_State
+from utils import utilsp
+from .foes import Foes_State
 import math
 import numpy as np
 from math import sqrt
 from utils.pose2D import Pose2D
 from ..core.World_State import RobotID
+from ..core.blackboard import Blackboard_Manager
+from Behaviour_tree.core.event_callbacks import BB_flags_and_values
+navigation_flags = BB_flags_and_values.Flags.motion.navigation 
+positions = BB_flags_and_values.Values.Positions
+
+from communication.sender.command_builder import CommandBuilder
+from communication.sender.command_sender_sim import CommandSenderSim
 #--------------------------------------------DEFINES--------------------------------------------#
 LOWER = 0
 UPPER = 1
@@ -27,22 +34,49 @@ WHEEL_RADIUS = 0.027
 class Bob:
 
     def __init__(self, robot_id: RobotID):
+        self._bb = Blackboard_Manager.get_instance()
         self.robot_id = robot_id
         self.config = Bob_Config(robot_id)
-        self.state = Bob_State(robot_id)
+        self.state: Bob_State | None = Bob_State(robot_id)
         self._has_ball = False
         self.foes: list[Foes_State] #TODO
+        self.cmd_builder = CommandBuilder()
+        self.cmd_sender = CommandSenderSim()
+        self.cmd : bytes | None = None
 
     def move(self, vel_x: float, vel_y: float) -> bool:
         return True
     
     def update(self):
-        self.state.update()
+        if(self.state):
+            self._bb.set(f"{self.robot_id.name}{navigation_flags.target_reached}", False)
+            self.state.update()
 
-    def move_oriented(self, pose: Pose2D):
+    def set_movment(self, target: Pose2D):
+        if(self.state):
+            self.state.target_position = target
 
-        self.state.set_target_position(pose)
+    def move_oriented(self):
+        if self.state is None:
+            return
+        """
+        Move o bob de sua pose2d atual ate outra pose2d
+        """
+        vx_s, vy_s, w = self.compute_world_velocity(self.state.position, self.state.target_position)
+        q = np.array([[w], [vx_s], [vy_s]], dtype=float)
 
+        #velocidade individual de cada roda
+        u = self.motorVel(q, self.state.position.theta)
+        u = np.clip(u, -120.0, 120.0)
+
+        #envia um pacote
+        self.cmd_builder.command_robots(
+            id=self.robot_id.value, wheelsspeed=True,
+            wheel1=-u[0].item(), wheel2=-u[1].item(),
+            wheel3=-u[2].item(), wheel4=-u[3].item()
+        )
+        self.cmd = self.cmd_builder.build()
+        self.cmd_sender.send(self.cmd)
 
     def kick_ball(self) -> bool:
         #TODO enviar comando para simulação
@@ -53,6 +87,7 @@ class Bob:
         return True
     
     def compute_world_velocity(
+        self,
         current,                    # Pose2D(x,y,theta) atual em {s}
         goal,                       # Pose2D(x,y,theta) alvo em {s}
         mode: str = "maintain_orientation",  # 3 opções diferentes de movimento q eu fiz pra testar "maintain_orientation" | "face_target" | "goal_orientation"
@@ -60,7 +95,7 @@ class Bob:
         # ganhos e limites
         k_pos: float = 1.4,         # 1/s ganho linear
         k_ang: float = 0.9,         # 1/s ganho angular (para face_target e etapa 2)
-        vmax: float = 1.5,          # m/s saturação linear
+        vmax: float = 0.5,          # m/s saturação linear
         wmax: float = 2.5,          # rad/s saturação angular
         
         # zonas e tolerâncias, isso é ajutavel e pode ate ser tirado
@@ -121,7 +156,7 @@ class Bob:
         elif mode == "face_target":
             # olha para na direcao do ponto desejado o tempo todo (mesmo durante a translação).
             theta_des = math.atan2(dy, dx) if dist > 1e-6 else goal.theta
-            ang_err = normaliza_para_pi(theta_des - theta_meas)
+            ang_err = Pose2D.normalize_angle_to_pi(theta_des - theta_meas)
 
             # controle P no yaw agr
             if abs(ang_err) >= yaw_deadband:
@@ -133,7 +168,7 @@ class Bob:
         elif mode == "goal_orientation":
             # olha para um angulo passado q nao necessariamente é na direcao do ponto desejado
             
-            ang_err = normaliza_para_pi(goal.theta - theta_meas)
+            ang_err = Pose2D.normalize_angle_to_pi(goal.theta - theta_meas)
 
             if abs(ang_err) >= yaw_deadband:
                 w = k_ang * ang_err * 3
@@ -148,9 +183,9 @@ class Bob:
             # para decidir se zera tudo: depende do modo
             if mode == "face_target":
                 theta_des = math.atan2(dy, dx) if dist > 1e-6 else goal.theta
-                ang_err = normaliza_para_pi(theta_des - theta_meas)
+                ang_err = Pose2D.normalize_angle_to_pi(theta_des - theta_meas)
             elif mode == "goal_orientation":
-                ang_err = normaliza_para_pi(goal.theta - theta_meas)
+                ang_err = Pose2D.normalize_angle_to_pi(goal.theta - theta_meas)
             else:
                 ang_err = 0.0  # maintain_orientation não exige yaw especifico, ent fds
 
@@ -159,9 +194,10 @@ class Bob:
                 vy_s = 0.0
                 w = 0.0
 
+        print(int(vx_s), int(vy_s), w)
         return vx_s, vy_s, w
 
-    def motorVel (q, phi):
+    def motorVel (self, q, phi):
 
         """
         Aqui é o modelo cinematico da gracia.
@@ -253,6 +289,8 @@ class Bob:
         return self.move(ball_position.x, ball_position.y)
     
     def go_to_point_avoiding_obstacles(self, dest: Pose2D, obstacules: list[Pose2D], raio: float) -> bool:
+        if self.state is None:
+            return False
         start = self.state.get_position()
         path = self.find_shortest_path(start, dest, obstacules, raio)
         if path and len(path) > 1:
@@ -262,6 +300,8 @@ class Bob:
             return self.move(dest.x, dest.y)
         
     def shoot_to_goal(self, goal_position: Pose2D) -> bool:
+        if self.state is None:
+            return False
         if not self._has_ball:
             return False
         my_pos = self.state.get_position()
@@ -278,6 +318,8 @@ class Bob:
         return self.move(intercept_x, intercept_y)
     
     def pass_to_teammate(self, teammate_pos: Pose2D) -> bool:
+        if self.state is None:
+            return False
         my_pos = self.state.get_position()
         dx = teammate_pos.x - my_pos.x
         dy = teammate_pos.y - my_pos.y
@@ -303,6 +345,8 @@ class Bob:
         return False
 
     def distance_nearest_foe(self):
+        if self.state is None:
+            return False
         distances =[]
         for foe in  self.foes:
             distances.append(self.state.position.distance_to(foe.position))
