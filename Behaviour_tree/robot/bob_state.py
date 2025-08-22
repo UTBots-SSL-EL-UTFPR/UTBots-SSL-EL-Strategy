@@ -65,8 +65,12 @@ class Bob_State:
 
         #################   Verifica se preso na mesma pos e verifica quadrante   #################
         new_pos = self.world_state.get_team_robot_pose(self.robot_id.value)
-        if  self.position ==  new_pos:
-            self.position_rept +=1
+        if new_pos is None:
+            # Não há dados de posição do robô ainda, aguarde atualização da câmera
+            return
+
+        if self.position == new_pos:
+            self.position_rept += 1
         else:
             self.position_rept = 0
             #---------------------quadrante---------------------#
@@ -99,10 +103,10 @@ class Bob_State:
                     self.target_position = self.path[self.path_index]
                     print(f"Próximo alvo: Waypoint {self.path_index} em {self.target_position}")
 
-
-
-
-
+        # Atualiza velocidade apenas se dados válidos
+        new_vel = self.world_state.get_team_robot_velocity(self.robot_id.value)
+        if new_vel is not None:
+            self.velocity = new_vel
 
         #TODO CHAMAR FUNÇÃO PARA VERIFICAR VISIBILIDADE BOLA - GOL
         #TODO CHAMAR FUNÇÃO PARA VISIBILIDADE DE PASSE 
@@ -111,9 +115,6 @@ class Bob_State:
         #   -> PODEMOS OU CHAMAR UMA THREAD OU FAZER UM ESQUEMA DE MOVIMENTAÇÃO DENTRO DA UPDATE
         #   -> PODEMOS FAZER ELE SEMPRE SEGUIR O OBJETIVO DELE, EM UMA LISTA DE POS
         #   -> A UPDATE VAI SER CHAMADA TODOS OS CICLOS, ENTÃO PODEMOS USA-LA PARA MOV.
-
-        
-        self.velocity = self.world_state.get_team_robot_velocity(self.robot_id.value)
 
         
     #---------------------------------------------------------------------------------------#
@@ -165,4 +166,3 @@ class Bob_State:
         return self.velocity
     
     # =================== Internos de classificação ===================
-    

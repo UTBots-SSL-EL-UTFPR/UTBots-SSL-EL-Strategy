@@ -139,42 +139,45 @@ class World_State:
         return Pose2D(int(position[0]), int(position[1]))
     
     #team
-    def get_team_robot_pose(self, robot_id: int) -> Pose2D:
+    def get_team_robot_pose(self, robot_id: int) -> Pose2D | None:
         team_color = self.configuration.team_collor
         if not team_color:
-            return Pose2D()
-        position_tuple = self._robot_positions.get(team_color, {}).get(robot_id, (40, 40))
-        x, y = position_tuple
-
-        theta = self._robot_orientations.get(team_color, {}).get(robot_id, 0.0)
-
+            return None
+        if robot_id not in self._robot_positions.get(team_color, {}):
+            return None
+        x, y = self._robot_positions[team_color][robot_id]
+        theta = self._robot_orientations[team_color][robot_id]
         return Pose2D(int(x), int(y), theta)
 
-    def get_team_robot_velocity(self, robot_id: int) -> Pose2D:
+    def get_team_robot_velocity(self, robot_id: int) -> Pose2D | None:
         team_color = self.configuration.team_collor
         if not team_color:
-            return Pose2D()
-        vx, vy = self._robot_velocities.get(team_color, {}).get(robot_id, (0.0, 0.0))
-        theta = self._robot_orientations.get(team_color, {}).get(robot_id, 0.0)
+            return None
+        if robot_id not in self._robot_velocities.get(team_color, {}):
+            return None
+        vx, vy = self._robot_velocities[team_color][robot_id]
+        theta = self._robot_orientations[team_color][robot_id]
         return Pose2D(int(vx), int(vy), theta)
     
     #foes
-    def get_foe_robot_pose(self, robot_id: int) -> Pose2D:
+    def get_foe_robot_pose(self, robot_id: int) -> Pose2D | None:
         foes_collor = self.configuration.foes_collor
         if not foes_collor:
-            return Pose2D()
-        
-        position_tuple = self._robot_positions.get(foes_collor, {}).get(robot_id, (0.0, 0.0))
-        x, y = position_tuple
-        theta = self._robot_orientations.get(foes_collor, {}).get(robot_id, 0.0)
-        pos  = Pose2D(int(x), int(y), theta)
+            return None
+        if robot_id not in self._robot_positions.get(foes_collor, {}):
+            return None
+        x, y = self._robot_positions[foes_collor][robot_id]
+        theta = self._robot_orientations[foes_collor][robot_id]
+        pos = Pose2D(int(x), int(y), theta)
         pos.get_quadrant()
         return pos
 
-    def get_foe_robot_velocity(self, robot_id: int) -> Pose2D:
+    def get_foe_robot_velocity(self, robot_id: int) -> Pose2D | None:
         foes_collor = self.configuration.foes_collor
         if not foes_collor:
-            return Pose2D()
-        vx, vy = self._robot_velocities.get(foes_collor, {}).get(robot_id, (0.0, 0.0))
-        theta = self._robot_orientations.get(foes_collor, {}).get(robot_id, 0.0)
+            return None
+        if robot_id not in self._robot_velocities.get(foes_collor, {}):
+            return None
+        vx, vy = self._robot_velocities[foes_collor][robot_id]
+        theta = self._robot_orientations[foes_collor][robot_id]
         return Pose2D(int(vx), int(vy), theta)
