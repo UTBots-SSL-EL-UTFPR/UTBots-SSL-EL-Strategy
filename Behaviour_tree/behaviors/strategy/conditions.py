@@ -26,11 +26,22 @@ class is_atack_from_recovery(py_trees.behaviour.Behaviour): #exemplo
     def update(self) -> py_trees.common.Status:
         return py_trees.common.Status.SUCCESS
 
-class is_slow_attack(py_trees.behaviour.Behaviour): #exemplo
+class is_slow_attack(py_trees.behaviour.Behaviour): 
     def __init__(self, name: str="verify is_slow_attack"):
         super().__init__(name)
 
     def update(self) -> py_trees.common.Status:
+        return py_trees.common.Status.FAILURE
+    
+
+class   Pass(py_trees.behavior.Behaviour):
+    def __init__(self,name:str="verify_pass"):
+        super().__init__(name)
+        
+
+    def update(self) -> py_trees.common.Status:
+        
+
         return py_trees.common.Status.FAILURE
     
 

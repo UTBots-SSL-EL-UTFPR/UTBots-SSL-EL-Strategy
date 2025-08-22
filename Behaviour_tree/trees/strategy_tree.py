@@ -3,9 +3,11 @@
 # trees/strategy_tree.py
 import py_trees 
 from .tree import Tree
-from ..behaviors.strategy import conditions as condition_nodes
-from ..behaviors.strategy import actions as action_nodes
-
+from ..behaviors.strategy import conditions as s_condition_nodes # Mudado o nome por conta que
+from ..behaviors.strategy import actions as s_action_nodes       # sera necessario pegar os actions
+                                                                 # e os conditions dos behavior commo
+from ..behaviors.common import condition as c_condition_nodes
+from ..behaviors.common import actions as c_action_nodes 
 from ..core.event_callbacks import BB_flags_and_values
 
 contexts = BB_flags_and_values.Flags.Team_Flags.Context
@@ -26,23 +28,38 @@ class Strategy_tree(Tree):
         #---------------------------------------------------------------------#
         #                          TEMOS POSSE DE BOLA                        #
         #---------------------------------------------------------------------#
+
         with_ball_simple_attack = py_trees.composites.Sequence(
             name="Ball_possetion: Simple_attack", memory=False, children=[
-                condition_nodes.is_simple_atack(), 
-                action_nodes.Set_blackboard_value("context: simple atack",contexts.is_simple_atack, True)
+                s_condition_nodes.is_simple_atack(), 
+                s_action_nodes.Set_blackboard_value("context: simple atack",contexts.is_simple_atack, True)
             ]
         )
-
+        with_ball_pass = py_trees.composites.Sequence(
+            name = "Ball_possetion:Pass",memory=False,children = [
+                s_condition_nodes.Pass(),
+                c_condition_nodes.Has_ball(),
+                #Range_Valido
+                #Recebedor_Desmarcado
+                s_action_nodes.Set_blackboard_value("context:Pass",contexts.is_pass,True)
+            ]
+        )
+        #####
+        #Preciso do nó HasBall , já criado , Ae o nó Range_Valido , 
+        # Ae o nó Jogador que ira receber a bola 
+        # e entao o nó passa ,tudo isso sao nos da minha arvore(logica do passe) 
+        # a logica de cada contexto esta dentro de cada classe particular
+        ######
         with_ball_complex_attack = py_trees.composites.Sequence(
             name="Ball_possetion: Attack_from_recovery", memory=False, children=[
-                condition_nodes.is_atack_from_recovery(),
-                action_nodes.Set_blackboard_value("Context: recovery",contexts.is_atack_from_recovery, True)
+                s_condition_nodes.is_atack_from_recovery(),
+                s_action_nodes.Set_blackboard_value("Context: recovery",contexts.is_atack_from_recovery, True)
             ]
         )
         with_ball_slow_attack = py_trees.composites.Sequence(
             name="Ball_possetion: with_ball_slow_attack", memory=False, children=[
-                condition_nodes.is_slow_attack(),
-                action_nodes.Set_blackboard_value("Context: slow_attack",contexts.is_slow_attack, True)
+                s_condition_nodes.is_slow_attack(),
+                s_action_nodes.Set_blackboard_value("Context: slow_attack",contexts.is_slow_attack, True)
             ]
         )
         team_has_ball_branch = py_trees.composites.Selector("Team Has Ball", True, children=[with_ball_simple_attack, with_ball_complex_attack, with_ball_slow_attack])
@@ -53,8 +70,8 @@ class Strategy_tree(Tree):
         
         exemple_of_defense = py_trees.composites.Sequence(
             "exemple_defense",False, children=[
-                condition_nodes.exemple_of_defense(),
-                action_nodes.Set_blackboard_value("iniciar exemplo defesa",contexts.is_defense_exemple, True)
+                s_condition_nodes.exemple_of_defense(),
+                s_action_nodes.Set_blackboard_value("iniciar exemplo defesa",contexts.is_defense_exemple, True)
             ]
         )
         foes_has_ball_branch = py_trees.composites.Selector("foes Have Ball", True, children=[exemple_of_defense])
@@ -70,7 +87,7 @@ class Strategy_tree(Tree):
             name="Attack Logic",
             memory=False,
             children=[
-                condition_nodes.Team_Has_ball_posetion(), # Verifica a posse
+                s_condition_nodes.Team_Has_ball_posetion(), # Verifica a posse
                 team_has_ball_branch                      # Executa o seletor de ataque
             ]
         )
@@ -80,7 +97,7 @@ class Strategy_tree(Tree):
             name="Defense Logic",
             memory=False,
             children=[
-                condition_nodes.Foes_Have_ball_posetion(), # Verifica a posse do adversário
+                s_condition_nodes.Foes_Have_ball_posetion(), # Verifica a posse do adversário
                 foes_has_ball_branch                       # Executa o seletor de defesa
             ]
         )

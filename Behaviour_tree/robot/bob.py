@@ -29,6 +29,7 @@ WHEELS_ANGLES = [math.radians(-30),
 GAMMA = [0, 0, 0, 0]
 ROBOT_RADIUS = 0.09
 WHEEL_RADIUS = 0.027
+FREE_DISTANCE = 1
 
 
 class Bob:
@@ -245,7 +246,7 @@ class Bob:
                 return False
         return True
 
-    def find_shortest_path(self, start: Pose2D, end: Pose2D, obstacules: list[Pose2D], raio: float):
+    def find_shortest_path(self, start: Pose2D, end: Pose2D, obstacules: list[Pose2D], raio: float, ball: Pose2D = Pose2D(0, 0), raio_ball: float = 0):
         from collections import deque
         step = 20  # Resolução da grade (ajuste conforme necessário)
         start_cell = (int(start.x // step), int(start.y // step))
@@ -275,6 +276,10 @@ class Bob:
                 if (nx, ny) not in visited:
                     wx, wy = nx*step, ny*step
                     if Bob.is_free(wx, wy, obstacules, raio):
+
+                        if raio_ball > 0 and not Bob.is_free(wx, wy, [ball], raio_ball):
+                            continue
+                        
                         visited[(nx, ny)] = current # type: ignore
                         queue.append((nx, ny))
 
@@ -346,3 +351,7 @@ class Bob:
         for foe in  self.foes:
             distances.append(self.state.position.distance_to(foe.position))
         self.nearest_foe = utilsp.min(distances)
+
+    def is_free(self)->bool:
+        d_min=self.distance_nearest_foe();
+        return d_min<FREE_DISTANCE
