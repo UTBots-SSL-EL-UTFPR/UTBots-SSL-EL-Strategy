@@ -25,6 +25,7 @@ class Has_ball(py_trees.behaviour.Behaviour):
 
     def __init__(self, name: str = "Has_ball"):
         super().__init__(name)
+        
 
     def update(self) -> py_trees.common.Status:
         if _bb.get(

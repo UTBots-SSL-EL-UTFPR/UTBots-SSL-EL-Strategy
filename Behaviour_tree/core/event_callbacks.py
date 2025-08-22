@@ -35,6 +35,7 @@ class BB_flags_and_values:
         class Team_Flags:
             class Context:
                 is_simple_atack = StaticBuilder("is_simple_atack")
+                is_pass = StaticBuilder("pass")
                 is_atack_from_recovery = StaticBuilder("is_atack_from_recovery")
                 is_defense_exemple = StaticBuilder("is_defense_exemple")
                 is_slow_attack = StaticBuilder("is_slow_attack")

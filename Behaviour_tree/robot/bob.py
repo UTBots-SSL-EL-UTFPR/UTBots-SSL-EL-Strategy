@@ -29,6 +29,7 @@ WHEELS_ANGLES = [math.radians(-30),
 GAMMA = [0, 0, 0, 0]
 ROBOT_RADIUS = 0.09
 WHEEL_RADIUS = 0.027
+FREE_DISTANCE = 1
 
 
 class Bob:
@@ -351,3 +352,7 @@ class Bob:
         for foe in  self.foes:
             distances.append(self.state.position.distance_to(foe.position))
         self.nearest_foe = utilsp.min(distances)
+
+    def is_free(self)->bool:
+        d_min=self.distance_nearest_foe();
+        return d_min<FREE_DISTANCE
