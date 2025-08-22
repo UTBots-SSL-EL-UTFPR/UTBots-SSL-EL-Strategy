@@ -20,7 +20,7 @@
     },
     "Motion":
     {
-        "threshould_arrived_target" : 10
+        "threshould_arrived_target" : 100
     },
     "Communication":
     {

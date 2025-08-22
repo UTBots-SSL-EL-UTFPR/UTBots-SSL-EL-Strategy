@@ -17,6 +17,7 @@ positions = BB_flags_and_values.Values.Positions
 TICK_INTERVAL = 0.1 
 UPDATE_INTERVAL = TICK_INTERVAL / 2 
 
+
 class PrintNode(pt.behaviour.Behaviour):
 
     def __init__(self, name: str = "PrintNode"):
@@ -27,8 +28,7 @@ class PrintNode(pt.behaviour.Behaviour):
     def setup(self, **kwargs) -> None:
         self.robot = kwargs.get("bob")
         if self.robot:
-            print(self.robot.robot_id)
-        print("setup")
+            print("setup")
 
     def initialise(self) -> None:
         print("initialize")
@@ -72,19 +72,31 @@ def main() -> None:
         "planner": 11
     }
     root.setup(timeout=1.0, visitor=None, **setup_args)
-    print(bob.robot_id.value)
+    
     print("\n--- LOOP ---")
     wd.update()
     bob.update()
-    bob.set_movment(Pose2D(0,0,0))
+
+    import math
+
+    raio = 500
+    num_pontos = 16
+    centro_x, centro_y = 0, 0
+
+    for i in range(num_pontos):
+        angulo = 2 * math.pi * i / num_pontos
+        x = centro_x + raio * math.cos(angulo)
+        y = centro_y + raio * math.sin(angulo)
+        bob.adicionar_ponto_trajetoria(Pose2D(int(x), int(y),))
+    bob.adicionar_ponto_trajetoria(Pose2D())
+
 
     t0 = time.time()
-    delay = 0.005
+    delay = 0.01
     while True:
         if time.time() >= delay + t0:
             wd.update()
             bob.update()
-            print(bob.state.get_position())
             root.tick()
             t0 = time.time()
 

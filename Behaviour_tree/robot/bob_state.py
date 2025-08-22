@@ -27,6 +27,8 @@ class Bob_State:
         self.position: Pose2D = Pose2D(3333,3333)
         self.velocity: Pose2D = Pose2D()
 
+        self.path: list[Pose2D] = []
+        self.path_index = 0
         self.target_position: Pose2D | None = Pose2D()
 
         self.active_function = None
@@ -79,11 +81,28 @@ class Bob_State:
             event_callbacks.on_robot_stuck(self.robot_id.name)
 
         #################   Verifica se chegou ao destino   #################
-        if(self.target_position):
+# Pré-requisito: A sua classe precisa ter um atributo self.path_index = 0
+
+        if self.path and len(self.path) > 0:
+            self.target_position = self.path[self.path_index]
+
             if self.target_position.is_in_range(self.position, self.configuration.threshould_arrived_target):
-                print(f"chegou {self.configuration.threshould_arrived_target} -- {self.target_position} -- {self.position}")
-                self.target_position = None
-                event_callbacks.on_target_reached(self.robot_id.name)
+                print(f"Waypoint {self.path_index} alcançado: {self.target_position}")
+                self.path_index += 1
+
+                if self.path_index >= len(self.path):
+                    print(f"Fim do caminho alcançado. Reiniciando do início.")
+                    self.path_index = 0
+                    self.path.clear()
+                    event_callbacks.on_target_reached(self.robot_id.name)
+                else:
+                    self.target_position = self.path[self.path_index]
+                    print(f"Próximo alvo: Waypoint {self.path_index} em {self.target_position}")
+
+
+
+
+
 
         #TODO CHAMAR FUNÇÃO PARA VERIFICAR VISIBILIDADE BOLA - GOL
         #TODO CHAMAR FUNÇÃO PARA VISIBILIDADE DE PASSE 

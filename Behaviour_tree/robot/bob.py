@@ -52,9 +52,9 @@ class Bob:
             self._bb.set(f"{self.robot_id.name}{navigation_flags.target_reached}", False)
             self.state.update()
 
-    def set_movment(self, target: Pose2D):
+    def adicionar_ponto_trajetoria(self, target: Pose2D):
         if(self.state):
-            self.state.target_position = target
+            self.state.path.append(target)
 
     def move_oriented(self):
         if self.state is None:
@@ -194,7 +194,6 @@ class Bob:
                 vy_s = 0.0
                 w = 0.0
 
-        print(int(vx_s), int(vy_s), w)
         return vx_s, vy_s, w
 
     def motorVel (self, q, phi):

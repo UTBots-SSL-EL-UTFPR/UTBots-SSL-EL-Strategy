@@ -143,7 +143,7 @@ class World_State:
         team_color = self.configuration.team_collor
         if not team_color:
             return Pose2D()
-        position_tuple = self._robot_positions.get(team_color, {}).get(robot_id, (0.0, 0.0))
+        position_tuple = self._robot_positions.get(team_color, {}).get(robot_id, (40, 40))
         x, y = position_tuple
 
         theta = self._robot_orientations.get(team_color, {}).get(robot_id, 0.0)
