@@ -6,7 +6,6 @@ from Behaviour_tree.core.field_state import FieldState
 from Behaviour_tree.core.World_State import World_State, RobotID
 
 from time import time, sleep
-from pprint import pprint
 import os
 
 # Comando pra rodar python3 -m Behaviour_tree.core.test_World_State

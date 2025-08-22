@@ -24,7 +24,7 @@ class Bob_State:
         self.world_state = World_State.get_object()
         self.configuration = Configuration.getObject()
 
-        self.position: Pose2D = Pose2D()
+        self.position: Pose2D = Pose2D(3333,3333)
         self.velocity: Pose2D = Pose2D()
 
         self.target_position: Pose2D | None = Pose2D()
@@ -81,7 +81,7 @@ class Bob_State:
         #################   Verifica se chegou ao destino   #################
         if(self.target_position):
             if self.target_position.is_in_range(self.position, self.configuration.threshould_arrived_target):
-                print(f"merda {self.configuration.threshould_arrived_target}")
+                print(f"chegou {self.configuration.threshould_arrived_target} -- {self.target_position} -- {self.position}")
                 self.target_position = None
                 event_callbacks.on_target_reached(self.robot_id.name)
 

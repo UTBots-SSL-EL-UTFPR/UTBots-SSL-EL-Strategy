@@ -5,8 +5,8 @@ import time
 class CommandBuilder:
     def __init__(self):
         self.packet = grSim_Packet_pb2.grSim_Packet()   # type: ignore
-        conf = Configuration.getObject()
-        self.packet.commands.isteamyellow = (conf.team_collor == "yellow")
+        self.conf = Configuration.getObject()
+        self.packet.commands.isteamyellow = (self.conf.team_collor == "yellow")
 
     def command_robots(
                 self, id: int, vx: float = 0.0, vy: float = 0.0, w: float = 0.0,
@@ -53,7 +53,11 @@ class CommandBuilder:
 
     def build(self) -> bytes:
         self.packet.commands.timestamp = time.time()    # preenche o campo obrigatório 'timestamp'
-        return self.packet.SerializeToString()
+        data = self.packet.SerializeToString()
+        self.packet = grSim_Packet_pb2.grSim_Packet() # type: ignore
+        self.packet.commands.isteamyellow = (self.conf.team_collor == "yellow")
+
+        return data
 
 
 '''

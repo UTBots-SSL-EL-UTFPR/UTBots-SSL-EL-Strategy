@@ -36,12 +36,13 @@ class PrintNode(pt.behaviour.Behaviour):
     def update(self) -> pt.common.Status:
         if self.robot is None or self.robot.state is None:
             return pt.common.Status.FAILURE
-        self.robot.state.target_position
+        
         if self._bb.get(
             f"{self.robot.robot_id.name}{navigation_flags.target_reached}"
             ):
             return pt.common.Status.SUCCESS
-        self.robot.move_oriented()
+        if self.robot.state.target_position:
+            self.robot.move_oriented()
         return pt.common.Status.RUNNING
     
     def terminate(self, new_status: pt.common.Status) -> None:
@@ -59,7 +60,6 @@ def main() -> None:
     if bob.state is None:
         return
     bob.state.reset()
-    bob.set_movment(Pose2D(0,0,0))
     wd = World_State.get_object()
 
     teste = PrintNode()
@@ -72,18 +72,23 @@ def main() -> None:
         "planner": 11
     }
     root.setup(timeout=1.0, visitor=None, **setup_args)
-
+    print(bob.robot_id.value)
     print("\n--- LOOP ---")
-    t0 = time.time()
-    delta = 0.1
     wd.update()
+    bob.update()
+    bob.set_movment(Pose2D(0,0,0))
+
+    t0 = time.time()
+    delay = 0.005
     while True:
-        if(time.time() >= t0 + delta):
+        if time.time() >= delay + t0:
             wd.update()
-            print(55)
+            bob.update()
+            print(bob.state.get_position())
+            root.tick()
             t0 = time.time()
-        bob.update()
-        root.tick()
+
+
         
 
 

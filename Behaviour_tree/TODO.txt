@@ -77,3 +77,5 @@
 
 
 Behaviour_tree.trees.bob_trees.sub_trees.test
+
+python3 -m Behaviour_tree.trees.bob_trees.sub_trees.test

@@ -51,9 +51,6 @@ class Bob:
         if(self.state):
             self._bb.set(f"{self.robot_id.name}{navigation_flags.target_reached}", False)
             self.state.update()
-            print(1)
-
-            
 
     def set_movment(self, target: Pose2D):
         if(self.state):
@@ -98,7 +95,7 @@ class Bob:
         # ganhos e limites
         k_pos: float = 1.4,         # 1/s ganho linear
         k_ang: float = 0.9,         # 1/s ganho angular (para face_target e etapa 2)
-        vmax: float = 1.5,          # m/s saturação linear
+        vmax: float = 0.5,          # m/s saturação linear
         wmax: float = 2.5,          # rad/s saturação angular
         
         # zonas e tolerâncias, isso é ajutavel e pode ate ser tirado
@@ -197,7 +194,7 @@ class Bob:
                 vy_s = 0.0
                 w = 0.0
 
-        print(vx_s, vy_s, w)
+        print(int(vx_s), int(vy_s), w)
         return vx_s, vy_s, w
 
     def motorVel (self, q, phi):

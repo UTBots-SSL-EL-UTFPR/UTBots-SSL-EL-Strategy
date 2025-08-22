@@ -19,5 +19,5 @@ class CommandSenderSim:
 
     def send(self, packet_bytes: bytes):       #envia o pacote dado no endereço dado
         self.sock.sendto(packet_bytes, self.address)
-        print(len(packet_bytes))
+        #print(len(packet_bytes))
 
