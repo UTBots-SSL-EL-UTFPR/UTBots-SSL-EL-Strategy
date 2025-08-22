@@ -153,10 +153,6 @@ class Choose_who_to_pass(py_trees.behaviour.Behaviour):
     def update(self):
         #avaliar pos outros jogadores
         #Has_Ball
-            if( Bob.valid_range(self.position,self.target)):
-                    if(Bob.is_free()):
-                        Bob.pass_to_teammate()
-
             #avaliar quao livre jogador if(d_min<1m)
                 #não pode ter pessoas dentro de um raio X
                 #não pode ter pessoas dentro de um raio' X no trajeto da bola
@@ -168,6 +164,6 @@ class Choose_who_to_pass(py_trees.behaviour.Behaviour):
                     #o jogador com maior raio X e raio' X
             #senao
                 #passa para o nao goleiro
-        
+       ... 
 
         

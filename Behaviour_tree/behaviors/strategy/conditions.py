@@ -32,8 +32,9 @@ class is_slow_attack(py_trees.behaviour.Behaviour):
 
     def update(self) -> py_trees.common.Status:
         return py_trees.common.Status.FAILURE
+    
 
-class Pass(py_trees.behavior.Behaviour):
+class   Pass(py_trees.behavior.Behaviour):
     def __init__(self,name:str="verify_pass"):
         super().__init__(name)
         

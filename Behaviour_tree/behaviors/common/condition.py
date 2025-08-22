@@ -31,5 +31,14 @@ class Has_ball(py_trees.behaviour.Behaviour):
         if _bb.get(
             f"{ball_flags.has_ball}"
         ):
-            return py_trees.common.Status.SUCCESS
+            return py_trees.common.Status.RUNNING
         return py_trees.common.Status.FAILURE
+    
+
+class Valid_range(py_trees.behaviour.Behaviour):
+
+    def __init__(self, name: str = "Valid_Range"):
+        super().__init__(name)
+        
+    def update(self) ->py_trees.common.Status:
+        ...

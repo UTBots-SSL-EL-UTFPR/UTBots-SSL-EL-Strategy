@@ -7,7 +7,7 @@ from ..behaviors.strategy import conditions as s_condition_nodes # Mudado o nome
 from ..behaviors.strategy import actions as s_action_nodes       # sera necessario pegar os actions
                                                                  # e os conditions dos behavior commo
 from ..behaviors.common import condition as c_condition_nodes
-from ..behaviors.common import condition as c_action_nodes 
+from ..behaviors.common import actions as c_action_nodes 
 from ..core.event_callbacks import BB_flags_and_values
 
 contexts = BB_flags_and_values.Flags.Team_Flags.Context
@@ -38,7 +38,7 @@ class Strategy_tree(Tree):
         with_ball_pass = py_trees.composites.Sequence(
             name = "Ball_possetion:Pass",memory=False,children = [
                 s_condition_nodes.Pass(),
-                s_action_nodes.HasBall(),
+                c_condition_nodes.Has_ball(),
                 #Range_Valido
                 #Recebedor_Desmarcado
                 s_action_nodes.Set_blackboard_value("context:Pass",contexts.is_pass,True)
