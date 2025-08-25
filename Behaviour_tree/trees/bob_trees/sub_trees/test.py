@@ -91,8 +91,7 @@ def main() -> None:
     bob_state.update_all()
     bob_state.set_kicker_position(RobotID.Kamiji)
 
-    for pos in kamiji.state.path:
-        print(f" fazendo {pos}")
+    print(kamiji.state.path)
 
     while True:
         if time.time() >= delay + t0:

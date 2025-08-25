@@ -287,8 +287,8 @@ class Bob:
                             continue
                         visited[(nx, ny)] = current # type: ignore
                         queue.append((nx, ny))
-
-        return [start]  # Caso não encontre caminho
+        print("sem caminho, retornando start")
+        return [start] 
     
     def go_to_ball(self, ball_position: Pose2D) -> bool:
         return self.move(ball_position.x, ball_position.y)

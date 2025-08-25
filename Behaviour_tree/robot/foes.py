@@ -8,7 +8,8 @@ from utils.defines import (
     ATTACK_ZONE,
     MIDFIELD_ZONE,
     DEFENSE_ZONE,
-    GOALKEEPER_ZONE,
+    FOE_GOALKEEPER_ZONE,
+    TEAM_GOALKEEPER_ZONE,
     BALL_POSSESSION_DISTANCE,
 )
 
@@ -22,11 +23,13 @@ class Foes_State:
         self.position:Pose2D = Pose2D()
         self.velocity:Pose2D = Pose2D()
         self.has_ball = False
-        self.world_state = World_State.get_instance()
+        self.world_state = World_State.get_object()
 
     def update(self):
-        self.position = self.world_state.get_foe_robot_pose(self.robot_id.value)
-        self.velocity = self.world_state.get_foe_robot_velocity(self.robot_id.value)
+        if self.world_state is None:
+            return
+        self.position = self.world_state.get_foe_robot_pose(self.robot_id.value) 
+        self.velocity = self.world_state.get_foe_robot_velocity(self.robot_id.value) 
         self.quadrant_index = self.position.get_quadrant()
 
     # =================== Métricas / consultas ===================

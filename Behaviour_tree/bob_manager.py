@@ -86,8 +86,8 @@ class BobManager:
         for obs in obstacles:
             if obs == robot.state.position:
                 obstacles.remove(obs)
-        #robot.state.path = robot.find_shortest_path(robot.state.position, target, obstacles, 15, self.ball_pos,15)
-        robot.adicionar_ponto_trajetoria(target)
+        robot.state.path = robot.find_shortest_path(robot.state.position, target, obstacles, 15, self.ball_pos,15)
+        #robot.adicionar_ponto_trajetoria(target)
 
 
 
