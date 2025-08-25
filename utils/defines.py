@@ -65,16 +65,22 @@ class RoleType(Enum):
     MIDFIELD = "midfield"
     DEFENSE = "defense"
     GOALKEEPER = "goalkeeper"
-    SUPPORT = "support"
+    OFFENSIVE_SUPPORT = "offensive_support"
+    DEFENSIVE_SUPPORT = "defensive_support"
+    KICKER = "Kicker"
+
+
 class Zone_Type(Enum):
     ATTACK_ZONE = 0
     MIDFIELD_ZONE = 1
     DEFENSE_ZONE = 2
-    GOALKEEPER_ZONE = 3
+    TEAM_GOALKEEPER_ZONE = 3
+    FOE_GOALKEEPER_ZONE = 4
     
 # Conjuntos de quadrantes por função tática (mantidos como constantes)
 ATTACK_ZONE = {Quadrant_type.Q1, Quadrant_type.Q2, Quadrant_type.Q3, Quadrant_type.Q4}
 MIDFIELD_ZONE = {Quadrant_type.Q5, Quadrant_type.Q6, Quadrant_type.Q7, Quadrant_type.Q8}
 DEFENSE_ZONE = {Quadrant_type.Q9, Quadrant_type.Q10, Quadrant_type.Q11, Quadrant_type.Q12}
 # Zona estática do goleiro (constante)
-GOALKEEPER_ZONE = (-1000, 1000, -4500, -3000)
+TEAM_GOALKEEPER_ZONE = (-1000, 1000, -4500, -3000)
+FOE_GOALKEEPER_ZONE = (1000, -1000, 4500, 3000)

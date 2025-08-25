@@ -11,6 +11,7 @@ from ....behaviors.common import condition as condition_nodes
 from ....behaviors.common import actions as action_nodes
 from ...tree import Tree
 
+from Behaviour_tree.bob_manager import BobManager
 navigation_flags = BB_flags_and_values.Flags.motion.navigation 
 positions = BB_flags_and_values.Values.Positions
 
@@ -42,6 +43,7 @@ class PrintNode(pt.behaviour.Behaviour):
             ):
             return pt.common.Status.SUCCESS
         if self.robot.state.target_position:
+            print(self.robot.state.target_position)
             self.robot.move_oriented()
         return pt.common.Status.RUNNING
     
@@ -56,11 +58,12 @@ class PrintNode(pt.behaviour.Behaviour):
 
 
 def main() -> None:
-    bob = Bob(RobotID.Kamiji)
-    if bob.state is None:
-        return
-    bob.state.reset()
+    bob_state = BobManager.get_object()
     wd = World_State.get_object()
+    kamiji = bob_state.get_bob(RobotID.Kamiji)
+
+    if kamiji is None: 
+        return
 
     teste = PrintNode()
     sequence = pt.composites.Sequence("sequencia",True, [teste])
@@ -68,43 +71,38 @@ def main() -> None:
 
     print("\n--- SETUP ---")
     setup_args = {
-        "bob": bob,           
+        "bob": kamiji,           
         "planner": 11
     }
     root.setup(timeout=1.0, visitor=None, **setup_args)
-    
-    print("\n--- LOOP ---")
-    wd.update()
-    bob.update()
 
-    import math
 
-    raio = 500
-    num_pontos = 16
-    centro_x, centro_y = 0, 0
+    delay = 2
+    t0 = time.time()
 
-    for i in range(num_pontos):
-        angulo = 2 * math.pi * i / num_pontos
-        x = centro_x + raio * math.cos(angulo)
-        y = centro_y + raio * math.sin(angulo)
-        bob.adicionar_ponto_trajetoria(Pose2D(int(x), int(y),))
-    bob.adicionar_ponto_trajetoria(Pose2D())
-
+    while time.time() <= delay + t0:
+        wd.update()
 
     t0 = time.time()
     delay = 0.01
+
+    print("\n--- LOOP ---")
+    wd.update()
+    bob_state.update_all()
+    bob_state.set_kicker_position(RobotID.Kamiji)
+
+    for pos in kamiji.state.path:
+        print(f" fazendo {pos}")
+
     while True:
         if time.time() >= delay + t0:
             wd.update()
-            bob.update()
+            bob_state.update_all()
             root.tick()
             t0 = time.time()
 
 
-        
-
-
-
+    
 
 if __name__ == "__main__":
     main()

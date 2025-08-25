@@ -38,7 +38,7 @@ class Bob:
         self._bb = Blackboard_Manager.get_instance()
         self.robot_id = robot_id
         self.config = Bob_Config(robot_id)
-        self.state: Bob_State | None = Bob_State(robot_id)
+        self.state = Bob_State(robot_id)
         self._has_ball = False
         self.foes: list[Foes_State] #TODO
         self.cmd_builder = CommandBuilder()
@@ -248,16 +248,15 @@ class Bob:
 
     def find_shortest_path(self, start: Pose2D, end: Pose2D, obstacules: list[Pose2D], raio: float, ball: Pose2D = Pose2D(0, 0), raio_ball: float = 0):
         from collections import deque
-        step = 20  # Resolução da grade (ajuste conforme necessário)
+        step = 20
         start_cell = (int(start.x // step), int(start.y // step))
         end_cell = (int(end.x // step), int(end.y // step))
 
-        # BFS tradicional
         queue = deque([start_cell])
         visited = {start_cell: None} 
-
         while queue:
             current = queue.popleft()
+
             if current == end_cell:
                 # Reconstrói caminho
                 path_rev = []
@@ -352,6 +351,6 @@ class Bob:
             distances.append(self.state.position.distance_to(foe.position))
         self.nearest_foe = utilsp.min(distances)
 
-    def is_free(self)->bool:
-        d_min=self.distance_nearest_foe();
-        return d_min<FREE_DISTANCE
+    # def is_free(self)->bool:
+    #     d_min=self.distance_nearest_foe()
+    #     return d_min<FREE_DISTANCE

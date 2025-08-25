@@ -28,6 +28,15 @@ class Configuration:
         self.foe_robot_2 = None
         self.foe_robot_3 = None
 
+        self.goal_position_x = None
+        self.goal_position_y = None
+
+        self.suport_dist_from_ball = None
+        self.min_wall_margin = None
+        self.min_goal_area_margin = None
+        self.other_robos_margin = None
+        self.max_ball_y_to_goalkeeper_kick = None
+
         self.threshould_arrived_target = None
 
     @staticmethod
@@ -61,6 +70,15 @@ class Configuration:
             instance.foe_robot_1 = data["Robots"]["foes"]["robot_id_1"]
             instance.foe_robot_2 = data["Robots"]["foes"]["robot_id_2"]
             instance.foe_robot_3 = data["Robots"]["foes"]["robot_id_3"]
+
+            instance.goal_position_x = data["Positioning"]["goal_center_x"]
+            instance.goal_position_y = data["Positioning"]["goal_center_y"]
+
+            instance.suport_dist_from_ball = data["Positioning"]["free_kick"]["suport_dist_from_ball"]
+            instance.min_wall_margin = data["Positioning"]["free_kick"]["min_wall_margin"]
+            instance.min_goal_area_margin = data["Positioning"]["free_kick"]["min_goal_area_margin"]
+            instance.other_robos_margin = data["Positioning"]["free_kick"]["other_robos_margin"]
+            instance.max_ball_y_to_goalkeeper_kick = data["Positioning"]["free_kick"]["max_ball_y_to_goalkeeper_kick"] #1m do gol
 
             instance.threshould_arrived_target = data["Motion"]["threshould_arrived_target"]
 

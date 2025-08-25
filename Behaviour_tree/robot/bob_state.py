@@ -12,7 +12,7 @@ from utils.defines import (
     BALL_POSSESSION_DISTANCE, #verificar om configuration
 )
 #TODO
-#   linha 82
+#   linha 112
 #
 
 
@@ -45,6 +45,7 @@ class Bob_State:
         event_callbacks.new_quadrant(self.robot_id.name, 0)
         event_callbacks.new_zone(self.robot_id.name, 0)
         event_callbacks.on_robot_stuck(self.robot_id.name)
+        event_callbacks.target_reset(self.robot_id.name)
     #---------------------------------------------------------------------------------------#
     #                                       UPDATE                                          #
     # temos os seguintes eventos:                                                           #
@@ -66,7 +67,6 @@ class Bob_State:
         #################   Verifica se preso na mesma pos e verifica quadrante   #################
         new_pos = self.world_state.get_team_robot_pose(self.robot_id.value)
         if new_pos is None:
-            # Não há dados de posição do robô ainda, aguarde atualização da câmera
             return
 
         if self.position == new_pos:

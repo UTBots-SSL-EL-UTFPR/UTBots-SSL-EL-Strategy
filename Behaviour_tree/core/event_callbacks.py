@@ -88,6 +88,9 @@ def on_robot_stuck(robot_id):
 def on_target_reached(robot_id):
     _bb.set(f"{robot_id}{BB_flags_and_values.Flags.motion.navigation.target_reached}", True)
 
+def target_reset(robot_id):
+    _bb.set(f"{robot_id}{BB_flags_and_values.Flags.motion.navigation.target_reached}", False)
+
 def new_quadrant(robot_id, new_quadrant):
     _bb.set(f"{robot_id}{BB_flags_and_values.Values.Positions.quadrant}", new_quadrant)
 

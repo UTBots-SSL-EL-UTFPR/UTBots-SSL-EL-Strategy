@@ -119,21 +119,6 @@ class World_State:
     def get_vision_data(self):
         return self.vision_data
 
-    def get_field_snapshot(self):
-        """Retorna estado completo do campo, incluindo robôs, bola e frames."""
-        return {
-            "robots_blue": self.field.robots_blue,
-            "robots_yellow": self.field.robots_yellow,
-            "ball_position": self._ball_position,
-            "frames_metadata": self.last_camera_frames,
-            "granular": {
-                "positions": self._robot_positions,
-                "velocities": self._robot_velocities,
-                "orientations": self._robot_orientations,
-            }
-        }
-
-
     def get_ball_position(self):
         position = self._ball_position
         return Pose2D(int(position[0]), int(position[1]))
@@ -181,3 +166,15 @@ class World_State:
         vx, vy = self._robot_velocities[foes_collor][robot_id]
         theta = self._robot_orientations[foes_collor][robot_id]
         return Pose2D(int(vx), int(vy), theta)
+    
+    def get_all_robot_position(self):
+        robots :list[Pose2D] = []
+        for id in RobotID:
+            pos = self.get_team_robot_pose(id.value)
+            if pos:
+                robots.append(pos)  
+        for id in RobotID:
+            pos = self.get_foe_robot_pose(id.value)
+            if pos:
+                robots.append(pos) 
+        return robots

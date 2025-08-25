@@ -1,4 +1,19 @@
 {
+    "Positioning":
+    {
+        "goal_center_x": -2.25,
+        "goal_center_y": 0,
+
+        "free_kick":
+        {
+            "suport_dist_from_ball": 600,
+            "min_wall_margin": 600,
+            "min_goal_area_margin": 300,
+            "other_robos_margin": 100,
+            "max_ball_y_to_goalkeeper_kick": -1500
+        }
+
+    },
     "Robots":
     {
         "team":
@@ -20,7 +35,7 @@
     },
     "Motion":
     {
-        "threshould_arrived_target" : 100
+        "threshould_arrived_target" : 50
     },
     "Communication":
     {
