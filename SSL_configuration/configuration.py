@@ -9,6 +9,9 @@ class Configuration:
     _instance = None 
 
     def __init__(self):
+        self.is_left_team = None
+        self.foes_id = []
+
         self.vision = None
         self.referee= None
 
@@ -39,6 +42,11 @@ class Configuration:
 
         self.threshould_arrived_target = None
 
+    def get_side_sign(self):
+        if self.is_left_team:
+            return 1
+        return -1
+
     @staticmethod
     def loadFromJson():
         with open('SSL_configuration/configuration.json', 'r') as file:
@@ -52,6 +60,10 @@ class Configuration:
             data = Configuration.loadFromJson()
 
             instance = Configuration._instance
+            
+            instance.is_left_team = data["global"]["is_left_team"]
+            instance.foes_id = data["global"]["foes_id"]
+
             instance.vision = data["Communication"]["Receive"]["Ports"]["vision"]
             instance.referee= data["Communication"]["Receive"]["Ports"]["referee"]
 

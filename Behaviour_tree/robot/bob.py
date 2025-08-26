@@ -261,8 +261,8 @@ class Bob:
         visited = {start_cell: None} 
         while queue:
             current = queue.popleft()
-
             if current == end_cell:
+
                 # Reconstrói caminho
                 path_rev = []
                 while current is not None:

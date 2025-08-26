@@ -1,17 +1,16 @@
 # core/bob_manager.py
-
+from __future__ import annotations
 from Behaviour_tree.trees.tree import Tree
 from .robot.bob import Bob
-from .trees.bob_trees.kamiji_tree import KamijiTree
-from .trees.bob_trees.defender_tree import Defender_tree
-from .trees.bob_trees.goalkeeper_tree import Goalkeeper_tree
-from .core.World_State import RobotID
+
 from typing import Dict
 from utils.pose2D import Pose2D
-from utils.defines import RoleType, Zone_Type
+from utils.defines import RoleType, ZoneType
 from .core.World_State import World_State
+from .core.World_State import RobotID
 from SSL_configuration.configuration import Configuration
 import math
+from .positioning.positioning_helper import Positioning_helper
 
 class BobManager:
     _instance = None
@@ -25,7 +24,7 @@ class BobManager:
         self.trees: Dict[RobotID, Tree] = {}
 
         self.world_state = World_State.get_object()
-        self.configuration = Configuration.getObject()
+        self.positioning_helper = Positioning_helper.get_object()
 
         self._create_bob(RobotID.Kamiji)
         self._create_bob(RobotID.Defender)
@@ -59,6 +58,7 @@ class BobManager:
             if(bob.state):
                 bob.state.update()
 
+
     def tick_all(self):
         for tree in self.trees.values():
             tree.tick()
@@ -78,81 +78,47 @@ class BobManager:
         if robot is None or robot.state is None:
             return
         robot.state.role = RoleType.KICKER
-        print(f"ball: {self.ball_pos}")
 
         target = Pose2D.align_two(self.ball_pos, Pose2D(2500, 0), 200, True) #TODO fazer gol dinamico (troca de lados)
-        print(f"target: {target}")
         obstacles = self.world_state.get_all_robot_position()
         for obs in obstacles:
             if obs == robot.state.position:
                 obstacles.remove(obs)
-        robot.state.path = robot.find_shortest_path(robot.state.position, target, obstacles, 15, self.ball_pos,15)
-        #robot.adicionar_ponto_trajetoria(target)
+        robot.state.path = robot.find_shortest_path(robot.state.position, target, obstacles, 80, self.ball_pos, 15)
 
-
+        
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
     def set_offensive_suport_position(self, id: RobotID):
         """
-        Define uma posição ofensiva de suporte para o robô especificado.
+        Calcula e define a posição do robô de SUPORTE OFENSIVO com base em:
+        1) Lado de preferência do adversário (mais robôs com y > 0 ⇒ preferem "alto");
+        2) Restrição do espaço ao QUADRANTE AVANÇADO (metade ofensiva) do LADO MAIS LIVRE;
+        3) Limitações: margens de campo, fora da área do goleiro e fora do raio de influência dos inimigos;
+        4) Seleção: ponto VÁLIDO mais próximo do centro do gol adversário (empate ⇒ ponto mais seguro).
 
-        Estratégia:
-        - Calcula um ponto lateral à linha bola→gol, a uma distância fixa.
-        - Corrige a posição para garantir que fique dentro do campo e fora da área do goleiro.
-
-        :param id: Identificador do robô (RobotID).
+        Grava em robot.state.target_position e define o papel OFFENSIVE_SUPPORT.
+        Retorna a Pose2D alvo.
         """
-
-        bx, by = self.ball_pos 
-        goal_x, goal_y = self.configuration.goal_position_x, 0
-        dist_from_ball = self.configuration.suport_dist_from_ball if self.configuration.suport_dist_from_ball is not None else 0
-        prefer_left = True
-
         robot = self.bobs.get(id)
         if robot is None or robot.state is None:
-            return
+            return None
+        
+        free_quadrants = self.positioning_helper.get_atack_quadrant_free(100)
+
+        obstacles = self.world_state.get_all_robot_position()
+        for obs in obstacles:
+            if obs == robot.state.position:
+                obstacles.remove(obs)
+        target_pose = Pose2D() #TODO
+        robot.state.path = robot.find_shortest_path(robot.state.position, target_pose, obstacles, 80, self.ball_pos, 15)
         robot.state.role = RoleType.OFFENSIVE_SUPPORT
 
-        # ------------------------
-        # 2) Calcula candidato de apoio (_support_candidate)
-        # ------------------------
 
-        theta = math.atan2(goal_y - by, goal_x - bx) # type: ignore
-        nx, ny = -math.sin(theta), math.cos(theta)
-        if not prefer_left:
-            nx, ny = -nx, -ny
 
-        cx = bx + nx * dist_from_ball
-        cy = by + ny * dist_from_ball
 
-        # ------------------------
-        # 3) Corrige para dentro do campo (_push_safe)
-        # ------------------------
-        half_len = 4500 / 2.0
-        half_wid = 3000 / 2.0
-        margin = 300.0  # margem de segurança
-
-        # clamp nos limites
-        cx = max(-half_len + margin, min(half_len - margin, cx))
-        cy = max(-half_wid + margin, min(half_wid - margin, cy))
-
-        # se caiu dentro da área do goleiro, empurra para fora
-        if robot.state.position.get_zone() != Zone_Type.FOE_GOALKEEPER_ZONE:
-            if self.side > 0:
-                cx = -half_len + self.field.keeper_area_length + margin
-            else:
-                cx = half_len - self.field.keeper_area_length - margin
-
-        # ------------------------
-        # 4) Define orientação e salva
-        # ------------------------
-        theta_face_ball = math.atan2(by - cy, bx - cx)
-        target_pose = Pose2D(cx, cy, theta_face_ball)
-
-        # salva no robô ou no blackboard
-        self.robots[id].target_pose = target_pose
-        return target_pose
-
-        
     def set_midlle_suport_position(self, id: RobotID):
         pass
     def set_goalkeeper_position(self, id: RobotID):

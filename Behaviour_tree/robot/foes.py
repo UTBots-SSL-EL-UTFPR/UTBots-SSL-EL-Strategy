@@ -1,17 +1,7 @@
 from ..core.World_State import World_State, RobotID
 from ..core.blackboard import Blackboard_Manager
 from utils.pose2D import Pose2D
-from utils.defines import (
-    ALL_QUADRANTS,
-    Quadrant_type,
-    RoleType,
-    ATTACK_ZONE,
-    MIDFIELD_ZONE,
-    DEFENSE_ZONE,
-    FOE_GOALKEEPER_ZONE,
-    TEAM_GOALKEEPER_ZONE,
-    BALL_POSSESSION_DISTANCE,
-)
+from utils.defines import BALL_POSSESSION_DISTANCE
 
 
 class Foes_State:
@@ -26,11 +16,8 @@ class Foes_State:
         self.world_state = World_State.get_object()
 
     def update(self):
-        if self.world_state is None:
-            return
-        self.position = self.world_state.get_foe_robot_pose(self.robot_id.value) 
-        self.velocity = self.world_state.get_foe_robot_velocity(self.robot_id.value) 
-        self.quadrant_index = self.position.get_quadrant()
+        self.position = self.world_state.get_foe_robot_pose(self.robot_id.value)
+        self.velocity = self.world_state.get_foe_robot_velocity(self.robot_id.value)
 
     # =================== Métricas / consultas ===================
     def check_ball_possession(self) -> bool:
