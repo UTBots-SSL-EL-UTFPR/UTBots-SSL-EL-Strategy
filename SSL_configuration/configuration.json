@@ -1,4 +1,9 @@
 {
+    "global":
+    {
+        "is_left_team": 1,
+        "foes_id": [1,2,0]
+    },
     "Positioning":
     {
         "goal_center_x": -2.25,

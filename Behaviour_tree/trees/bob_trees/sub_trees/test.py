@@ -11,6 +11,8 @@ from ....behaviors.common import condition as condition_nodes
 from ....behaviors.common import actions as action_nodes
 from ...tree import Tree
 
+from Behaviour_tree.positioning.positioning_helper import Positioning_helper
+
 from Behaviour_tree.bob_manager import BobManager
 navigation_flags = BB_flags_and_values.Flags.motion.navigation 
 positions = BB_flags_and_values.Values.Positions
@@ -32,8 +34,7 @@ class PrintNode(pt.behaviour.Behaviour):
             print("setup")
 
     def initialise(self) -> None:
-        print("initialize")
-
+        pass
     def update(self) -> pt.common.Status:
         if self.robot is None or self.robot.state is None:
             return pt.common.Status.FAILURE
@@ -43,7 +44,6 @@ class PrintNode(pt.behaviour.Behaviour):
             ):
             return pt.common.Status.SUCCESS
         if self.robot.state.target_position:
-            print(self.robot.state.target_position)
             self.robot.move_oriented()
         return pt.common.Status.RUNNING
     
@@ -61,46 +61,65 @@ def main() -> None:
     bob_state = BobManager.get_object()
     wd = World_State.get_object()
     kamiji = bob_state.get_bob(RobotID.Kamiji)
-
-    if kamiji is None: 
+    defensor = bob_state.get_bob(RobotID.Defender)
+    pos_helper = Positioning_helper.get_object()
+    if kamiji is None or defensor is None: 
         return
 
-    teste = PrintNode()
-    sequence = pt.composites.Sequence("sequencia",True, [teste])
-    root = pt.trees.BehaviourTree(sequence)
+    #kamiji_tree
+    move = PrintNode()
+    sequence = pt.composites.Sequence("sequencia",True, [move])
+    kamiji_tree = pt.trees.BehaviourTree(sequence)
 
     print("\n--- SETUP ---")
-    setup_args = {
+    kamiji_tree_setup_args = {
         "bob": kamiji,           
         "planner": 11
     }
-    root.setup(timeout=1.0, visitor=None, **setup_args)
+    kamiji_tree.setup(timeout=1.0, visitor=None, **kamiji_tree_setup_args)
+
+    #defensor_tree
+    move = PrintNode()
+    sequence = pt.composites.Sequence("sequencia",True, [move])
+    defensor_tree = pt.trees.BehaviourTree(sequence)
+    defensor_tree_setup_args = {
+            "bob": defensor,           
+            "planner": 11
+        }
+    defensor_tree.setup(timeout=1.0, visitor=None, **defensor_tree_setup_args)
 
 
     delay = 2
     t0 = time.time()
-
     while time.time() <= delay + t0:
         wd.update()
 
     t0 = time.time()
-    delay = 0.01
+    delay = 1
 
     print("\n--- LOOP ---")
     wd.update()
     bob_state.update_all()
-    bob_state.set_kicker_position(RobotID.Kamiji)
+    
+    print("-"*100)
 
-    for pos in kamiji.state.path:
-        print(f" fazendo {pos}")
+    bob_state.set_offensive_suport_position(RobotID.Defender)
+    bob_state.set_kicker_position(RobotID.Kamiji)
+    print("-"*100)
 
     while True:
         if time.time() >= delay + t0:
             wd.update()
             bob_state.update_all()
-            root.tick()
+            # kamiji_tree.tick()
+            # defensor_tree.tick()
+            lista = pos_helper.get_atack_quadrant_free(150)
+            for q in lista:
+                if q:
+                    print(q.name)
+                    pass
+            print("-"*100)
             t0 = time.time()
-
 
     
 

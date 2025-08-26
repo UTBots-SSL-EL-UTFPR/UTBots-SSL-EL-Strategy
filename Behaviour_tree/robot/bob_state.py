@@ -5,12 +5,7 @@ from .all_bob_states import AllBobs_State
 
 from utils.pose2D import Pose2D
 from SSL_configuration.configuration import Configuration
-from utils.defines import (
-    ALL_QUADRANTS,
-    Quadrant_type,
-    RoleType,
-    BALL_POSSESSION_DISTANCE, #verificar om configuration
-)
+from utils.defines import Quadrant, QuadrantType, Zone, ZoneType, RoleType, BALL_POSSESSION_DISTANCE
 #TODO
 #   linha 112
 #
@@ -74,10 +69,10 @@ class Bob_State:
         else:
             self.position_rept = 0
             #---------------------quadrante---------------------#
-            if new_pos.get_quadrant() != self.position.quadrant:
+            if new_pos.quadrant != self.position.quadrant:
                 event_callbacks.new_quadrant(self.robot_id.name, new_pos.quadrant)
-                if new_pos.get_zone() != self.position.get_zone():
-                    event_callbacks.new_zone(self.robot_id.name, new_pos.get_zone())
+                if new_pos.quadrant != self.position.zone:
+                    event_callbacks.new_zone(self.robot_id.name, new_pos.zone)
             self.position = new_pos
 
         if self.position_rept >= 15:
@@ -123,7 +118,7 @@ class Bob_State:
     def set_position(self, position: Pose2D):
         """Define manualmente a posição e recalcula quadrante e role."""
         self.position = position
-        self.quadrant_index = self.position.get_quadrant()
+        self.quadrant_index = self.position.quadrant
 
     def set_velocity(self, velocity: Pose2D):
         """Atualiza o vetor de velocidade (vx, vy)."""

@@ -154,7 +154,6 @@ class World_State:
         x, y = self._robot_positions[foes_collor][robot_id]
         theta = self._robot_orientations[foes_collor][robot_id]
         pos = Pose2D(int(x), int(y), theta)
-        pos.get_quadrant()
         return pos
 
     def get_foe_robot_velocity(self, robot_id: int) -> Pose2D | None:
@@ -167,14 +166,26 @@ class World_State:
         theta = self._robot_orientations[foes_collor][robot_id]
         return Pose2D(int(vx), int(vy), theta)
     
-    def get_all_robot_position(self):
+
+    def get_all_foes_position(self):
+        robots :list[Pose2D] = []
+        for id in self.configuration.foes_id:
+            pos = self.get_foe_robot_pose(id)
+            if pos:
+                robots.append(pos) 
+        return robots
+    
+    def get_all_team_position(self):
         robots :list[Pose2D] = []
         for id in RobotID:
             pos = self.get_team_robot_pose(id.value)
             if pos:
                 robots.append(pos)  
-        for id in RobotID:
-            pos = self.get_foe_robot_pose(id.value)
-            if pos:
-                robots.append(pos) 
         return robots
+
+    def get_all_robot_position(self):
+        robots :list[Pose2D] = []
+        robots.extend(self.get_all_foes_position())
+        robots.extend(self.get_all_team_position())
+        return robots
+
