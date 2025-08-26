@@ -248,21 +248,16 @@ class Bob:
 
     def find_shortest_path(self, start: Pose2D, end: Pose2D, obstacules: list[Pose2D], raio: float, ball: Pose2D = Pose2D(0, 0), raio_ball: float = 0):
         from collections import deque
-        from utils.defines import FIELD_X, FIELD_Y
         step = 20
         start_cell = (int(start.x // step), int(start.y // step))
         end_cell = (int(end.x // step), int(end.y // step))
-
-        # Limites máximos do grid
-        max_x = int(FIELD_X // step)
-        max_y = int(FIELD_Y // step)
 
         queue = deque([start_cell])
         visited = {start_cell: None} 
         while queue:
             current = queue.popleft()
-            if current == end_cell:
 
+            if current == end_cell:
                 # Reconstrói caminho
                 path_rev = []
                 while current is not None:
@@ -277,18 +272,17 @@ class Bob:
                 (cx+1, cy), (cx-1, cy), (cx, cy+1), (cx, cy-1),
                 (cx+1, cy+1), (cx-1, cy-1), (cx+1, cy-1), (cx-1, cy+1)
             ]:
-                # Checagem de limites do campo
-                if not (0 <= nx < max_x and 0 <= ny < max_y):
-                    continue
                 if (nx, ny) not in visited:
                     wx, wy = nx*step, ny*step
                     if Bob.is_free(wx, wy, obstacules, raio):
+
                         if raio_ball > 0 and not Bob.is_free(wx, wy, [ball], raio_ball):
                             continue
+                        
                         visited[(nx, ny)] = current # type: ignore
                         queue.append((nx, ny))
-        print("sem caminho, retornando start")
-        return [start] 
+
+        return [start]  # Caso não encontre caminho
     
     def go_to_ball(self, ball_position: Pose2D) -> bool:
         return self.move(ball_position.x, ball_position.y)
