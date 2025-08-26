@@ -107,6 +107,25 @@ class BobManager:
             return None
         
         free_quadrants = self.positioning_helper.get_atack_quadrant_free(100)
+        
+        if(self.ball_pos.y > 675):
+            #prioridade maior para menor
+            #pegar o robo com a melhor visibulidade do kicker
+            #tendo os pontos com boa "visibilidade", pegar o com mais area aberta do gol
+            pass
+        elif(self.ball_pos.y < -675):
+            #prioridade menor para maior
+            #pegar o robo com a melhor visibulidade do kicker
+            #tendo os pontos com boa "visibilidade", pegar o com mais area aberta do gol
+            pass
+
+        else:
+            #tentar "enganar" o chute
+            #posicionar-se de maneira a sair da frente da bola para que ela passe para o gol
+            pass
+
+
+
 
         obstacles = self.world_state.get_all_robot_position()
         for obs in obstacles:
