@@ -1,3 +1,40 @@
+# Flag global: True se o time defende o gol da direita (campo invertido)
+FIELD_INVERTED_SIDE = False  # Altere para True se seu time defende o lado direito
+
+_QUADRANT_INVERT_MAP = {
+    'Q1': 'Q4', 'Q2': 'Q3', 'Q3': 'Q2', 'Q4': 'Q1',
+    'Q5': 'Q8', 'Q6': 'Q7', 'Q7': 'Q6', 'Q8': 'Q5',
+    'Q9': 'Q12', 'Q10': 'Q11', 'Q11': 'Q10', 'Q12': 'Q9',
+}
+
+def get_quadrant_type(idx_or_name):
+    """
+    Retorna o QuadrantType correto considerando o lado do campo.
+    Aceita índice (1..12) ou nome ('Q1'..'Q12').
+    """
+    if isinstance(idx_or_name, int):
+        name = f"Q{idx_or_name}"
+    else:
+        name = str(idx_or_name)
+    if FIELD_INVERTED_SIDE:
+        name = _QUADRANT_INVERT_MAP.get(name, name)
+    return QuadrantType[name]
+
+def get_zone_type(name: str):
+    """
+    Retorna a ZoneType correta considerando o lado do campo.
+    Para zonas de ataque/defesa, inverte se necessário.
+    """
+    if FIELD_INVERTED_SIDE:
+        if name.upper() == 'ATTACK':
+            return ZoneType.DEFENSE
+        if name.upper() == 'DEFENSE':
+            return ZoneType.ATTACK
+        if name.upper() == 'TEAM_GOALKEEPER':
+            return ZoneType.FOE_GOALKEEPER
+        if name.upper() == 'FOE_GOALKEEPER':
+            return ZoneType.TEAM_GOALKEEPER
+    return ZoneType[name.upper()]
 # defines.py - Constantes globais do projeto
 
 from dataclasses import dataclass, field
