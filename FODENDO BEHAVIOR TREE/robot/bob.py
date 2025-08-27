@@ -8,7 +8,7 @@ le e executa comandos de blackboard
 """
 
 # ssl_robot_controller/robot/robot.py
-
+import math
 import time
 
 class Bob:
@@ -30,5 +30,3 @@ class Bob:
          
     def rotate():
         ...
-
-        
