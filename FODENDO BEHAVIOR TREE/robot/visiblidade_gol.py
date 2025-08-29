@@ -1,7 +1,6 @@
 import math
-from utils import pose2D    # Não tenho certeza de como faz o import
 
-ROBOT_RADIUS = 0.09
+ROBOT_RADIUS = 90
 
 def haIntersecao (xr, yr, x0, y0, angulo):
     a = 1
@@ -17,45 +16,60 @@ def haIntersecao (xr, yr, x0, y0, angulo):
             return t2
     return 0
 
-def skip_bob(theta, x, y):
+# calcula o ângulo entre a origem e o último ponto (na vertical) da circunferência
+def skip_bob(theta, xr, yr, x0, y0):
     phi = theta + math.pi/2 # Ângulo entre x+ e a reta perpendicular ao raio
-    t = haIntersecao(x, y, x, y, phi)
-    x_prox = x + t*math.cos(phi)
-    theta = math.cos(x_prox/t)
+    t = haIntersecao(xr, yr, xr, yr, phi)   # Encontra o praâmetro e calcula o ângulo
+    x_prox = xr + t*math.cos(phi)   # x do limite superior da circunferência
+    theta = math.cos((x_prox-x0)/t)
     return theta
 
-def is_visible(obstacles: list[Pose2D], p0: *Pose2D, x_gol: int, y_golMin: int, y_golMax):
-    x = p0.x
-    y = p0.y
-    # Ângulo entre os lims. do gol e o bob chutando
-    theta_max = math.atan((y_golMax - y)/((x_gol - x)))
-    theta_min = math.atan((y_golMin - y)/((x_gol - x))) 
-    delta_theta = math.pi/180   # Cada raio é lançado a cada ~1 grau
-    theta = theta_min
-    angulo_chute_aux = [0, 0]
-    angulo_chute = [0,0]
+# retorna o maior intervalo de visão
+def is_visible(obstacles, p0, x_gol, y_golMin, y_golMax):
+    x0 = p0[0]    # Posição dop robô  que está chutando
+    y0 = p0[1]
+    d = math.sqrt(y0**2 + (x_gol-x0)**2)
+    print(d)
 
-    vision = False
-    # A cada d(theta), verifica se o raio bate no gol
+    # Ângulo entre os lims. do gol e o bob chutando
+    theta_max = math.atan((y_golMax - y0)/((x_gol - x0)))
+    theta_min = math.atan((y_golMin - y0)/((x_gol - x0))) 
+    delta_theta = (theta_max - theta_min)/d    # O n° de raios lançados é igual à distância (em mm) do gol
+    theta = theta_min
+
+    angulo_chute_aux = [-1, -1]
+    angulo_chute = [-1,-1]  # Lista com o início e o fim do intervalo de visão
+    vision = False 
+
     while (theta <= theta_max):
         find_goal = True
+        # Verifica se há intercecção em cada obstáculo 
         for i in range(len(obstacles)):
-            if(haIntersecao(obstacles[i].x, obstacles[i].y, x, y, theta)):
+            if(haIntersecao(obstacles[i][0], obstacles[i][1], x0, y0, theta)):
                 find_goal = False
-                skip_bob(theta, x, y)
+                skip_bob(theta, obstacles[i][0], obstacles[i][1], x0, y0)
                 break
         if(find_goal):
             if(not vision):
                 angulo_chute_aux[0] = theta
                 vision = True
-            else:
-                angulo_chute_aux[1] = theta
         else:
             if(vision):
+                angulo_chute_aux[1] = theta
+                vision = False
                 if(angulo_chute[1]-angulo_chute[0] < angulo_chute_aux[1]-angulo_chute_aux[0]):
                     angulo_chute[0] = angulo_chute_aux[0]
                     angulo_chute[1] = angulo_chute_aux[1]
-                    angulo_chute_aux = [0,0]
+                angulo_chute_aux = [-1,-1]
         theta += delta_theta
-    return False
-        
+    return angulo_chute # retorna o maior ângulo de visão, senão retorna [-1,-1]
+
+# Teste
+if __name__ == "__main__":
+    obstacles = [[1000, 0]]
+    p0 = [0,0]
+    x_gol = 2250
+    y_golMax = 750
+    y_golMin = -750
+
+    print(is_visible(obstacles, p0, x_gol, y_golMin, y_golMax))
