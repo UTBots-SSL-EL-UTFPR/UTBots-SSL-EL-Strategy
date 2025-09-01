@@ -1,12 +1,13 @@
 from utils import defines
 from utils.defines import ZoneType, RoleType, QuadrantType, Quadrant
 from utils.pose2D import Pose2D
-
+import math
 from ..core.World_State import World_State,RobotID
 
 from SSL_configuration.configuration import Configuration
 
-from typing import Iterable 
+from typing import Iterable,List, Tuple
+from dataclasses import dataclass
 
 GOALKEEPER_DISTANCE_X = 2250
 HALF_GOALKEEPER_AREA_WIDTH = 675
@@ -19,7 +20,36 @@ GRID_STEP = 250
 
 HALF_LEGHT = int(4500 / 2)
 HALF_WID = int(3000 / 2)
+MIN_PASS_DISTANCE = 1000
 
+ROBOT_RADIUS = int(90)
+
+class ShadowCone:
+    def __init__(self, origin: Pose2D, opponent: Pose2D, radius = ROBOT_RADIUS):
+        self.origin = origin
+        self.opponent = opponent
+        self.radius = radius
+        self.radius_sq = radius ** 2
+
+        self.vec_origin_to_opp = (opponent.x - origin.x, opponent.y - origin.y)
+        self.dist_sq = self.vec_origin_to_opp[0]**2 + self.vec_origin_to_opp[1]**2
+        
+        self.origin_inside = self.dist_sq <= self.radius_sq
+        
+        if not self.origin_inside and self.dist_sq > self.radius_sq:
+            dist = math.sqrt(self.dist_sq)
+            
+            ux = self.vec_origin_to_opp[0] / dist
+            uy = self.vec_origin_to_opp[1] / dist
+            
+            cos_alpha = math.sqrt(self.dist_sq - self.radius_sq) / dist
+            sin_alpha = self.radius / dist
+            
+            self.ray_left = (ux * cos_alpha - uy * sin_alpha, uy * cos_alpha + ux * sin_alpha)
+            self.ray_right = (ux * cos_alpha + uy * sin_alpha, uy * cos_alpha - ux * sin_alpha)
+        else:
+            self.ray_left = (0, 0)
+            self.ray_right = (0, 0)
 
 class Positioning_helper:
     _instance = None
@@ -49,7 +79,7 @@ class Positioning_helper:
     @staticmethod
     def verify_quadrant_free(quad: Quadrant, max_dist_from_border: int) -> bool:
         all_robots: list[Pose2D]
-        all_robots = Positioning_helper._world_state.get_all_robot_position()
+        all_robots = Positioning_helper._world_state.get_all_foes_position()
 
         robots_in_quad = [position for position in all_robots if position.quadrant.name == quad.name] # type: ignore
 
@@ -67,7 +97,9 @@ class Positioning_helper:
         """
         attack_zone_quadrants = ZoneType.ATTACK.value.quadrants
         free_quadrants_enums = []
+
         for q_data in attack_zone_quadrants:
+
             if Positioning_helper.verify_quadrant_free(q_data, max_dist_from_border):
                 free_quadrants_enums.append(QuadrantType[q_data.name])
 
@@ -93,3 +125,361 @@ class Positioning_helper:
             if pose.distance_to(e) < INFLUENCE_RADIUS:
                 return False
         return True
+    
+
+    @staticmethod
+    def is_point_in_shadow_vectorized(point: Pose2D, origin: Pose2D, shadow: ShadowCone) -> bool:
+        """
+        Versão otimizada que verifica se um ponto está em uma sombra pré-calculada.
+        """
+        if shadow.origin_inside:
+            return True
+
+        vec_origin_to_point = (point.x - origin.x, point.y - origin.y)
+
+        dot_product_direction = (vec_origin_to_point[0] * shadow.vec_origin_to_opp[0] + 
+                                 vec_origin_to_point[1] * shadow.vec_origin_to_opp[1])
+        if dot_product_direction < 0:
+            return False 
+
+        cross_left = shadow.ray_left[0] * vec_origin_to_point[1] - shadow.ray_left[1] * vec_origin_to_point[0]
+        cross_right = shadow.ray_right[0] * vec_origin_to_point[1] - shadow.ray_right[1] * vec_origin_to_point[0]
+
+        return cross_left >= 0 and cross_right <= 0
+
+    @staticmethod
+    def find_largest_visible_square_vectorized(quadrant: Quadrant,shadows: List[ShadowCone],origin: Pose2D, grid_step: float = 100) -> Tuple[int, int, int] | None:
+        """
+        Encontra o maior quadrado visível usando matemática vetorial e busca binária.
+        Recebe uma lista de 'shadows' pré-calculados para máxima eficiência.
+        """
+        best_square = (0, 0, 0)
+
+        y = quadrant.y_min
+        while y < quadrant.y_max:
+            x = quadrant.x_min
+            while x < quadrant.x_max:
+                top_left_candidate = Pose2D(int(x), int(y))
+                
+                is_start_visible = True
+                for s in shadows:
+                    if Positioning_helper.is_point_in_shadow_vectorized(top_left_candidate, origin, s):
+                        is_start_visible = False
+                        break
+                
+                if not is_start_visible:
+                    x += grid_step
+                    continue
+
+                high = min(quadrant.x_max - x, quadrant.y_max - y)
+                best_side_for_this_corner = 0
+
+                if high > best_square[2]:
+                    low = best_square[2]
+
+                    while low <= high:
+                        mid = round(((low + high) / 2) / grid_step) * grid_step
+                        if mid <= best_side_for_this_corner:
+                            break 
+
+                        corners = [
+                            top_left_candidate, Pose2D(int(x + mid), int(y)),
+                            Pose2D(int(x), int(y + mid)), Pose2D(int(x + mid), int(y + mid))
+                        ]
+                        is_visible = True
+                        for corner in corners:
+                            for s in shadows:
+                                if Positioning_helper.is_point_in_shadow_vectorized(corner, origin, s):
+                                    is_visible = False
+                                    break
+                            if not is_visible:
+                                break
+                        
+                        if is_visible:
+                            best_side_for_this_corner = mid
+                            low = mid + grid_step
+                        else:
+                            high = mid - grid_step
+
+                if best_side_for_this_corner > best_square[2]:
+                    best_square = (int(x), int(y), int(best_side_for_this_corner))
+                
+                x += grid_step
+            y += grid_step
+        
+        return best_square if best_square[2] > 0 else None
+    
+    @staticmethod
+    def find_largest_dual_visibility_square(
+        quadrant: Quadrant,
+        origin_kicker: Pose2D,
+        origin_goal: Pose2D,
+        opponents: List[Pose2D],
+        grid_step: float = 100
+    ) -> Tuple[int, int, int] | None:
+        """
+        Encontra o maior quadrado que é visível SIMULTANEAMENTE a partir do
+        cobrador (origin_kicker) e do gol (origin_goal).
+        """
+        shadows_from_kicker = [ShadowCone(origin_kicker, opp) for opp in opponents]
+        shadows_from_goal = [ShadowCone(origin_goal, opp) for opp in opponents]
+        best_square = (0, 0, 0)
+        # for s in shadows_from_kicker:
+        #     print(s.ray_left)
+        #     print(s.ray_right)
+
+        y = quadrant.y_min
+        while y < quadrant.y_max:
+            x = quadrant.x_min
+            while x < quadrant.x_max:
+                top_left_candidate = Pose2D(int(x), int(y))
+                
+                is_start_visible = True
+                for s in shadows_from_kicker:
+                    if Positioning_helper.is_point_in_shadow_vectorized(top_left_candidate, origin_kicker, s):
+                        is_start_visible = False
+                        break
+                if not is_start_visible:
+                    x += grid_step
+                    continue
+                
+                for s in shadows_from_goal:
+                    if Positioning_helper.is_point_in_shadow_vectorized(top_left_candidate, origin_goal, s):
+                        is_start_visible = False
+                        break
+
+                if not is_start_visible:
+                    x += grid_step
+                    continue
+                
+                high = min(quadrant.x_max - x, quadrant.y_max - y)
+                best_side_for_this_corner = 0
+
+                if high > best_square[2]:
+                    low = best_square[2]
+                    while low <= high:
+                        mid = round(((low + high) / 2) / grid_step) * grid_step
+                        if mid <= best_side_for_this_corner: break 
+
+                        corners = [ top_left_candidate, Pose2D(int(x + mid), int(y)),
+                                    Pose2D(int(x), int(y + mid)), Pose2D(int(x + mid), int(y + mid)) ]
+                        
+                        is_fully_visible = True
+                        for corner in corners:
+                            for s in shadows_from_kicker:
+                                if Positioning_helper.is_point_in_shadow_vectorized(corner, origin_kicker, s):
+                                    is_fully_visible = False; break
+                            if not is_fully_visible: break
+                            
+                            for s in shadows_from_goal:
+                                if Positioning_helper.is_point_in_shadow_vectorized(corner, origin_goal, s):
+                                    is_fully_visible = False; break
+                            if not is_fully_visible: break
+                        
+                        if is_fully_visible:
+                            best_side_for_this_corner = mid
+                            low = mid + grid_step
+                        else:
+                            high = mid - grid_step
+
+                if best_side_for_this_corner > best_square[2]:
+                    best_square = (int(x), int(y), int(best_side_for_this_corner))
+                
+                x += grid_step
+            y += grid_step
+        
+        return best_square if best_square[2] > 0 else None
+    
+    # Dentro da classe Positioning_helper
+
+    @staticmethod
+    def find_best_point_in_square(square: Tuple[int, int, int],kicker_pos: Pose2D,ball_pos: Pose2D, goal_center: Pose2D, min_pass_dist: float,point_grid_step: float = 100.0) -> Pose2D | None:
+        x_start, y_start, side = square
+        if side == 0:
+            return None
+        print(square)
+        valid_points = []
+        
+        y = y_start
+        while y <= y_start + side:
+            x = x_start
+            while x <= x_start + side:
+                candidate = Pose2D(int(x), int(y))
+                
+                dist_to_kicker = candidate.distance_to(kicker_pos)
+                is_advanced_enough = candidate.x >= ball_pos.x
+                
+                if dist_to_kicker >= min_pass_dist and is_advanced_enough:
+                    valid_points.append(candidate)
+                
+                x += point_grid_step
+            y += point_grid_step
+
+        if not valid_points:
+            return None
+
+        best_point = min(valid_points, key=lambda p: p.distance_to(goal_center))
+        return best_point
+    
+    @staticmethod
+    def find_safest_point_in_square(
+        square: Tuple[int, int, int],
+        kicker_pos: Pose2D,
+        ball_pos: Pose2D,
+        opponents: List[Pose2D],
+        min_pass_dist: float,
+        point_grid_step: float = 100.0
+    ) -> Pose2D | None:
+        """
+        Busca dentro de um quadrado o ponto que maximiza a distância para o oponente mais próximo,
+        respeitando as restrições de passe e de posição em relação à bola.
+        """
+        x_start, y_start, side = square
+        if side == 0:
+            return None
+
+        valid_points = []
+        
+        y = y_start
+        while y <= y_start + side:
+            x = x_start
+            while x <= x_start + side:
+                candidate = Pose2D(int(x), int(y))
+                dist_to_kicker = candidate.distance_to(kicker_pos)
+                is_advanced_enough = candidate.x >= ball_pos.x
+                
+                if dist_to_kicker >= min_pass_dist and is_advanced_enough:
+                    valid_points.append(candidate)
+                
+                x += point_grid_step
+            y += point_grid_step
+
+        if not valid_points:
+            return None
+        safest_point = None
+        max_safety_distance = -1
+
+        for point in valid_points:
+            if not opponents: 
+                min_dist_to_opponent = float('inf')
+            else:
+                min_dist_to_opponent = min([point.distance_to(opp) for opp in opponents])
+            
+            if min_dist_to_opponent > max_safety_distance:
+                max_safety_distance = min_dist_to_opponent
+                safest_point = point
+                
+        return safest_point
+    
+
+    @staticmethod
+    def _distance_point_to_segment_sq(p: Pose2D, v: Pose2D, w: Pose2D) -> float:
+        """
+        Calcula a distância ao quadrado de um ponto 'p' a um segmento de reta 'v-w'.
+        É um cálculo geométrico padrão para encontrar a menor distância.
+        """
+        l2 = v.distance_to_sq(w)
+        if l2 == 0.0:
+            return p.distance_to_sq(v)
+        
+        dot_product = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y))
+        t = max(0, min(1, dot_product / l2))
+        
+        # Calcula as coordenadas do ponto projetado no segmento de reta
+        projection_x = v.x + t * (w.x - v.x)
+        projection_y = v.y + t * (w.y - v.y)
+        
+        return (p.x - projection_x)**2 + (p.y - projection_y)**2
+    
+
+# Dentro da sua classe Positioning_helper
+
+    @staticmethod
+    def _project_point_on_ray(point: Pose2D, ray_origin: Pose2D, ray_direction: Tuple[float, float]) -> Pose2D:
+        """
+        Projeta um ponto em um raio infinito. Essencial para encontrar o ponto mais
+        próximo na borda de um cone de sombra.
+        """
+        # Vetor da origem do raio para o ponto que queremos projetar
+        vec_to_point_x = point.x - ray_origin.x
+        vec_to_point_y = point.y - ray_origin.y
+        
+        dir_x, dir_y = ray_direction
+        
+        # O produto escalar nos dá o comprimento da projeção ao longo da direção do raio
+        dot_product = vec_to_point_x * dir_x + vec_to_point_y * dir_y
+        
+        # Usamos max(0, ...) para garantir que a projeção esteja no raio
+        # e não "atrás" da sua origem.
+        t = max(0, dot_product)
+
+        return Pose2D(int(ray_origin.x + t * dir_x), int(ray_origin.y + t * dir_y))
+    
+
+    @staticmethod
+    def is_path_clear(start_pos: Pose2D, end_pos: Pose2D, opponents: List[Pose2D], robot_radius: float = 90.0) -> bool:
+        """
+        Função auxiliar que verifica de forma simples se o caminho entre dois pontos está livre.
+        Retorna True se estiver livre, False se estiver obstruído.
+        """
+        if not opponents:
+            return True
+        collision_dist_sq = (robot_radius + robot_radius)**2
+        
+        for opp in opponents:
+            dist_sq = Positioning_helper._distance_point_to_segment_sq(opp, start_pos, end_pos)
+            if dist_sq < collision_dist_sq:
+                return False
+        return True
+
+    @staticmethod
+    def get_clear_pass_position(robot_pos: Pose2D) -> Tuple[bool, Pose2D]:
+        """
+        Verifica a visibilidade e, se obstruído, calcula o ponto visível mais próximo
+        da posição atual do robô, saindo do cone de sombra do bloqueador.
+        """
+        ball_pos = Positioning_helper._world_state.get_ball_position()
+        all_robots = Positioning_helper._world_state.get_all_robot_position()
+        obstacles = [obs for obs in all_robots if obs != robot_pos]
+
+        if Positioning_helper.is_path_clear(ball_pos, robot_pos, obstacles, ROBOT_RADIUS):
+            return True, ball_pos
+
+        collision_dist_sq = (ROBOT_RADIUS + ROBOT_RADIUS)**2
+        blockers = []
+        for obs in obstacles:
+            if Positioning_helper._distance_point_to_segment_sq(obs, ball_pos, robot_pos) < collision_dist_sq:
+                blockers.append(obs)
+
+        if not blockers:
+            return True, ball_pos 
+
+        main_blocker = min(blockers, key=lambda b: b.distance_to_sq(robot_pos))
+
+        # 4. Cria o "Cone de Sombra Inflado"
+        inflated_shadow = ShadowCone(ball_pos, main_blocker, ROBOT_RADIUS*2 + 50)
+
+        if inflated_shadow.origin_inside:
+            return False, robot_pos 
+
+        # 5. Projeta a posição atual do robô nas duas bordas do cone de sombra inflado
+        left_ray_dir = inflated_shadow.ray_left
+        right_ray_dir = inflated_shadow.ray_right
+        norm_left = math.hypot(*left_ray_dir)
+        norm_right = math.hypot(*right_ray_dir)
+
+        if norm_left == 0 or norm_right == 0: return False, robot_pos # Evita divisão por zero
+
+        left_ray_dir_unit = (left_ray_dir[0] / norm_left, left_ray_dir[1] / norm_left)
+        right_ray_dir_unit = (right_ray_dir[0] / norm_right, right_ray_dir[1] / norm_right)
+
+        escape_point1 = Positioning_helper._project_point_on_ray(robot_pos, ball_pos, left_ray_dir_unit)
+        escape_point2 = Positioning_helper._project_point_on_ray(robot_pos, ball_pos, right_ray_dir_unit)
+        
+        # 6. Escolhe o ponto de escape que está mais perto da posição atual do robô
+        dist1_sq = robot_pos.distance_to_sq(escape_point1)
+        dist2_sq = robot_pos.distance_to_sq(escape_point2)
+
+        best_escape_point = escape_point1 if dist1_sq < dist2_sq else escape_point2
+        
+        return False, best_escape_point

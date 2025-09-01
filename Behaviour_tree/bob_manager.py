@@ -5,12 +5,12 @@ from .robot.bob import Bob
 
 from typing import Dict
 from utils.pose2D import Pose2D
-from utils.defines import RoleType, ZoneType
+from utils.defines import RoleType, ZoneType, QuadrantType
 from .core.World_State import World_State
 from .core.World_State import RobotID
 from SSL_configuration.configuration import Configuration
 import math
-from .positioning.positioning_helper import Positioning_helper
+from .positioning.positioning_helper import Positioning_helper, MIN_PASS_DISTANCE, HALF_LEGHT
 
 class BobManager:
     _instance = None
@@ -22,7 +22,7 @@ class BobManager:
         self.bobs: Dict[RobotID, Bob] = {}
         
         self.trees: Dict[RobotID, Tree] = {}
-
+        self.configuration = Configuration.getObject()
         self.world_state = World_State.get_object()
         self.positioning_helper = Positioning_helper.get_object()
 
@@ -93,55 +93,136 @@ class BobManager:
 
     def set_offensive_suport_position(self, id: RobotID):
         """
-        Calcula e define a posição do robô de SUPORTE OFENSIVO com base em:
-        1) Lado de preferência do adversário (mais robôs com y > 0 ⇒ preferem "alto");
-        2) Restrição do espaço ao QUADRANTE AVANÇADO (metade ofensiva) do LADO MAIS LIVRE;
-        3) Limitações: margens de campo, fora da área do goleiro e fora do raio de influência dos inimigos;
-        4) Seleção: ponto VÁLIDO mais próximo do centro do gol adversário (empate ⇒ ponto mais seguro).
-
-        Grava em robot.state.target_position e define o papel OFFENSIVE_SUPPORT.
-        Retorna a Pose2D alvo.
+        Calcula a posição do SUPORTE OFENSIVO de forma determinística, buscando
+        o maior espaço com visibilidade tanto do cobrador quanto do gol.
         """
         robot = self.bobs.get(id)
         if robot is None or robot.state is None:
             return None
-        
-        free_quadrants = self.positioning_helper.get_atack_quadrant_free(100)
-        
-        if(self.ball_pos.y > 675):
-            #prioridade maior para menor
-            #pegar o robo com a melhor visibulidade do kicker
-            #tendo os pontos com boa "visibilidade", pegar o com mais area aberta do gol
-            pass
-        elif(self.ball_pos.y < -675):
-            #prioridade menor para maior
-            #pegar o robo com a melhor visibulidade do kicker
-            #tendo os pontos com boa "visibilidade", pegar o com mais area aberta do gol
-            pass
 
+        robot_pos = robot.state.position
+        
+        opponents = self.world_state.get_all_foes_position()
+        goal_center = Pose2D(1500, 0)
+
+        target_pose = robot_pos
+        free_quadrants_enums = self.positioning_helper.get_atack_quadrant_free(100)
+
+        found_squares = {}
+        for quad_enum in free_quadrants_enums:
+            quad_obj = quad_enum.value
+            visible_square = self.positioning_helper.find_largest_dual_visibility_square(
+                quadrant=quad_obj,
+                origin_kicker=self.ball_pos,
+                origin_goal=goal_center,
+                opponents=opponents,
+                grid_step=150
+            )
+
+            if visible_square:
+                found_squares[quad_enum] = visible_square
+
+        priority_order = []
+        if self.ball_pos.y <= 0:
+            priority_order = [
+                QuadrantType.Q4, QuadrantType.Q3,  
+                QuadrantType.Q12, QuadrantType.Q11, 
+                QuadrantType.Q8, QuadrantType.Q7   
+            ]
         else:
-            #tentar "enganar" o chute
-            #posicionar-se de maneira a sair da frente da bola para que ela passe para o gol
-            pass
+            priority_order = [
+                QuadrantType.Q12, QuadrantType.Q11, 
+                QuadrantType.Q4, QuadrantType.Q3,   
+                QuadrantType.Q8, QuadrantType.Q7   
+            ]
+        for priority_quad in priority_order:
+            if priority_quad in found_squares:
+                
+                chosen_square = found_squares[priority_quad]
+                
+                safest_point = self.positioning_helper.find_safest_point_in_square(
+                    square=chosen_square,
+                    kicker_pos=self.ball_pos,
+                    ball_pos=self.ball_pos,
+                    opponents=opponents,
+                    min_pass_dist=MIN_PASS_DISTANCE
+                )
+                if safest_point:
+                    target_pose = Pose2D(Pose2D._clamp(safest_point.x,-2050,2050),Pose2D._clamp(safest_point.y, -1300, 1300))
+                    
+                    break 
+        obstacles = self.world_state.get_all_robot_position()
+        obstacles = [obs for obs in obstacles if obs != robot_pos]
+        print(target_pose, robot_pos)
+        print(obstacles)
+        robot.state.path = robot.find_shortest_path(robot_pos, target_pose, obstacles, 80, self.ball_pos, 15)
+        print("passei_2")
+        robot.state.role = RoleType.OFFENSIVE_SUPPORT
+        return
 
 
+    def set_midlle_suport_position(self, id: RobotID, main_suport_pose: Pose2D):
+        """
+        Posiciona o robô de "suporte do meio".
 
+        A lógica é:
+        1. Escolher o lado do campo (Y positivo ou negativo) oposto ao do suporte principal.
+        2. Mirar em um ponto pré-definido nesse lado (X=1300, Y=+-1000).
+        3. Verificar se há oponentes próximos a este ponto alvo.
+        4. Se houver, ajustar a posição para ficar "à frente" do oponente
+        """
+        robot = self.bobs.get(id)
+        if robot is None or robot.state is None:
+            return None
+        TARGET_X = 1300
+        TARGET_Y_MAGNITUDE = 1000
+        SAFE_OPPONENT_DISTANCE = 400
+
+
+        if main_suport_pose.y >= 0:
+            primary_target = Pose2D(TARGET_X, -TARGET_Y_MAGNITUDE)
+        else:
+            primary_target = Pose2D(TARGET_X, TARGET_Y_MAGNITUDE)
+
+        opponents = self.world_state.get_all_foes_position()
+        target_pose = primary_target 
+
+        if opponents:
+            closest_opponent = min(opponents, key=lambda opp: opp.distance_to(primary_target))
+            dist_to_closest = primary_target.distance_to(closest_opponent)
+
+            if dist_to_closest < SAFE_OPPONENT_DISTANCE:
+
+                new_x = closest_opponent.x + SAFE_OPPONENT_DISTANCE
+                
+                if new_x > HALF_LEGHT - 200:
+                    new_x = HALF_LEGHT - 200
+
+                target_pose = Pose2D(new_x, primary_target.y)
 
         obstacles = self.world_state.get_all_robot_position()
-        for obs in obstacles:
-            if obs == robot.state.position:
-                obstacles.remove(obs)
-        target_pose = Pose2D() #TODO
+        obstacles = [obs for obs in obstacles if obs != robot.state.position]
+        
+        robot.state.target_position = target_pose
+        robot.state.path = robot.find_shortest_path(robot.state.position, target_pose, obstacles, 80, self.ball_pos, 15)
+        robot.state.role = RoleType.DEFENSIVE_SUPPORT
+        
+        return target_pose
+
+
+    def set_goalkeeper_position(self, id: RobotID):
+        robot = self.bobs.get(id)
+        if robot is None or robot.state is None:
+            return None
+        robot_pos = robot.state.position
+        self.ball_pos
+        obstacles = self.world_state.get_all_robot_position()
+        obstacles = [obs for obs in obstacles if obs != robot_pos]
+        
+        target_pose = Pose2D(-100,0)
         robot.state.path = robot.find_shortest_path(robot.state.position, target_pose, obstacles, 80, self.ball_pos, 15)
         robot.state.role = RoleType.OFFENSIVE_SUPPORT
 
-
-
-
-    def set_midlle_suport_position(self, id: RobotID):
-        pass
-    def set_goalkeeper_position(self, id: RobotID):
-        pass
     
 
     def set_bob_freekick_position(self):
@@ -149,14 +230,23 @@ class BobManager:
         Decide metas de posicionamento para **goleiro**, **cobrador** e **apoio** em bola parada ofensiva.
         Para bola parada defenciva, podemos ter goleiro cobrador e  2 apoio
         """
-        if ball_pos.y < self.configuration.max_ball_y_to_goalkeeper_kick: # type: ignore
+        if self.ball_pos.x < self.configuration.max_ball_y_to_goalkeeper_kick: # type: ignore
             self.set_offensive_suport_position(RobotID.Kamiji)
-            self.set_midlle_suport_position(RobotID.Defender)
+            aux = self.bobs.get(RobotID.Kamiji)
+            if not aux or not aux.state:
+                return
+            pos = aux.state.path[len(aux.state.path) - 1]
+            self.set_midlle_suport_position(RobotID.Defender, pos) # type: ignore
             self.set_kicker_position(RobotID.Goalkeeper)
         else:
             self.set_kicker_position(RobotID.Kamiji)
+
             self.set_offensive_suport_position(RobotID.Defender)
+            print("tres")
+
             self.set_goalkeeper_position(RobotID.Goalkeeper)
+            print("quatro")
+
         return 
 
 

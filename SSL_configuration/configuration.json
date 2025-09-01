@@ -15,7 +15,7 @@
             "min_wall_margin": 600,
             "min_goal_area_margin": 300,
             "other_robos_margin": 100,
-            "max_ball_y_to_goalkeeper_kick": -1500
+            "max_ball_y_to_goalkeeper_kick": 0
         }
 
     },

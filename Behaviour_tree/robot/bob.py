@@ -27,7 +27,7 @@ WHEELS_ANGLES = [math.radians(-30),
                  math.radians(135),
                  math.radians(-150)]
 GAMMA = [0, 0, 0, 0]
-ROBOT_RADIUS = 0.09
+ROBOT_RADIUS_MOTORVEL = 0.09
 WHEEL_RADIUS = 0.027
 FREE_DISTANCE = 1
 
@@ -221,7 +221,7 @@ class Bob:
         for i in range(N_RODAS):
             Bi = WHEELS_ANGLES[i]   # Ângulo entre {w} e {b}
             gammai = GAMMA[i]
-            hi = np.array([ROBOT_RADIUS,
+            hi = np.array([ROBOT_RADIUS_MOTORVEL,
                         np.cos(Bi+phi+gammai),
                         np.sin(Bi+phi+gammai)])
             hi /= (WHEEL_RADIUS*np.cos(gammai))  # Operações compactadas
@@ -252,11 +252,12 @@ class Bob:
         start_cell = (int(start.x // step), int(start.y // step))
         end_cell = (int(end.x // step), int(end.y // step))
 
+        obstacules = [obs for obs in obstacules if obs.distance_to(start) > raio and obs.distance_to(end) > raio ]
+
         queue = deque([start_cell])
         visited = {start_cell: None} 
         while queue:
             current = queue.popleft()
-
             if current == end_cell:
                 # Reconstrói caminho
                 path_rev = []

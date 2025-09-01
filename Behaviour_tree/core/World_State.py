@@ -99,7 +99,6 @@ class World_State:
         if balls:
             self._ball_position = (balls[0]["x"], balls[0]["y"])
 
-        # Atualiza posições, velocidades e orientações
         for bot in detection.get("robots_blue", []):
             rid = bot["robot_id"]
             self._robot_positions["blue"][rid] = (bot.get("x", 0.0), bot.get("y", 0.0))
@@ -150,6 +149,7 @@ class World_State:
         if not foes_collor:
             return None
         if robot_id not in self._robot_positions.get(foes_collor, {}):
+            print(robot_id)
             return None
         x, y = self._robot_positions[foes_collor][robot_id]
         theta = self._robot_orientations[foes_collor][robot_id]
@@ -170,7 +170,7 @@ class World_State:
     def get_all_foes_position(self):
         robots :list[Pose2D] = []
         for id in self.configuration.foes_id:
-            pos = self.get_foe_robot_pose(id)
+            pos = self.get_foe_robot_pose(int(id))
             if pos:
                 robots.append(pos) 
         return robots

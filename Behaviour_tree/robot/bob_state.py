@@ -6,6 +6,7 @@ from .all_bob_states import AllBobs_State
 from utils.pose2D import Pose2D
 from SSL_configuration.configuration import Configuration
 from utils.defines import Quadrant, QuadrantType, Zone, ZoneType, RoleType, BALL_POSSESSION_DISTANCE
+from Behaviour_tree.positioning.positioning_helper import Positioning_helper
 #TODO
 #   linha 112
 #
@@ -18,6 +19,7 @@ class Bob_State:
 
         self.world_state = World_State.get_object()
         self.configuration = Configuration.getObject()
+        self.pos_helper = Positioning_helper.get_object()
 
         self.position: Pose2D = Pose2D(3333,3333)
         self.velocity: Pose2D = Pose2D()
@@ -30,6 +32,7 @@ class Bob_State:
         self.current_command = None
         self.role: RoleType | None = None
 
+        self.ball_visible = False
         self.has_ball = False
         self.position_rept = 0
 
@@ -41,6 +44,7 @@ class Bob_State:
         event_callbacks.new_zone(self.robot_id.name, 0)
         event_callbacks.on_robot_stuck(self.robot_id.name)
         event_callbacks.target_reset(self.robot_id.name)
+        event_callbacks.on_ball_not_visible(self.robot_id.name, Pose2D(0,0))
     #---------------------------------------------------------------------------------------#
     #                                       UPDATE                                          #
     # temos os seguintes eventos:                                                           #
@@ -49,13 +53,12 @@ class Bob_State:
     #---------------------------------------------------------------------------------------#
 
     def update(self):
-        
         ################# Verifica se a posse de bola foi alterada #################
         if self.has_ball != self.check_ball_possession():
-            #evento em bob_manager/strategy tree
             if(self.has_ball):
                 event_callbacks.lost_ball_posetion(self.robot_id.name)
             else:
+                self.ball_visible = True
                 event_callbacks.team_got_ball_posetion(self.robot_id.name)
             self.has_ball = not self.has_ball
 
@@ -80,25 +83,31 @@ class Bob_State:
             event_callbacks.on_robot_stuck(self.robot_id.name)
 
         #################   Verifica se chegou ao destino   #################
-# Pré-requisito: A sua classe precisa ter um atributo self.path_index = 0
-
         if self.path and len(self.path) > 0:
             self.target_position = self.path[self.path_index]
 
             if self.target_position.is_in_range(self.position, self.configuration.threshould_arrived_target):
-                print(f"Waypoint {self.path_index} alcançado: {self.target_position}")
                 self.path_index += 1
 
                 if self.path_index >= len(self.path):
-                    print(f"Fim do caminho alcançado. Reiniciando do início.")
                     self.path_index = 0
                     self.path.clear()
                     event_callbacks.on_target_reached(self.robot_id.name)
                 else:
                     self.target_position = self.path[self.path_index]
-                    print(f"Próximo alvo: Waypoint {self.path_index} em {self.target_position}")
+        #################   Verifica visão da bola   #################
+        visible, best_position = Positioning_helper.get_clear_pass_position(self.position)
+        print(visible)
+        if visible != self.ball_visible:
+            if visible: 
+                event_callbacks.on_ball_visible(self.robot_id.name)
+            else:
+                event_callbacks.on_ball_not_visible(self.robot_id.name, best_position)
 
-        # Atualiza velocidade apenas se dados válidos
+            self.ball_visible = visible
+
+        
+
         new_vel = self.world_state.get_team_robot_velocity(self.robot_id.value)
         if new_vel is not None:
             self.velocity = new_vel
@@ -130,6 +139,7 @@ class Bob_State:
 
     def set_target_position(self, position: Pose2D):
         """Define uma posição alvo (goal) para planejamento de movimento."""
+        event_callbacks.target_reset(self.robot_id.name)
         self.target_position = position
 
     def reset(self):

@@ -46,6 +46,8 @@ class BB_flags_and_values:
             class ball:
                 has_ball = StaticBuilder("has_ball")
                 is_close = StaticBuilder("is_close")
+                ball_visible = StaticBuilder("ball_visible")
+
             
             class navigation:
                 target_reached = StaticBuilder("target_reached")
@@ -54,8 +56,9 @@ class BB_flags_and_values:
                 lost_path = StaticBuilder("lost_path")
     class Values:
         class Positions:
-            quadrant = StaticBuilder("quadrant") #1, ... ,12
-            zone = StaticBuilder("zone")#atack, defense
+            quadrant = StaticBuilder("quadrant") 
+            zone = StaticBuilder("zone")
+            pos_ball_visible = StaticBuilder("pos_ball_visible")
 
 
 #----------------------------------------------------------------------------#
@@ -84,6 +87,14 @@ def foes_got_ball_posetion(robot_id: str):
 
 def on_robot_stuck(robot_id):
     _bb.set(f"{robot_id}{BB_flags_and_values.Flags.motion.navigation.is_stuck}", True)
+
+def on_ball_visible(robot_id):
+    _bb.set(f"{robot_id}{BB_flags_and_values.Flags.motion.ball.ball_visible}", True)
+    
+def on_ball_not_visible(robot_id, best_position):
+    _bb.set(f"{robot_id}{BB_flags_and_values.Flags.motion.ball.ball_visible}", False)
+    _bb.set(f"{robot_id}{BB_flags_and_values.Values.Positions.pos_ball_visible}", best_position)
+
 
 def on_target_reached(robot_id):
     _bb.set(f"{robot_id}{BB_flags_and_values.Flags.motion.navigation.target_reached}", True)

@@ -121,7 +121,13 @@ class Pose2D:
         return (a + math.pi) % (2*math.pi) - math.pi
     
     @staticmethod
-    def _clamp(v: float, lo: float, hi: float) -> float:
+    def _clamp(v: int, lo: int, hi: int) -> int:
         #limita V entre low e high
         return max(lo, min(hi, v))
 
+    def distance_to_sq(self, other: 'Pose2D') -> float:
+            """
+            Calcula a distância euclidiana AO QUADRADO para outro ponto.
+            É mais rápido que distance_to() pois evita a raiz quadrada.
+            """
+            return (self.x - other.x)**2 + (self.y - other.y)**2
