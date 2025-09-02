@@ -1,6 +1,6 @@
 import math
 
-ROBOT_RADIUS = 90
+ROBOT_RADIUS = 90   # está em mm
 
 def haIntersecao (xr, yr, x0, y0, angulo):
     a = 1
@@ -17,7 +17,7 @@ def haIntersecao (xr, yr, x0, y0, angulo):
     return 0
 
 # calcula o ângulo entre a origem e o último ponto (na vertical) da circunferência
-def skip_bob(theta, xr, yr, x0, y0):
+def skip_bob(theta, xr, yr, x0):
     phi = theta + math.pi/2 # Ângulo entre x+ e a reta perpendicular ao raio
     t = haIntersecao(xr, yr, xr, yr, phi)   # Encontra o praâmetro e calcula o ângulo
     x_prox = xr + t*math.cos(phi)   # x do limite superior da circunferência
@@ -28,8 +28,7 @@ def skip_bob(theta, xr, yr, x0, y0):
 def is_visible(obstacles, p0, x_gol, y_golMin, y_golMax):
     x0 = p0[0]    # Posição dop robô  que está chutando
     y0 = p0[1]
-    d = math.sqrt(y0**2 + (x_gol-x0)**2)
-    print(d)
+    d = math.sqrt(y0**2 + (x_gol-x0)**2) # Distância em relação ao meio do gol
 
     # Ângulo entre os lims. do gol e o bob chutando
     theta_max = math.atan((y_golMax - y0)/((x_gol - x0)))
@@ -47,7 +46,7 @@ def is_visible(obstacles, p0, x_gol, y_golMin, y_golMax):
         for i in range(len(obstacles)):
             if(haIntersecao(obstacles[i][0], obstacles[i][1], x0, y0, theta)):
                 find_goal = False
-                skip_bob(theta, obstacles[i][0], obstacles[i][1], x0, y0)
+                skip_bob(theta, obstacles[i][0], obstacles[i][1], x0)
                 break
         if(find_goal):
             if(not vision):
@@ -72,4 +71,6 @@ if __name__ == "__main__":
     y_golMax = 750
     y_golMin = -750
 
-    print(is_visible(obstacles, p0, x_gol, y_golMin, y_golMax))
+    inicio, fim = (is_visible(obstacles, p0, x_gol, y_golMin, y_golMax))
+    print(math.degrees(inicio))
+    print(math.degrees(fim))
