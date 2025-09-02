@@ -4,6 +4,8 @@ Todos os comportamentos de ação, classes instanciadas com biblioteca pytree
 from __future__ import annotations
 from time import sleep
 
+import py_trees
+
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 import time
 from Behaviour_tree.core.event_callbacks import BB_flags_and_values
@@ -128,3 +130,33 @@ class Move_node(pt.behaviour.Behaviour):
             callbacks.target_reset(self.robot.robot_id.name)
         except Exception:
             pass
+
+
+#---------------------------------------------------------------------------------------#
+#                                      PASSE                                            A#
+#---------------------------------------------------------------------------------------# 
+
+class Choose_who_to_pass(py_trees.behaviour.Behaviour):
+
+    def __init__(self, Robot:Bob, name):
+        super().__init__(name)
+        self.robot = Robot
+        self.target: tuple[float, float]
+        self.bb = Blackboard_Manager.get_instance()
+        self.position = self.bb.get(f"{Robot.robot_id}{positions.quadrant}")
+
+    def update(self):
+        #avaliar pos outros jogadores
+        #Has_Ball
+            #avaliar quao livre jogador if(d_min<1m)
+                #não pode ter pessoas dentro de um raio X
+                #não pode ter pessoas dentro de um raio' X no trajeto da bola
+            #avaliar distancia OK
+    
+        #decidir
+            #Se bola no goleiro
+                #escolhemos o mais "livre"
+                    #o jogador com maior raio X e raio' X
+            #senao
+                #passa para o nao goleiro
+       ... 
