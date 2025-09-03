@@ -65,8 +65,8 @@ FIELD_X_MAX = FIELD_WIDTH / 2   #  2250
 FIELD_Y_MIN = -FIELD_HEIGHT / 2  # -1500
 FIELD_Y_MAX = FIELD_HEIGHT / 2   #  1500
 # Robôs e bola
-BOB_RADIUS = 0.09  # Raio do robô Bob em metros
-BALL_RADIUS = 0.021  # Raio da bola em metros
+BOB_RADIUS = 80  # Raio do robô Bob em metros
+BALL_RADIUS = 15  # Raio da bola em metros
 BALL_POSSESSION_DISTANCE = BOB_RADIUS + BALL_RADIUS + 0.01  # Distância de posse da bola
 
 # ============================================
