@@ -39,7 +39,7 @@ class Strategy_tree(Tree):
             name = "Ball_possetion:Pass",memory=False,children = [
                 s_condition_nodes.Pass(),
                 c_condition_nodes.Has_ball(),
-                #Range_Valido
+                c_condition_nodes.Valid_Line(),
                 #Recebedor_Desmarcado
                 s_action_nodes.Set_blackboard_value("context:Pass",contexts.is_pass,True)
             ]

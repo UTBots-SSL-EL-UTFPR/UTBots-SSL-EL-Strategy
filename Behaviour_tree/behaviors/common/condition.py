@@ -46,15 +46,15 @@ class Valid_Line(py_trees.behaviour.Behaviour):
         super().__init__(name)
     
     def setup(self,**kwargs):
-        pass
+        return super().setup(**kwargs)
 
     def update(self) ->py_trees.common.Status:
-        #if _bb.get(
-          #f"{}"
-        #)
-        return py_trees.common.Status.RUNNING
-        ...    
-
+        if _bb.get(
+          f"{team_flags.Context.valid_line}"
+        ):
+            return py_trees.common.Status.RUNNING
+        return py_trees.common.Status.FAILURE
+    
 class Valid_range(py_trees.behaviour.Behaviour):
 
     def __init__(self, name: str = "Valid_Range"):
