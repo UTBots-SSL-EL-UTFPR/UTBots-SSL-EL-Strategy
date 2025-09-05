@@ -76,14 +76,14 @@ class Receiver_Unmarked(py_trees.behaviour.Behaviour):
         super().__init__(name)
     
     def setup(self,**kwargs):
-        pass
+        return super().setup(**kwargs)
 
     def update(self) ->py_trees.common.Status:
-        #if _bb.get(
-          #f"{}"
-        #)
-        return py_trees.common.Status.RUNNING
-        ...
+        if _bb.get(
+          f"{team_flags.Context.unmarked_receiver}"
+        ):
+            return py_trees.common.Status.RUNNING
+        return py_trees.common.Status.FAILURE
 
 
 class rotation_done(py_trees.behaviour.Behaviour):#rotacionar em relaçaom ao alvo para realizar o passe

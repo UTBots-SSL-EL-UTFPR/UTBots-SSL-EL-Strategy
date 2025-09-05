@@ -37,6 +37,7 @@ class BB_flags_and_values:
                 is_simple_atack = StaticBuilder("is_simple_atack")
                 is_pass = StaticBuilder("pass")
                 valid_line = StaticBuilder("valide_line")
+                unmarked_receiver = StaticBuilder("unmarked_receiver")
                 is_atack_from_recovery = StaticBuilder("is_atack_from_recovery")
                 is_defense_exemple = StaticBuilder("is_defense_exemple")
                 is_slow_attack = StaticBuilder("is_slow_attack")
@@ -94,6 +95,9 @@ def on_ball_visible(robot_id):
 
 def on_valid_line(robot_id):
     _bb.set(f"{robot_id}{BB_flags_and_values.Flags.Team_Flags.Context.valid_line}", True)
+
+def unmarked_receiver(robot_id):
+    _bb.set(f"{robot_id}{BB_flags_and_values.Flags.Team_Flags.Context.unmarked_receiver}", True)
     
 def on_ball_not_visible(robot_id, best_position):
     _bb.set(f"{robot_id}{BB_flags_and_values.Flags.motion.ball.ball_visible}", False)
