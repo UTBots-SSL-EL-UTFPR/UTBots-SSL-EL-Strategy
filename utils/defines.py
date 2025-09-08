@@ -22,7 +22,7 @@ def get_quadrant_type(idx_or_name):
 
 def get_zone_type(name: str):
     """
-    Retorna a ZoneType correta considerando o lado do campo.
+    Retorna a Zone_condition_nodes.Valid_Line(),Type correta considerando o lado do campo.
     Para zonas de ataque/defesa, inverte se necessário.
     """
     if FIELD_INVERTED_SIDE:
