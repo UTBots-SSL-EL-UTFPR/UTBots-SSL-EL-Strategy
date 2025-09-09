@@ -23,26 +23,8 @@ def haIntersecao (xr, yr, x0, y0, angulo):
             return True
     return False
 
-# Calcua ums lista com os obstáculos que estão no campo de visão do chutador
-def calc_visible_bobs(x0, y0, obstacles_coord, x_gol, y_golMin, y_golMax, theta_max, theta_min):
-    visible_bobs = []
-    for i in range(len(obstacles)):
-        xr = obstacles_coord[i][0]
-        yr = obstacles_coord[i][1]
-        if((x_gol > 0 and xr < 0) or (x_gol < 0 and xr > 0)):
-            continue
-        m = (yr-y0) / (xr-x0)
-        intersec_y = m(x_gol - x0) + y0
-        if (intersec_y >= y_golMin and intersec_y <= y_golMax):
-            visible_bobs.insert((xr, yr))
-        elif (haIntersecao(xr, yr, x0, y0, theta_min) or haIntersecao(xr, yr, x0, y0, theta_max)):
-              theta_bottom, theta_top = ang_tangent_lines(x0, y0, xr, yr)
-              bob = Obstacle(xr, yr, theta_bottom, theta_top)
-              visible_bobs.insert(bob)
-    return visible_bobs
-
 # Calcula o ângulo das retas tangentes à circunferência
-def ang_tangent_lines(x0, y0, xr, yr, theta):
+def ang_tangent_lines(x0, y0, xr, yr):
     a = ROBOT_RADIUS**2 - (xr-x0)**2
     b = -2*(xr-y0)*(y0-yr)
     c = -(y0-yr)**2 + ROBOT_RADIUS**2
@@ -53,6 +35,26 @@ def ang_tangent_lines(x0, y0, xr, yr, theta):
         theta1 = math.atan(m1)
         theta2 = math.atan(m2)
         return theta1, theta2
+
+# Calcua ums lista com os obstáculos que estão no campo de visão do chutador
+def calc_visible_bobs(x0, y0, obstacles_coord, x_gol, y_golMin, y_golMax, theta_max, theta_min):
+    visible_bobs = []
+    for i in range(len(obstacles)):
+        xr = obstacles_coord[i][0]
+        yr = obstacles_coord[i][1]
+        if((x_gol > 0 and xr < 0) or (x_gol < 0 and xr > 0)):
+            continue
+        m = (yr-y0) / (xr-x0)
+        intersec_y = m*(x_gol - x0) + y0
+        if (intersec_y >= y_golMin and intersec_y <= y_golMax):
+            theta_bottom, theta_top = ang_tangent_lines(x0, y0, xr, yr)
+            bob = Obstacle(xr, yr, theta_bottom, theta_top)
+            visible_bobs.append(bob)
+        elif (haIntersecao(xr, yr, x0, y0, theta_min) or haIntersecao(xr, yr, x0, y0, theta_max)):
+              theta_bottom, theta_top = ang_tangent_lines(x0, y0, xr, yr)
+              bob = Obstacle(xr, yr, theta_bottom, theta_top)
+              visible_bobs.append(bob)
+    return visible_bobs
 
 # Retorna o maior intervalo de visão
 def is_visible(obstacles, p0, x_gol, y_golMin, y_golMax):
@@ -88,7 +90,7 @@ def is_visible(obstacles, p0, x_gol, y_golMin, y_golMax):
 
 # Teste
 if __name__ == "__main__":
-    obstacles = [(1000, 0), (-1600, -500)]
+    obstacles = [(1000, 300), (-1000, 0)]
     p0 = (0,0)
     x_gol = 2250
     y_golMax = 750
