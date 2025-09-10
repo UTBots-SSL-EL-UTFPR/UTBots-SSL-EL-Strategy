@@ -1,5 +1,20 @@
 import math
 
+# Falta tirar da lsita visible_bobs aqueles que estão dentro do potno cego de outros
+'''
+Teste feito em:
+* (x0,y0)=(0,0) e x>0 e 1 obstáculo no meio
+* (x0,y0)=(0,0) e x>0 e 1 obstáculo na borda superior
+* (x0,y0)=(0,0) e x>0 e 1 obstáculo na borda inferior
+* (x0,y0)=(0,0) e x>0 e 2 obstáculos (um no meio e outro na borda inferior)
+* (x0,y0)=(0,0) e x>0 e 2 obstáculos (um no meio e outro na borda superior)
+* (x0,y0)=(0,0) e x>0 e 2 obstáculos (um na borda inferior e outro na borda superior)
+* (x0,y0)=(0,0) e x>0 e 3 obstáculos (um no meio, outro na borda inferior e outra na borda superior)
+* (x0,y0)=(0,0) e x>0 e 3 obstáculos (todos no meio)
+* (x0,y0)=(0,0) e x<0 e 1 obstáculo no meio 
+
+'''
+
 ROBOT_RADIUS = 85   # está em mm
 
 class Obstacle:
@@ -39,7 +54,7 @@ def ang_tangent_lines(x0, y0, xr, yr):
 # Calcua ums lista com os obstáculos que estão no campo de visão do chutador
 def calc_visible_bobs(x0, y0, obstacles_coord, x_gol, y_golMin, y_golMax, theta_max, theta_min):
     visible_bobs = []
-    for i in range(len(obstacles)):
+    for i in range(len(obstacles_coord)):
         xr = obstacles_coord[i][0]
         yr = obstacles_coord[i][1]
         if((x_gol > 0 and xr < 0) or (x_gol < 0 and xr > 0)):
@@ -56,6 +71,12 @@ def calc_visible_bobs(x0, y0, obstacles_coord, x_gol, y_golMin, y_golMax, theta_
               visible_bobs.append(bob)
     return visible_bobs
 
+def PontoCego(theta, visible_bobs):
+    for i in range(len(visible_bobs)):
+        if (theta < visible_bobs[i].theta_top and theta > visible_bobs[i].theta_bottom):
+            return True
+    return False
+
 # Retorna o maior intervalo de visão
 def is_visible(obstacles, p0, x_gol, y_golMin, y_golMax):
     x0 = p0[0]    # Posição dop robô  que está chutando
@@ -63,7 +84,10 @@ def is_visible(obstacles, p0, x_gol, y_golMin, y_golMax):
 
     # Ângulo entre os lims. do gol e o chutador
     theta_max = math.atan((y_golMax - y0)/((x_gol - x0)))
-    theta_min = math.atan((y_golMin - y0)/((x_gol - x0))) 
+    theta_min = math.atan((y_golMin - y0)/((x_gol - x0)))
+    if(x_gol<0):
+        theta_min*=-1
+        theta_max*=-1
     theta = theta_min
     kick_angle = [-1,-1]  # Lista com o início e o fim do intervalo de visão
     
@@ -77,20 +101,21 @@ def is_visible(obstacles, p0, x_gol, y_golMin, y_golMax):
         for i in range(len(visible_bobs)):
             theta_bottom = visible_bobs[i].theta_bottom
             theta_top = visible_bobs[i].theta_top
-            if((theta_bottom - theta) >=0 and (theta_bottom - theta) > (kick_angle[1] - kick_angle[0])):
+            print(PontoCego(theta, visible_bobs))
+            if((theta_bottom - theta) >=0 and not PontoCego(theta, visible_bobs) and (theta_bottom - theta) > (kick_angle[1] - kick_angle[0])):
                 kick_angle = [theta, theta_bottom]
             theta = theta_top
+            print(math.degrees(theta))
             if(theta >= theta_max):
                 break
             elif((i == len(visible_bobs)-1) and theta < theta_max):
                 if(theta_max - theta > kick_angle[1] - kick_angle[0]):
-                    kick_angle = [theta, theta_bottom]
-                    
+                    kick_angle = [theta, theta_max] 
     return kick_angle
 
 # Teste
 if __name__ == "__main__":
-    obstacles = [(1000, 300), (-1000, 0)]
+    obstacles = [(600, 0), (1600, 100), (-1000, 0), (1400, -200)]
     p0 = (0,0)
     x_gol = 2250
     y_golMax = 750
