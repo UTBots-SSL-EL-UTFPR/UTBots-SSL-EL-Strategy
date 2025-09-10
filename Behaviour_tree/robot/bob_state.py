@@ -111,7 +111,7 @@ class Bob_State:
             if(Positioning_helper.is_path_clear(pos_gol,pos_1,obstacles,bob.ROBOT_RADIUS)):
                 if (Bob.is_free(RobotID(1))):
                     event_callbacks.unmarked_receiver(self.robot_id.name)
-            elif(Positioning_helper.is_path_clear(pos_gol,pos_2,obstacles,bob.ROBOT_RADIUS)):
+            if(Positioning_helper.is_path_clear(pos_gol,pos_2,obstacles,bob.ROBOT_RADIUS)):
                 if (Bob.is_free(RobotID(0))):
                     event_callbacks.unmarked_receiver(self.robot_id.name)
                     
