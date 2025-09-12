@@ -17,6 +17,7 @@ team_flags = BB_flags_and_values.Flags.Team_Flags
 
 
 from Behaviour_tree.robot.bob import Bob
+from Behaviour_tree.positioning.positioning_helper import Positioning_helper
 #---------------------------------------------------------------------------------------#
 #                                         MOVIMENTO                                     #
 #---------------------------------------------------------------------------------------#
@@ -212,7 +213,76 @@ class Choose_who_to_pass(py_trees.behaviour.Behaviour):
             
             #self.target = (1000,0)
             #self.bb.set(f"{self.robot.robot_id.name}{positions.target_to_pass}",self.target)
-            #return py_trees.common.Status.SUCCESS
-        
-    
-       
+            #return py_trees.common.Status.SUCCESS    
+ 
+class Align_for_pass(pt.behaviour.Behaviour):
+    """
+    Nó que garante que passador e receptor estejam orientados corretamente.
+    Se não estiverem, envia comandos de rotação até alinhar.
+    """
+
+    def __init__(
+        self,
+        passer: Bob,
+        receiver: Bob,
+        name: str = "Align_for_pass",
+        tolerance: float = 0.15
+    ):
+        super().__init__(name)
+        self.passer = passer
+        self.receiver = receiver
+        self.tolerance = tolerance
+        self.bb = Blackboard_Manager.get_instance()
+
+    def setup(self, **kwargs):
+        if self.passer is None or self.receiver is None:
+            raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
+        return super().setup(**kwargs)
+
+    def initialise(self):
+        self.bb.set(f"{self.passer.robot_id.name}_cmd_rotation", 0.0)
+        self.bb.set(f"{self.receiver.robot_id.name}_cmd_rotation", 0.0)
+
+    def update(self) -> pt.common.Status:
+        if (
+            self.passer is None or self.receiver is None or
+            self.passer.state is None or self.receiver.state is None
+        ):
+            return pt.common.Status.FAILURE
+
+        passer_pose = self.passer.state.position
+        receiver_pose = self.receiver.state.position
+        goal_pose = self.bb.get("goal_pose")
+
+        # Verificação sem considerar oponentes
+        if Positioning_helper.are_pass_orientations_aligned(
+            passer_pose, receiver_pose, goal_pose, opponents=[], tolerance=self.tolerance
+        ):
+            return pt.common.Status.SUCCESS
+
+        # Ângulo ideal receptor
+        desired_receiver_angle = Positioning_helper.get_best_pass_orientation(
+            passer_pose, receiver_pose, goal_pose, opponents=[]
+        )
+        # Ângulo ideal passador (olhando pro receptor)
+        desired_passer_angle = math.atan2(
+            receiver_pose.y - passer_pose.y,
+            receiver_pose.x - passer_pose.x
+        )
+
+        # Ajustar passador
+        angle_diff_passer = (desired_passer_angle - passer_pose.theta + math.pi) % (2*math.pi) - math.pi
+        if abs(angle_diff_passer) > self.tolerance:
+            self.bb.set(f"{self.passer.robot_id.name}_cmd_rotation", angle_diff_passer)
+
+        # Ajustar receptor
+        angle_diff_receiver = (desired_receiver_angle - receiver_pose.theta + math.pi) % (2*math.pi) - math.pi
+        if abs(angle_diff_receiver) > self.tolerance:
+            self.bb.set(f"{self.receiver.robot_id.name}_cmd_rotation", angle_diff_receiver)
+
+        return pt.common.Status.RUNNING
+
+    def terminate(self, new_status: pt.common.Status):
+        self.bb.set(f"{self.passer.robot_id.name}_cmd_rotation", 0.0)
+        self.bb.set(f"{self.receiver.robot_id.name}_cmd_rotation", 0.0)
+      
