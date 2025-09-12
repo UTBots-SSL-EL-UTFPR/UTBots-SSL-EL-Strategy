@@ -4,14 +4,15 @@ import math
 '''
 Teste feito em:
 * (x0,y0)=(0,0) e x>0 e 1 obstáculo no meio
-* (x0,y0)=(0,0) e x>0 e 1 obstáculo na borda superior
-* (x0,y0)=(0,0) e x>0 e 1 obstáculo na borda inferior
-* (x0,y0)=(0,0) e x>0 e 2 obstáculos (um no meio e outro na borda inferior)
-* (x0,y0)=(0,0) e x>0 e 2 obstáculos (um no meio e outro na borda superior)
-* (x0,y0)=(0,0) e x>0 e 2 obstáculos (um na borda inferior e outro na borda superior)
-* (x0,y0)=(0,0) e x>0 e 3 obstáculos (um no meio, outro na borda inferior e outra na borda superior)
-* (x0,y0)=(0,0) e x>0 e 3 obstáculos (todos no meio)
-* (x0,y0)=(0,0) e x<0 e 1 obstáculo no meio 
+* (x0,y0)=(0,0) e x<.0 e 1 obstáculo no meio
+(x0,y0)=(0,0) e x>0 e 1 obstáculo na borda superior
+(x0,y0)=(0,0) e x>0 e 1 obstáculo na borda inferior
+(x0,y0)=(0,0) e x>0 e 2 obstáculos (um no meio e outro na borda inferior)
+(x0,y0)=(0,0) e x>0 e 2 obstáculos (um no meio e outro na borda superior)
+(x0,y0)=(0,0) e x>0 e 2 obstáculos (um na borda inferior e outro na borda superior)
+(x0,y0)=(0,0) e x>0 e 3 obstáculos (um no meio, outro na borda inferior e outra na borda superior)
+(x0,y0)=(0,0) e x>0 e 3 obstáculos (todos no meio)
+(x0,y0)=(0,0) e x<0 e 1 obstáculo no meio 
 
 '''
 
@@ -71,11 +72,15 @@ def calc_visible_bobs(x0, y0, obstacles_coord, x_gol, y_golMin, y_golMax, theta_
               visible_bobs.append(bob)
     return visible_bobs
 
-def PontoCego(theta, visible_bobs):
-    for i in range(len(visible_bobs)):
-        if (theta < visible_bobs[i].theta_top and theta > visible_bobs[i].theta_bottom):
-            return True
-    return False
+def removePontosCegos(visible_bobs):
+    to_remove = []
+    for bob in visible_bobs:
+        for i in range(len(visible_bobs)):
+            if ((bob.theta_top < visible_bobs[i].theta_top and bob.theta_top > visible_bobs[i].theta_bottom)
+                and (bob.theta_bottom < visible_bobs[i].theta_top and bob.theta_bottom > visible_bobs[i].theta_bottom)):
+                to_remove.append(bob)
+    for i in range(len(to_remove)):
+        visible_bobs.remove(to_remove[i])
 
 # Retorna o maior intervalo de visão
 def is_visible(obstacles, p0, x_gol, y_golMin, y_golMax):
@@ -92,35 +97,33 @@ def is_visible(obstacles, p0, x_gol, y_golMin, y_golMax):
     kick_angle = [-1,-1]  # Lista com o início e o fim do intervalo de visão
     
     visible_bobs = calc_visible_bobs(x0, y0, obstacles, x_gol, y_golMin, y_golMax, theta_max, theta_min)
+    removePontosCegos(visible_bobs)
     visible_bobs.sort(key=lambda bob: bob.theta_bottom) # Organiza a lista em ordem crescente do ângulo da reta tangência à parte inferior do bob
 
-    if(visible_bobs == None):
+    if(not visible_bobs):
         kick_angle = [theta, theta_max]
     else:
         # Varre o ângulo entre a parte de cima de um bob e a parte de baixo de outro (armazena o maior intervalo)
         for i in range(len(visible_bobs)):
             theta_bottom = visible_bobs[i].theta_bottom
             theta_top = visible_bobs[i].theta_top
-            print(PontoCego(theta, visible_bobs))
-            if((theta_bottom - theta) >=0 and not PontoCego(theta, visible_bobs) and (theta_bottom - theta) > (kick_angle[1] - kick_angle[0])):
+            if((theta_bottom - theta) >=0 and (theta_bottom - theta) > (kick_angle[1] - kick_angle[0])):
                 kick_angle = [theta, theta_bottom]
             theta = theta_top
-            print(math.degrees(theta))
             if(theta >= theta_max):
                 break
             elif((i == len(visible_bobs)-1) and theta < theta_max):
                 if(theta_max - theta > kick_angle[1] - kick_angle[0]):
                     kick_angle = [theta, theta_max] 
-    return kick_angle
+    return math.fabs(math.degrees(kick_angle[1]-[kick_angle][0]))
 
 # Teste
 if __name__ == "__main__":
-    obstacles = [(600, 0), (1600, 100), (-1000, 0), (1400, -200)]
+    obstacles = [(1400, 100)]
     p0 = (0,0)
-    x_gol = 2250
+    x_gol = - 2250
     y_golMax = 750
     y_golMin = -750
 
-    inicio, fim = (is_visible(obstacles, p0, x_gol, y_golMin, y_golMax))
-    print(math.degrees(inicio))
-    print(math.degrees(fim))
+    angle = (is_visible(obstacles, p0, x_gol, y_golMin, y_golMax))
+    print(angle)
