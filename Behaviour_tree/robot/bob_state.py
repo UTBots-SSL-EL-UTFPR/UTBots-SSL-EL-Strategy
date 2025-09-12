@@ -100,41 +100,12 @@ class Bob_State:
 
         #################   Verifica se o recebedor está desmarcado   #################
 
-        #primeiro a bola  esta no goleiro 
-        if self.robot_id == RobotID(2):
-            pos_gol=self.get_position()
-            pos_1=World_State.get_team_robot_pose(self,1)
-            pos_2=World_State.get_team_robot_pose(self,0)
-            
-            obstacles = World_State.get_all_foes_position()
-             
-            if(Positioning_helper.is_path_clear(pos_gol,pos_1,obstacles,bob.ROBOT_RADIUS)):
-                if (Bob.is_free(RobotID(1))):
+       
+            if (Bob.is_free(RobotID(1))):
                     event_callbacks.unmarked_receiver(self.robot_id.name)
-            if(Positioning_helper.is_path_clear(pos_gol,pos_2,obstacles,bob.ROBOT_RADIUS)):
-                if (Bob.is_free(RobotID(0))):
+            if (Bob.is_free(RobotID(0))):
                     event_callbacks.unmarked_receiver(self.robot_id.name)
                     
-        #se a bola esta com outro robo
-        elif self.robot_id == RobotID(1):
-            pos_1=self.get_position()
-            pos_2=World_State.get_team_robot_pose(self,0)
-        
-            obstacles = World_State.get_all_foes_position()
-             
-            if(Positioning_helper.is_path_clear(pos_1,pos_2,obstacles,bob.ROBOT_RADIUS)):
-                if (Bob.is_free(RobotID(0))):
-                    event_callbacks.unmarked_receiver(self.robot_id.name)
-
-        else:
-            pos_1=self.get_position()
-            pos_2=World_State.get_team_robot_pose(self,1)
-        
-            obstacles = World_State.get_all_foes_position()
-             
-            if(Positioning_helper.is_path_clear(pos_1,pos_2,obstacles,bob.ROBOT_RADIUS)):
-                if (Bob.is_free(RobotID(1))):
-                    event_callbacks.unmarked_receiver(self.robot_id.name)
 
         #################   Verifica se preso na mesma pos e verifica quadrante   #################
         new_pos = self.world_state.get_team_robot_pose(self.robot_id.value)

@@ -3,8 +3,9 @@ Todos os comportamentos de ação, classes instanciadas com biblioteca pytree
 """
 from __future__ import annotations
 from time import sleep
-
+from ...core.World_State import World_State, RobotID
 import py_trees
+from ...core.event_callbacks import BB_flags_and_values
 
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 import time
@@ -12,6 +13,8 @@ from Behaviour_tree.core.event_callbacks import BB_flags_and_values
 from  Behaviour_tree.core import event_callbacks as callbacks
 navigation_flags = BB_flags_and_values.Flags.motion.navigation 
 positions = BB_flags_and_values.Values.Positions
+team_flags = BB_flags_and_values.Flags.Team_Flags
+
 
 from Behaviour_tree.robot.bob import Bob
 #---------------------------------------------------------------------------------------#
@@ -145,18 +148,71 @@ class Choose_who_to_pass(py_trees.behaviour.Behaviour):
         self.bb = Blackboard_Manager.get_instance()
         self.position = self.bb.get(f"{Robot.robot_id}{positions.quadrant}")
 
-    def update(self):
-        #avaliar pos outros jogadores
-        #Has_Ball
-            #avaliar quao livre jogador if(d_min<1m)
-                #não pode ter pessoas dentro de um raio X
-                #não pode ter pessoas dentro de um raio' X no trajeto da bola
-            #avaliar distancia OK
+    def setup(self,**kwargs):
+        return super().setup(**kwargs)
     
-        #decidir
-            #Se bola no goleiro
-                #escolhemos o mais "livre"
-                    #o jogador com maior raio X e raio' X
-            #senao
-                #passa para o nao goleiro
-       ... 
+    def update(self):
+       
+        if self.robot is None or self.robot.state is None:
+            return py_trees.common.Status.FAILURE   
+        if self.position is None:
+            return py_trees.common.Status.FAILURE
+        
+        if self.position % 4 == 0:#######Esta no ultimo quarto do campo , irá chutar no gol
+            return py_trees.common.Status.FAILURE
+            
+        
+        best_target_pos =None
+        best_target_id  =None
+        if self.robot.robot_id == 2:
+          
+            target0 =RobotID(0)
+            target1 = RobotID(1)
+
+            #Passar para o jogador mais proximo
+            
+            min_distance = 1000000
+
+            for robot_id in [target0,target1]:
+                pos = self.bb.get(f"{robot_id}{positions.position}")
+                if pos is not None:
+                    distance = ((self.robot.state.position.x - pos[0])**2 + (self.robot.state.position.y - pos[1])**2)**0.5
+                    if distance < min_distance:
+                        min_distance = distance
+                        best_target_pos = pos
+                        best_target_id = robot_id
+
+                    if best_target_pos is not None:
+                        self.target = best_target_pos
+                        self.bb.on_pass(self.robot.robot_id.name)
+                        
+                    
+        elif self.robot.robot_id == 1:
+            best_target_id = RobotID(0)
+            best_target_pos = self.bb.get(f"{best_target_id}{positions.position}")
+            if best_target_pos is not None:
+                self.target = best_target_pos
+                self.bb.on_pass(self.robot.robot_id.name)
+                
+            
+        else:
+            best_target_id = RobotID(1)
+            best_target_pos = self.bb.get(f"{best_target_id}{positions.position}")
+            if best_target_pos is not None:
+                self.target = best_target_pos
+                self.bb.on_pass(self.robot.robot_id.name)
+        
+
+        if self.bb.get(f"{team_flags.Context.is_pass}"):
+            return py_trees.common.Status.SUCCESS
+        else:
+            return py_trees.common.Status.FAILURE
+
+
+            
+            #self.target = (1000,0)
+            #self.bb.set(f"{self.robot.robot_id.name}{positions.target_to_pass}",self.target)
+            #return py_trees.common.Status.SUCCESS
+        
+    
+       

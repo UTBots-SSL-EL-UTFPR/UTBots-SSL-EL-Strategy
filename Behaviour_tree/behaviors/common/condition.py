@@ -54,21 +54,7 @@ class Valid_Line(py_trees.behaviour.Behaviour):
         ):
             return py_trees.common.Status.RUNNING
         return py_trees.common.Status.FAILURE
-    
-class Valid_range(py_trees.behaviour.Behaviour):
 
-    def __init__(self, name: str = "Valid_Range"):
-        super().__init__(name)
-    
-    def setup(self,**kwargs):
-        pass
-
-    def update(self) ->py_trees.common.Status:
-        #if _bb.get(
-          #f"{}"
-        #)
-        return py_trees.common.Status.RUNNING
-        ...
 
 class Receiver_Unmarked(py_trees.behaviour.Behaviour):
     
@@ -83,25 +69,25 @@ class Receiver_Unmarked(py_trees.behaviour.Behaviour):
           f"{team_flags.Context.unmarked_receiver}"
         ):
             return py_trees.common.Status.RUNNING
+        
         return py_trees.common.Status.FAILURE
 
 
-class rotation_done(py_trees.behaviour.Behaviour):#rotacionar em relaçaom ao alvo para realizar o passe
+###class rotation_done(py_trees.behaviour.Behaviour):#rotacionar em relaçaom ao alvo para realizar o passe
+#DENTRO DO NO DE AÇAO CHOOSE WHO TO PASS
+   ## def __init__(self, Robot:Bob, name: str = "Rotation_done"):
+     ##   super().__init__(name)
+       # self.robot = Robot
+        #self.bb = Blackboard_Manager.get_instance()
 
-    def __init__(self, Robot:Bob, name: str = "Rotation_done"):
-        super().__init__(name)
-        self.robot = Robot
-        self.bb = Blackboard_Manager.get_instance()
-
-    def update(self) -> py_trees.common.Status:
+    #def update(self) -> py_trees.common.Status:
         #if self.bb.get(
          #   f"{self.robot.robot_id}{positions_values.rotation_done}"
           #  ):
            # return py_trees.common.Status.SUCCESS
-        return py_trees.common.Status.RUNNING
+     #   return py_trees.common.Status.RUNNING
 
-########PASSE#########################   ACIMAAAAAAAA
-        ...
+########PASSE#########################   ACIMAAAAAAAA 
 
 
 class Ball_visible(py_trees.behaviour.Behaviour):

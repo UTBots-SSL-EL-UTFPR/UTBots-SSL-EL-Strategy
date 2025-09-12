@@ -90,6 +90,9 @@ def foes_got_ball_posetion(robot_id: str):
 def on_robot_stuck(robot_id):
     _bb.set(f"{robot_id}{BB_flags_and_values.Flags.motion.navigation.is_stuck}", True)
 
+def on_pass(robot_id):
+    _bb.set(f"{robot_id}{BB_flags_and_values.Flags.motion.ball.is_pass}",True)
+
 def on_ball_visible(robot_id):
     _bb.set(f"{robot_id}{BB_flags_and_values.Flags.motion.ball.ball_visible}", True)
 
@@ -98,7 +101,7 @@ def on_valid_line(robot_id):
 
 def unmarked_receiver(robot_id):
     _bb.set(f"{robot_id}{BB_flags_and_values.Flags.Team_Flags.Context.unmarked_receiver}", True)
-    
+
 def on_ball_not_visible(robot_id, best_position):
     _bb.set(f"{robot_id}{BB_flags_and_values.Flags.motion.ball.ball_visible}", False)
     _bb.set(f"{robot_id}{BB_flags_and_values.Values.Positions.pos_ball_visible}", best_position)
