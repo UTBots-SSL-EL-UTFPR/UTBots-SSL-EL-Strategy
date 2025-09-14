@@ -1,24 +1,33 @@
 """
 Todos os comportamentos de ação, classes instanciadas com biblioteca pytree
 """
+
 from __future__ import annotations
+
+import logging
+import time
 from time import sleep
 
+from Behaviour_tree.core import event_callbacks as callbacks
 from Behaviour_tree.core.blackboard import Blackboard_Manager
-import time
 from Behaviour_tree.core.event_callbacks import BB_flags_and_values
-from  Behaviour_tree.core import event_callbacks as callbacks
-navigation_flags = BB_flags_and_values.Flags.motion.navigation 
+
+navigation_flags = BB_flags_and_values.Flags.motion.navigation
 positions = BB_flags_and_values.Values.Positions
-
-from Behaviour_tree.robot.bob import Bob
-#---------------------------------------------------------------------------------------#
-#                                         MOVIMENTO                                     #
-#---------------------------------------------------------------------------------------#
-
-from typing import Optional, Tuple
+team_flags = BB_flags_and_values.Flags.Team_Flags
 import time
+from typing import Optional, Tuple
+
 import py_trees as pt
+
+from Behaviour_tree.positioning.positioning_helper import Positioning_helper
+from Behaviour_tree.robot.bob import Bob
+
+# ---------------------------------------------------------------------------------------#
+#                                         MOVIMENTO                                     #
+# ---------------------------------------------------------------------------------------#
+logger = logging.getLogger(__name__)
+
 
 class Move_node(pt.behaviour.Behaviour):
     """
@@ -28,9 +37,6 @@ class Move_node(pt.behaviour.Behaviour):
     :type name: str
     :param robot: Instância do robô (Bob).
     :type robot: Bob | None
-    :param target_reached_key: Chave do Blackboard que sinaliza 'alvo alcançado' (bool).
-                               Ex.: f\"{robot.robot_id.name}{navigation_flags.target_reached}\".
-    :type target_reached_key: str
     :param timeout_s: Tempo máximo (segundos) para tentar alcançar o alvo antes de retornar FAILURE.
     :type timeout_s: float
     """
@@ -38,11 +44,11 @@ class Move_node(pt.behaviour.Behaviour):
     def __init__(
         self,
         name: str = "MOVE",
-        robot = None,
-        timeout_s: float = 3.0,
+        robot=None,
+        timeout_s: float = 15,
     ):
         super().__init__(name=name)
-        self.robot :  Bob | None = robot
+        self.robot: Bob | None = robot
         self._bb = Blackboard_Manager.get_instance()
 
         self.target_reached_key = ""
@@ -51,38 +57,30 @@ class Move_node(pt.behaviour.Behaviour):
         self._t0: float = 0.0
         self._last_move_ts: float = 0.0
         self._stall_ticks: int = 0
-        self._max_stall_ticks: int = 30 
-
+        self._max_stall_ticks: int = 30
 
     def setup(self, **kwargs) -> None:
-        """
-        Prepara o nó para execução. Registre chaves do BB aqui se sua API suportar.
 
-        :raises RuntimeError: se 'robot' não estiver definido.
-        """
-        print("setup")
         if self.robot is None:
             raise RuntimeError(f"[{self.name}] 'robot' não definido no setup()")
-        self.target_reached_key = f"{self.robot.robot_id.name}{navigation_flags.target_reached}"
+        self.target_reached_key = (
+            f"{self.robot.robot_id.name}{navigation_flags.target_reached}"
+        )
 
     def initialise(self) -> None:
-        """
-        Chamado no primeiro tick ativo (ou reentrada). Zera temporais, limpa flags,
-        e carrega alvo do BB para o estado do robô se necessário.
-        """
         if self.robot is None or self.robot.state is None:
             return
+
         self._t0 = time.time()
         self._last_move_ts = self._t0
         self._stall_ticks = 0
-        self._bb.set(f"{self.robot.robot_id.name}{navigation_flags.is_stuck}", False) # type: ignore
-        print(f"{self.robot.robot_id} -> INIT MOVEMENT")
+        self._bb.set(f"{self.robot.robot_id.name}{navigation_flags.is_stuck}", False)  # type: ignore
 
         self._bb.set(self.target_reached_key, False)
 
     def update(self) -> pt.common.Status:
         """
-        Empurra o robô a mover-se (via `robot.move_oriented()`) enquanto não atingiu o alvo.
+        Empurra o robô enquanto não atingiu o alvo.
         Depende do Blackboard para saber se o alvo foi alcançado (`target_reached_key`).
 
         :returns: SUCCESS quando alvo alcançado; RUNNING durante o deslocamento; FAILURE em erro/timeout.
@@ -92,33 +90,27 @@ class Move_node(pt.behaviour.Behaviour):
             return pt.common.Status.FAILURE
 
         if bool(self._bb.get(self.target_reached_key)):
-            print(f"{self.robot.robot_id} -> TARGET REACHED")
+            logging.debug(f"{self.robot.robot_id} -> TARGET REACHED")
             return pt.common.Status.SUCCESS
 
         if not getattr(self.robot.state, "target_position", None):
             return pt.common.Status.FAILURE
 
         try:
-            self.robot.move_oriented() 
+            self.robot.move_oriented()
         except Exception as exc:
             return pt.common.Status.FAILURE
 
         if (time.time() - self._t0) > self.timeout_s:
-            print(f"{self.robot.robot_id} -> MOVE TIMEOUT")
+            logging.warning(f"{self.robot.robot_id} -> MOVE TIMEOUT")
             return pt.common.Status.FAILURE
 
         if self._bb.get(f"{self.robot.robot_id.name}{navigation_flags.is_stuck}"):
-            print(f"{self.robot.robot_id} -> ROBOT STUCK")
+            logging.debug(f"{self.robot.robot_id} -> ROBOT STUCK")
             return pt.common.Status.FAILURE
         return pt.common.Status.RUNNING
 
     def terminate(self, new_status: pt.common.Status) -> None:
-        """
-        Limpa estado local e o alvo do robô. Dispara callback de reset.
-
-        :param new_status: status no qual o nó terminou (SUCCESS/FAILURE/INVALID).
-        :type new_status: pt.common.Status
-        """
         if self.robot is None or getattr(self.robot, "state", None) is None:
             return
 
@@ -128,3 +120,107 @@ class Move_node(pt.behaviour.Behaviour):
             callbacks.target_reset(self.robot.robot_id.name)
         except Exception:
             pass
+
+
+# -------------------------------------------------------------------------------------------------#
+
+
+# -------------------------------------------------------------------------------------------------#
+class Receive_pass(pt.behaviour.Behaviour):
+    """
+    Se for pra ele, intercepta a bola e 'vira' para o gol, preparando o alvo de recepção.
+    - Lê no BB: positions.pos_pass_target e a flag de passe destinado a este robô.
+    - Converte o alvo em (x, y, theta~0.0) e chama compute_pose_facing_goal(target)
+    - Adiciona a Pose2D resultante como ponto de trajetória
+    """
+
+    def __init__(
+        self,
+        name: str = "Receive_pass",
+        robot=None,
+    ):
+        super().__init__(name=name)
+        self.robot: Bob | None = robot
+        self._bb = Blackboard_Manager.get_instance()
+
+        self.receive_key: str
+        self.pos_pass_key: str = f"{positions.pos_pass_target}"
+
+    def setup(self, **kwargs) -> None:
+        if self.robot is None:
+            raise RuntimeError(f"[{self.name}] 'robot' não definido no setup()")
+        self.receive_key = (
+            f"{self.robot.robot_id.name}{team_flags.kick_actions.team_pass}"
+        )
+
+    def initialise(self) -> None:
+        pass
+
+    def update(self) -> pt.common.Status:
+        """
+        Verifica se deve preparar o movimento de receber passe,
+        calcula a Pose2D alvo apontando para o centro do gol e
+        adiciona na trajetória do robô. Retorna SUCCESS ao preparar.
+        """
+
+        if self.robot is None or getattr(self.robot, "state", None) is None:
+            return pt.common.Status.FAILURE
+
+        passe = self._bb.get(self.receive_key)
+        if not passe:
+            logger.debug(f"{self.robot.robot_id} nao esta recebendo passe")
+            return pt.common.Status.FAILURE
+
+        target = self._bb.get(self.pos_pass_key)
+        if target is None:
+            logger.warning("pos de passe nula")
+            return pt.common.Status.FAILURE
+
+        pose_target = Positioning_helper.compute_pose_facing_goal(target)
+
+        self.robot.adicionar_ponto_trajetoria(pose_target)
+
+        self._bb.set(self.receive_key, False)
+        self._bb.set(self.pos_pass_key, None)
+
+        logger.debug(f"indo pegar passe -> {pose_target}")
+
+        return pt.common.Status.SUCCESS
+
+
+class Rebound_position(pt.behaviour.Behaviour):
+    """
+    se posiciona de maneira a receber um rebote
+    """
+
+    def __init__(self, name: str = "Receive_pass", robot=None):
+        super().__init__(name=name)
+        self.robot: Bob | None = robot
+        self._bb = Blackboard_Manager.get_instance()
+
+    def setup(self, **kwargs) -> None:
+        if self.robot is None:
+            raise RuntimeError(f"[{self.name}] 'robot' não definido no setup()")
+
+    def initialise(self) -> None:
+        pass
+
+    def update(self) -> pt.common.Status:
+        """
+        Verifica se deve preparar o movimento de receber passe,
+        calcula a Pose2D alvo apontando para o centro do gol e
+        adiciona na trajetória do robô. Retorna SUCCESS ao preparar.
+        """
+        if self.robot is None or getattr(self.robot, "state", None) is None:
+            logger.warning("robo NONE")
+            return pt.common.Status.FAILURE
+        if not self._bb.get(f"{team_flags.kick_actions.team_kick}"):
+            logger.debug("nao é team kick")
+            return pt.common.Status.FAILURE
+
+        target_pose = Positioning_helper.calculate_rebound_position(
+            self.robot.state.position
+        )
+        self.robot.adicionar_ponto_trajetoria(target_pose)
+        logger.debug(f"indo rebotar -> {target_pose}")
+        return pt.common.Status.SUCCESS

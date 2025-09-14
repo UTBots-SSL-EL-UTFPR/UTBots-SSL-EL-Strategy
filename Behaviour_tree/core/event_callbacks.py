@@ -42,12 +42,17 @@ class BB_flags_and_values:
             class Ball_posetion:
                 team_has_ball = StaticBuilder("team_has_ball")
                 foes_have_ball = StaticBuilder("foes_have_ball")
+            class kick_actions:
+                team_kick = StaticBuilder("team_kick")
+                team_pass = StaticBuilder("team_pass")
+                team_preparing = StaticBuilder("team_preparing")
+
+
         class motion:
             class ball:
                 has_ball = StaticBuilder("has_ball")
                 is_close = StaticBuilder("is_close")
                 ball_visible = StaticBuilder("ball_visible")
-
             
             class navigation:
                 target_reached = StaticBuilder("target_reached")
@@ -59,6 +64,7 @@ class BB_flags_and_values:
             quadrant = StaticBuilder("quadrant") 
             zone = StaticBuilder("zone")
             pos_ball_visible = StaticBuilder("pos_ball_visible")
+            pos_pass_target = StaticBuilder("pos_pass_target")
 
 
 #----------------------------------------------------------------------------#

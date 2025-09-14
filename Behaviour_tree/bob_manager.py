@@ -153,10 +153,7 @@ class BobManager:
                     break 
         obstacles = self.world_state.get_all_robot_position()
         obstacles = [obs for obs in obstacles if obs != robot_pos]
-        print(target_pose, robot_pos)
-        print(obstacles)
         robot.state.path = robot.find_shortest_path(robot_pos, target_pose, obstacles, 80, self.ball_pos, 15)
-        print("passei_2")
         robot.state.role = RoleType.OFFENSIVE_SUPPORT
         return
 
@@ -242,10 +239,8 @@ class BobManager:
             self.set_kicker_position(RobotID.Kamiji)
 
             self.set_offensive_suport_position(RobotID.Defender)
-            print("tres")
 
             self.set_goalkeeper_position(RobotID.Goalkeeper)
-            print("quatro")
 
         return 
 

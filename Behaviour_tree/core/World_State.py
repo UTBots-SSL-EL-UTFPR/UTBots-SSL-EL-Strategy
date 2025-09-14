@@ -149,7 +149,6 @@ class World_State:
         if not foes_collor:
             return None
         if robot_id not in self._robot_positions.get(foes_collor, {}):
-            print(robot_id)
             return None
         x, y = self._robot_positions[foes_collor][robot_id]
         theta = self._robot_orientations[foes_collor][robot_id]

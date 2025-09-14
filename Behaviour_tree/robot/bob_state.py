@@ -97,7 +97,6 @@ class Bob_State:
                     self.target_position = self.path[self.path_index]
         #################   Verifica visão da bola   #################
         visible, best_position = Positioning_helper.get_clear_pass_position(self.position)
-        print(visible)
         if visible != self.ball_visible:
             if visible: 
                 event_callbacks.on_ball_visible(self.robot_id.name)
