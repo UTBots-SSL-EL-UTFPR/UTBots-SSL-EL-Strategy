@@ -24,10 +24,19 @@ class Pose2D:
 {s} = referencial do mundo
 '''
 
-toleranciaPonto = 0.1
-toleranciaAngulo = 10
+toleranciaPonto = 0.03
+toleranciaAngulo = 0.5
 THETA_OFFSET = math.pi
 THETA_SIGN   = +1.0
+VMAX = 1
+WMAX = 2.5
+
+SCALE = 1
+K_POS = 1.2
+K_ANG = 0.3
+
+KD_POS = 0.25
+KD_ANG = 0.3
 
 
 def normalize_angle_to_pi(a: float) -> float:
@@ -36,22 +45,24 @@ def normalize_angle_to_pi(a: float) -> float:
 def compute_world_velocity(
     current,                    # Pose2D(x,y,theta) atual em {s}
     goal,                       # Pose2D(x,y,theta) alvo em {s}
-    mode: str = "maintain_orientation",  # 3 opções diferentes de movimento q eu fiz pra testar "maintain_orientation" | "face_target" | "goal_orientation"
+    mode,  # 3 opções diferentes de movimento "maintain_orientation" "precision_movement" "rotation_only"
     
     # ganhos e limites
-    k_pos: float = 1.4,         # 1/s ganho linear
-    k_ang: float = 0.9,         # 1/s ganho angular (para face_target e etapa 2)
-    vmax: float = 1.5,          # m/s saturação linear
+    k_pos: float = 0.7,         # 1/s ganho linear
+    k_ang: float = 0.4,         # 1/s ganho angular (para face_target e etapa 2)
+    vmax: float = 1,          # m/s saturação linear
     wmax: float = 2.5,          # rad/s saturação angular
+
+    kd_ang: float = 0.2,
     
     # zonas e tolerâncias, isso é ajutavel e pode ate ser tirado
     slow_radius: float = 0.02,   # m começa a frear ao se aproximar
     pos_tol: float = 0.03,      # m tolerância de posição (chegada de posição)
-    ang_tol: float = math.radians(2.0),  # rad tolerância angular (chegada de orientação)
+    ang_tol: float = math.radians(0.5),  # rad tolerância angular (chegada de orientação)
 
     # deadbands, ajustavel tmb
-    v_min: float = 0.10,        # [m/s] piso de velocidade (vencer atrito)
-    yaw_deadband: float = math.radians(3.0),  # [rad] ignora correções muito pequenas
+    v_min: float = 0.20,        # [m/s] piso de velocidade (vencer atrito)
+    yaw_deadband: float = math.radians(1.0),  # [rad] ignora correções muito pequenas
 ):
     """
     Retorna (vx_s, vy_s, w) em {s} seguindo uma das 3 opcoes:
@@ -65,75 +76,144 @@ def compute_world_velocity(
     dy = goal.y - current.y
     dist = math.hypot(dx, dy)
 
-    # ================= VELOCIDADES LINEARES (em {s}) =================
-    if dist < pos_tol:
+            # Ganhos derivativos (ajuste aqui; mantive fora da assinatura)
+    kd_pos = KD_POS   # (adimensional) termo D translacional
+    kd_ang = KD_ANG   # (adimensional) termo D angular
+
+    # ================= ERROS EM METROS (x,y) E RAD (theta) =================
+    ex = (goal.x - current.x) / SCALE   # m
+    ey = (goal.y - current.y) / SCALE   # m
+    dist = math.hypot(ex, ey)           # m
+
+    # ================= PD TRANSLACIONAL (em METROS) =================
+    # dt translacional
+    if mode == "precision_movement":
+
+        now_lin = time.monotonic()
+        st_lin = _trans_state
+        if st_lin["prev_time"] is None:
+            dt_lin = 0.02  # ~50 Hz inicial
+        else:
+            dt_lin = max(1e-6, now_lin - st_lin["prev_time"])
+        st_lin["prev_time"] = now_lin
+
+        if dist < pos_tol:
+            vx_s = 0.0
+            vy_s = 0.0
+            # sincroniza estado para evitar pico ao sair da tolerância
+            st_lin["prev_ex"] = ex
+            st_lin["prev_ey"] = ey
+        else:
+            # derivada do erro (m/s)
+            d_ex = (ex - st_lin["prev_ex"]) / dt_lin
+            d_ey = (ey - st_lin["prev_ey"]) / dt_lin
+            st_lin["prev_ex"] = ex
+            st_lin["prev_ey"] = ey
+
+            
+
+            # P + D translacional (m/s)
+            vx_s = k_pos * ex + kd_pos * d_ex
+            vy_s = k_pos * ey + kd_pos * d_ey
+
+            """# rampa perto do último ponto (se aplicável) — usa dist em m
+            if isLastMovement and slow_radius > 1e-6 and dist < slow_radius:
+                scale = dist / slow_radius
+                vx_s *= scale
+                vy_s *= scale"""
+
+            # saturação e piso (m/s)
+            v = math.hypot(vx_s, vy_s)
+            if v > vmax:
+                s = vmax / v
+                vx_s *= s
+                vy_s *= s
+                v = vmax
+            if 0.0 < v < v_min:
+                s = v_min / v
+                vx_s *= s
+                vy_s *= s
+    elif mode == "maintain_orientation":
+        if dist < pos_tol:
+            vx_s = 0.0
+            vy_s = 0.0
+        else:
+            # controle proporcional em {s}
+            vx_s = k_pos * dx
+            vy_s = k_pos * dy
+
+            """# rampa suave (linear) perto do alvo. para freiar o robo linearmente quando se chega perto do objetivo. Da pra tirar isso aqui tranquilamente tmb
+            # ou fazer ele so atuar quando for o ultimo movimento msm.
+            if slow_radius > 1e-6 and dist < slow_radius:
+                scale = dist / slow_radius
+                vx_s *= scale
+                vy_s *= scale"""
+
+            # saturação e piso, ajustavel tmb, eh so pra garantir uma velocidade minima e maxima do robo
+            v = math.hypot(vx_s, vy_s)
+            if v > vmax:
+                vx_s *= vmax / v
+                vy_s *= vmax / v
+                v = vmax
+            if 0.0 < v < v_min:
+                vx_s *= v_min / v
+                vy_s *= v_min / v
+
+    else:
         vx_s = 0.0
         vy_s = 0.0
-    else:
-        # controle proporcional em {s}
-        vx_s = k_pos * dx
-        vy_s = k_pos * dy
 
-        # rampa suave (linear) perto do alvo. para freiar o robo linearmente quando se chega perto do objetivo. Da pra tirar isso aqui tranquilamente tmb
-        # ou fazer ele so atuar quando for o ultimo movimento msm.
-        if slow_radius > 1e-6 and dist < slow_radius:
-            scale = dist / slow_radius
-            vx_s *= scale
-            vy_s *= scale
-
-        # saturação e piso, ajustavel tmb, eh so pra garantir uma velocidade minima e maxima do robo
-        v = math.hypot(vx_s, vy_s)
-        if v > vmax:
-            vx_s *= vmax / v
-            vy_s *= vmax / v
-            v = vmax
-        if 0.0 < v < v_min:
-            vx_s *= v_min / v
-            vy_s *= v_min / v
-
-    # ================= CONTROLE DE ORIENTAÇÃO =================
+    # ================= PD ANGULAR (em RAD) =================
     w = 0.0
     theta_meas = THETA_SIGN * (current.theta + THETA_OFFSET)
 
+    # dt angular
+    now_yaw = time.monotonic()
+    st_yaw = _yaw_state
+    if st_yaw["prev_time"] is None:
+        dt_yaw = 0.02
+    else:
+        dt_yaw = max(1e-6, now_yaw - st_yaw["prev_time"])
+    st_yaw["prev_time"] = now_yaw
+
     if mode == "maintain_orientation":
-        # nunca gira; só translada.
         w = 0.0
+        st_yaw["prev_err"] = 0.0
 
-    elif mode == "face_target":
-        # olha para na direcao do ponto desejado o tempo todo (mesmo durante a translação).
-        theta_des = math.atan2(dy, dx) if dist > 1e-6 else goal.theta
-        ang_err = normalize_angle_to_pi(theta_des - theta_meas)
-
-        # controle P no yaw agr
-        if abs(ang_err) >= yaw_deadband:
-            w = k_ang * ang_err
-            w = max(-wmax, min(w, wmax))
-        else:
-            w = 0.0
-
-    elif mode == "goal_orientation":
-        # olha para um angulo passado q nao necessariamente é na direcao do ponto desejado
-        
+    elif (mode == "precision_movement" and dist <= 0.2):
         ang_err = normalize_angle_to_pi(goal.theta - theta_meas)
 
-        if abs(ang_err) >= yaw_deadband:
-            w = k_ang * ang_err * 3
-            w = max(-wmax, min(w, wmax))
-        else:
+        if abs(ang_err) < yaw_deadband:
             w = 0.0
+            st_yaw["prev_err"] = ang_err
+        else:
+            d_ang_err = (ang_err - st_yaw["prev_err"]) / dt_yaw  # rad/s
+            st_yaw["prev_err"] = ang_err
+
+            w = k_ang * ang_err + kd_ang * d_ang_err
+            w = max(-wmax, min(wmax, w))
     else:
-        raise ValueError(f"mode inválido: {mode!r}. Use 'maintain_orientation', 'face_target' ou 'goal_orientation'.")
+        ang_err = normalize_angle_to_pi(goal.theta - theta_meas)
+
+        if abs(ang_err) < yaw_deadband:
+            w = 0.0
+            st_yaw["prev_err"] = ang_err
+        else:
+            d_ang_err = (ang_err - st_yaw["prev_err"]) / dt_yaw  # rad/s
+            st_yaw["prev_err"] = ang_err
+
+            w = k_ang * ang_err + kd_ang * d_ang_err
+            w = max(-wmax, min(wmax, w))
 
     # ================= CONDIÇÃO DE CHEGADA GLOBAL =================
     if dist < pos_tol:
-        # para decidir se zera tudo: depende do modo
         if mode == "face_target":
-            theta_des = math.atan2(dy, dx) if dist > 1e-6 else goal.theta
+            theta_des = math.atan2(ey, ex) if dist > 1e-6 else goal.theta
             ang_err = normalize_angle_to_pi(theta_des - theta_meas)
-        elif mode == "goal_orientation":
+        elif mode == "precision_movement" or mode == "rotation_only":
             ang_err = normalize_angle_to_pi(goal.theta - theta_meas)
         else:
-            ang_err = 0.0  # maintain_orientation não exige yaw especifico, ent fds
+            ang_err = 0.0
 
         if abs(ang_err) < ang_tol:
             vx_s = 0.0
@@ -221,6 +301,18 @@ if __name__ == "__main__":
 
     #tudo aqui é so pra testar de forma isolada msm
 
+    _yaw_state = {
+                "prev_err": 0.0,
+                "prev_time": None,
+            }
+    
+    _trans_state = {
+                "prev_ex": 0.0,
+                "prev_ey": 0.0,
+                "prev_time": None,
+            }
+
+
 
     #geometria do robo ------------------------------------------------------------------------------------------------
     wheels_angles = [math.radians(-30), 
@@ -245,18 +337,18 @@ if __name__ == "__main__":
     sender = CommandSenderSim()
 
     #destino ---------------------------------------------------------------------------------------------------------
-    xg = 0.75
-    yg = -1.3
+    xg = 0
+    yg = 0
     theta_g = math.radians(90)
 
     #loop de controle---------------------------------------------------------------------------------------------------
     arrived_count = 0
-    need_hits = 12  # ~200 ms em 60 Hz
+    need_hits = 1  # ~200 ms em 60 Hz
     start = time.time()
     # ---- Controle & logs ----
     segundoPonto = False
 
-    MODE = "goal_orientation"  # "maintain_orientation" | "face_target" | "goal_orientation"
+    MODE = "precision_movement"  # "maintain_orientation" | "rotation_only" | "precision_movement"
     phi_prev = None                # para derivar yaw
     u_prev = np.zeros((4,1))       # opcional: manter último comando
     k_d = 0.2                      # ganho derivativo do yaw (0.15–0.35)
@@ -268,11 +360,11 @@ if __name__ == "__main__":
     packet_bytes = builder.build()
     sender.send(packet_bytes)"""
 
-    while True:
-        now = time.time()
-        dt = max(1e-3, now - t_prev)
-        t_prev = now
+    count = 0
 
+    while True:
+
+        #if time.time() >= delay + t0:
         # lê pose UMA vez por ciclo
         pose = get_pose_from_receiver_multicam(receiver, "blue", 0, timeout=0.03)
 
@@ -288,21 +380,6 @@ if __name__ == "__main__":
                 mode=MODE
             )
 
-            # --- PD no yaw (so ideia por enquanto) ---
-            yaw_rate = 0.0
-            if phi_prev is not None:
-                dphi = ((phi - phi_prev + math.pi) % (2*math.pi)) - math.pi
-                yaw_rate = dphi / dt
-
-            apply_D = (MODE == "face_target")
-            # no goal_orientation: só aplica D na etapa 2 (quando já está no ponto)
-            if MODE == "goal_orientation":
-                dx_tmp, dy_tmp = (xg - x), (yg - y)
-                dist_tmp = math.hypot(dx_tmp, dy_tmp)
-                apply_D = apply_D or (dist_tmp < toleranciaPonto)
-
-            if apply_D:
-                w = w - k_d * yaw_rate
             # saturação angular final
             w = max(-wmax_global, min(w, wmax_global))
 
@@ -313,13 +390,11 @@ if __name__ == "__main__":
             if (MODE == "maintain_orientation" and dist < toleranciaPonto) or \
             (MODE != "maintain_orientation" and dist < toleranciaPonto and abs(ang_err) < math.radians(toleranciaAngulo)):
                 arrived_count += 1
+                builder.command_robots(id=0, wheelsspeed=True, wheel1=0.0, wheel2=0.0, wheel3=0.0, wheel4=0.0)
+                sender.send(builder.build())
+                break
             else:
                 arrived_count = 0
-
-        # log com throttle (não interfere no cálculo)
-        if now - last_log > 0.5:
-            print("pose:", pose, "arrived_count:", arrived_count)
-            last_log = now
 
         # monta q e cinemática
         q = np.array([[w], [vx_s], [vy_s]], dtype=float)
@@ -335,23 +410,20 @@ if __name__ == "__main__":
 
         u_prev = u
 
-        if arrived_count >= need_hits:
+        """if arrived_count >= need_hits:
             builder.command_robots(id=0, wheelsspeed=True, wheel1=0.0, wheel2=0.0, wheel3=0.0, wheel4=0.0)
             sender.send(builder.build())
-            break
+            break"""
 
         phi_prev = phi
-        time.sleep(max(0.0, 1/60 - (time.time() - now)))
+        t0 = time.time()
+        count += 1
+        if count % 100 == 0:  # a cada 100 ticks
+            elapsed = time.time() - start
+            freq = count / elapsed
+            print(f"Frequência média: {freq:.1f} Hz")
+        
 
-    builder.command_robots(
-            id=0, kick_x=4.0
-        )
-    start_time = time.time()
-
-    while time.time() - start_time < 1.0:
-        packet_bytes = builder.build()
-        sender.send(packet_bytes)
-        time.sleep(0.016)  # ~60 pacotes por segundo
 
     
 

@@ -714,3 +714,100 @@ class Positioning_helper:
         pos = Positioning_helper.constrain_position(rebound_pos)
 
         return pos
+
+    
+    @staticmethod
+    def get_best_pass_orientation(
+        passer_pos: Pose2D,
+        receiver_pos: Pose2D,
+        goal_pos: Pose2D,
+        opponents: List[Pose2D],
+        weight_receive: float = 0.6,
+        weight_goal: float = 0.4
+    ) -> float:
+        """
+        Retorna o melhor ângulo (em radianos) para o receptor se orientar ao receber o passe.
+
+        - passer_pos: posição do robô passador
+        - receiver_pos: posição do robô receptor
+        - goal_pos: centro do gol adversário
+        - opponents: lista de posições dos oponentes
+        - weight_receive: peso da orientação para receber o passe
+        - weight_goal: peso da orientação futura para finalizar ou progredir
+
+        Retorna um ângulo em radianos (orientação ideal do receptor).
+        """
+
+        # Vetor da bola para o receptor (direção de recepção)
+        vec_receive = (passer_pos.x - receiver_pos.x, passer_pos.y - receiver_pos.y)
+        angle_receive = math.atan2(vec_receive[1], vec_receive[0])
+
+        # Vetor do receptor para o gol (direção ofensiva)
+        vec_goal = (goal_pos.x - receiver_pos.x, goal_pos.y - receiver_pos.y)
+        angle_goal = math.atan2(vec_goal[1], vec_goal[0])
+
+        # Combinação ponderada dos ângulos (mantém continuidade da jogada)
+        best_angle = math.atan2(
+            weight_receive * math.sin(angle_receive) + weight_goal * math.sin(angle_goal),
+            weight_receive * math.cos(angle_receive) + weight_goal * math.cos(angle_goal)
+        )
+
+        # Ajuste de segurança: verificar se caminho está livre até o receptor
+        if not Positioning_helper.is_path_clear(passer_pos, receiver_pos, opponents):
+            # Se caminho bloqueado, orientar receptor para bola diretamente (prioridade em receber)
+            return angle_receive
+
+        return best_angle
+
+    @staticmethod
+    def are_pass_orientations_aligned(
+        passer_id: RobotID,
+        receiver_id: RobotID,
+        goal_pos: Pose2D,
+        opponents: List[Pose2D],
+        tolerance_deg: float = 10.0
+    ) -> bool:
+        """
+        Verifica se passador e receptor estão orientados corretamente para o passe.
+
+        - Passador: deve estar orientado em direção ao receptor.
+        - Receptor: deve estar orientado segundo o melhor ângulo (receber + progressão).
+
+        :param passer_id: Robô que irá passar a bola.
+        :param receiver_id: Robô que irá receber a bola.
+        :param goal_pos: Posição do gol adversário.
+        :param opponents: Lista de posições dos adversários.
+        :param tolerance_deg: Tolerância angular em graus.
+        :return: True se ambos estiverem alinhados.
+        """
+        ws = World_State.get_object()
+
+        passer_pose = ws.get_team_robot_pose(passer_id.value)
+        receiver_pose = ws.get_team_robot_pose(receiver_id.value)
+
+        if passer_pose is None or receiver_pose is None:
+            return False
+
+        # --- Passador deve olhar pro receptor ---
+        desired_passer_angle = math.atan2(
+            receiver_pose.y - passer_pose.y,
+            receiver_pose.x - passer_pose.x
+        )
+
+        # --- Receptor deve estar alinhado para receber + olhar pro gol ---
+        desired_receiver_angle = Positioning_helper.get_best_pass_orientation(
+            passer_pos=passer_pose,
+            receiver_pos=receiver_pose,
+            goal_pos=goal_pos,
+            opponents=opponents
+        )
+
+        tolerance_rad = math.radians(tolerance_deg)
+
+        def angle_diff(a, b):
+            return math.atan2(math.sin(a - b), math.cos(a - b))
+
+        passer_aligned = abs(angle_diff(desired_passer_angle, passer_pose.theta)) <= tolerance_rad
+        receiver_aligned = abs(angle_diff(desired_receiver_angle, receiver_pose.theta)) <= tolerance_rad
+
+        return passer_aligned and receiver_aligned

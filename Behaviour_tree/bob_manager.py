@@ -5,7 +5,16 @@ from .robot.bob import Bob
 
 from typing import Dict
 from utils.pose2D import Pose2D
-from utils.defines import RoleType, ZoneType, QuadrantType
+from utils.defines import (
+    RoleType,
+    ZoneType,
+    QuadrantType,
+    BOB_RADIUS,
+    BALL_RADIUS,
+    FIELD_INVERTED_SIDE,
+    FIELD_X_MIN,
+    FIELD_X_MAX,
+)
 from .core.World_State import World_State
 from .core.World_State import RobotID
 from SSL_configuration.configuration import Configuration
@@ -84,7 +93,7 @@ class BobManager:
         for obs in obstacles:
             if obs == robot.state.position:
                 obstacles.remove(obs)
-        robot.state.path = robot.find_shortest_path(robot.state.position, target, obstacles, 80, self.ball_pos, 15)
+        robot.state.path = robot.find_shortest_path(robot.state.position, target, obstacles, BOB_RADIUS, self.ball_pos, BALL_RADIUS)
 
         
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------#
@@ -201,7 +210,7 @@ class BobManager:
         obstacles = [obs for obs in obstacles if obs != robot.state.position]
         
         robot.state.target_position = target_pose
-        robot.state.path = robot.find_shortest_path(robot.state.position, target_pose, obstacles, 80, self.ball_pos, 15)
+        robot.state.path = robot.find_shortest_path(robot.state.position, target_pose, obstacles, BOB_RADIUS, self.ball_pos, BALL_RADIUS)
         robot.state.role = RoleType.DEFENSIVE_SUPPORT
         
         return target_pose
@@ -217,9 +226,72 @@ class BobManager:
         obstacles = [obs for obs in obstacles if obs != robot_pos]
         
         target_pose = Pose2D(-100,0)
-        robot.state.path = robot.find_shortest_path(robot.state.position, target_pose, obstacles, 80, self.ball_pos, 15)
+        robot.state.path = robot.find_shortest_path(robot.state.position, target_pose, obstacles, BOB_RADIUS, self.ball_pos, BALL_RADIUS)
         robot.state.role = RoleType.OFFENSIVE_SUPPORT
+    
+    def set_goalkeeper_defense_position(self, id: RobotID):
+        """Posiciona o goleiro para defender com base na posição atual da bola.
 
+        Estratégia:
+        - Projeta a posição da bola dentro da faixa vertical da área do goleiro.
+        - Mantém o goleiro em uma "linha de corte" entre a bola e o centro do gol.
+        - Restringe movimento ao retângulo da área de goleiro.
+        - Usa path planning para gerar caminho até o alvo.
+        """
+        robot = self.bobs.get(id)
+        if robot is None or robot.state is None:
+            return None
+
+        # Definição da área do goleiro (lado depende do FIELD_INVERTED_SIDE)
+        if not FIELD_INVERTED_SIDE:
+            # Defende gol da esquerda
+            area_x_min, area_x_max = -2250, -1650
+        else:
+            # Espelho para gol da direita
+            area_x_min, area_x_max = 1650, 2250
+        area_y_min, area_y_max = -600, 600
+
+        ball = self.ball_pos if self.ball_pos else self.world_state.get_ball_position()
+        if ball is None:
+            return None
+
+        # Centro do gol defendido
+        goal_x = FIELD_X_MIN if not FIELD_INVERTED_SIDE else FIELD_X_MAX
+        goal_center_y = 0.0
+
+        # Projeta y da bola dentro da área
+        target_y = max(area_y_min + 50, min(ball.y, area_y_max - 50))
+
+        # Distância horizontal relativa bola -> gol
+        dist_ball_to_goal = abs(ball.x - goal_x)
+        # Profundidade base: mais à frente se a bola está longe, mais recuado se está perto
+        if dist_ball_to_goal < 300:
+            depth_factor = 0.1  # cola mais na linha
+        elif dist_ball_to_goal < 800:
+            depth_factor = 0.35
+        else:
+            depth_factor = 0.6
+
+        # Calcula x alvo dentro da área: interpolação entre linha do gol e borda externa da área
+        if not FIELD_INVERTED_SIDE:
+            # Área à esquerda (x crescente para fora)
+            target_x = goal_x + (area_x_max - goal_x) * depth_factor
+        else:
+            # Área à direita (x decrescente para fora)
+            target_x = goal_x + (area_x_min - goal_x) * depth_factor
+
+        # Clamp final dentro da área
+        target_x = max(area_x_min + 20, min(target_x, area_x_max - 20))
+
+        target_pose = Pose2D(target_x, target_y)
+
+        # Planejamento de caminho
+        obstacles = self.world_state.get_all_robot_position()
+        obstacles = [obs for obs in obstacles if obs != robot.state.position]
+        robot.state.target_position = target_pose
+        robot.state.path = robot.find_shortest_path(robot.state.position, target_pose, obstacles, BOB_RADIUS, self.ball_pos, BALL_RADIUS)
+        robot.state.role = RoleType.GOALKEEPER
+        return target_pose
     
 
     def set_bob_freekick_position(self):

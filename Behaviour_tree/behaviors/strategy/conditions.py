@@ -38,7 +38,7 @@ class   Pass(py_trees.behavior.Behaviour):
     def __init__(self,name:str="verify_pass"):
         super().__init__(name)
         
-
+    
     def update(self) -> py_trees.common.Status:
         
 

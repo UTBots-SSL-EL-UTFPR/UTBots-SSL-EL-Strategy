@@ -39,17 +39,13 @@ class Strategy_tree(Tree):
             name = "Ball_possetion:Pass",memory=False,children = [
                 s_condition_nodes.Pass(),
                 c_condition_nodes.Has_ball(),
-                #Range_Valido
-                #Recebedor_Desmarcado
+                c_condition_nodes.Valid_Line(),
+                c_condition_nodes.Receiver_Unmarked(),
+                c_action_nodes.Choose_who_to_pass(),
                 s_action_nodes.Set_blackboard_value("context:Pass",contexts.is_pass,True)
             ]
         )
-        #####
-        #Preciso do nó HasBall , já criado , Ae o nó Range_Valido , 
-        # Ae o nó Jogador que ira receber a bola 
-        # e entao o nó passa ,tudo isso sao nos da minha arvore(logica do passe) 
-        # a logica de cada contexto esta dentro de cada classe particular
-        ######
+
         with_ball_complex_attack = py_trees.composites.Sequence(
             name="Ball_possetion: Attack_from_recovery", memory=False, children=[
                 s_condition_nodes.is_atack_from_recovery(),
