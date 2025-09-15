@@ -5,6 +5,7 @@ Todos os comportamentos de ação, classes instanciadas com biblioteca pytree
 from __future__ import annotations
 
 import logging
+import math
 import time
 from time import sleep
 
@@ -105,7 +106,7 @@ class Move_node(pt.behaviour.Behaviour):
             return pt.common.Status.FAILURE
 
         try:
-            self.robot.move_oriented()
+            self.robot.fast_movement()
         except Exception as exc:
             return pt.common.Status.FAILURE
 
@@ -119,7 +120,7 @@ class Move_node(pt.behaviour.Behaviour):
         return pt.common.Status.RUNNING
 
     def terminate(self, new_status: pt.common.Status) -> None:
-        if self.robot is None or getattr(self.robot, "state", None) is None:
+        if self.robot is None or self.robot.state is None:
             return
 
         self.robot.state.target_position = None
@@ -219,7 +220,7 @@ class Rebound_position(pt.behaviour.Behaviour):
         calcula a Pose2D alvo apontando para o centro do gol e
         adiciona na trajetória do robô. Retorna SUCCESS ao preparar.
         """
-        if self.robot is None or getattr(self.robot, "state", None) is None:
+        if self.robot is None or self.robot.state is None:
             logger.warning("robo NONE")
             return pt.common.Status.FAILURE
         if not self._bb.get(f"{team_flags.kick_actions.team_kick}"):
@@ -275,7 +276,7 @@ class Choose_who_to_pass(py_trees.behaviour.Behaviour):
             min_distance = 1000000
 
             for robot_id in [target0, target1]:
-                pos = self.bb.get(f"{robot_id}{positions.position}")
+                pos = self.bb.get(f"{robot_id}{positions.position}")  # TODO ???????
                 if pos is not None:
                     distance = (
                         (self.robot.state.position.x - pos[0]) ** 2

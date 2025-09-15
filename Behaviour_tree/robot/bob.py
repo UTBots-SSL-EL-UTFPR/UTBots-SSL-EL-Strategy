@@ -148,10 +148,6 @@ class Bob:
         #TODO enviar comando para simulação
         return True
 
-    def rotate(self, angle: float) -> bool:
-        #TODO ENVIAR COMANDO ROTATE (é melhor controlar com encoders)
-        return True
-
 
     def compute_world_velocity(
         self,
