@@ -7,8 +7,9 @@ from utils.pose2D import Pose2D
 from SSL_configuration.configuration import Configuration
 from utils.defines import Quadrant, QuadrantType, Zone, ZoneType, RoleType, BALL_POSSESSION_DISTANCE
 from Behaviour_tree.positioning.positioning_helper import Positioning_helper
-from robot import bob
-from bob import Bob
+
+from .bob import Bob
+from . import bob
 #TODO
 #   linha 112
 #
@@ -73,8 +74,8 @@ class Bob_State:
             pos_1=World_State.get_team_robot_pose(self,1)
             pos_2=World_State.get_team_robot_pose(self,0)
             
-            obstacles = World_State.get_all_foes_position()
-             
+            obstacles = self.world_state.get_all_foes_position()
+            
             if(Positioning_helper.is_path_clear(pos_gol,pos_1,obstacles,bob.ROBOT_RADIUS) or Positioning_helper.is_path_clear(pos_gol,pos_2,obstacles,bob.ROBOT_RADIUS)):
                 event_callbacks.on_valid_line(self.robot_id.name)
         #se a bola esta com outro robo
@@ -83,7 +84,7 @@ class Bob_State:
             pos_2=World_State.get_team_robot_pose(self,0)
         
             
-            obstacles = World_State.get_all_foes_position()
+            obstacles =self.world_state.get_all_foes_position()
              
             if(Positioning_helper.is_path_clear(pos_1,pos_2,obstacles,bob.ROBOT_RADIUS)):
                 event_callbacks.on_valid_line(self.robot_id.name)
@@ -93,7 +94,7 @@ class Bob_State:
             pos_2=World_State.get_team_robot_pose(self,1)
         
             
-            obstacles = World_State.get_all_foes_position()
+            obstacles = self.world_state.get_all_foes_position()
              
             if(Positioning_helper.is_path_clear(pos_1,pos_2,obstacles,bob.ROBOT_RADIUS)):
                 event_callbacks.on_valid_line(self.robot_id.name)

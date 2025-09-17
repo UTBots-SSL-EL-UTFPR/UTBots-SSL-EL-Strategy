@@ -27,6 +27,7 @@ from typing import Optional, Tuple
 import py_trees as pt
 
 team_flags = BB_flags_and_values.Flags.Team_Flags
+from ...positioning import positioning_helper as Positioning_helper
 
 
 from Behaviour_tree.positioning.positioning_helper import Positioning_helper
@@ -245,74 +246,49 @@ class Choose_who_to_pass(py_trees.behaviour.Behaviour):
     def __init__(self, Robot: Bob, name):
         super().__init__(name)
         self.robot = Robot
-        self.target: tuple[float, float]
         self.bb = Blackboard_Manager.get_instance()
-        self.position = self.bb.get(f"{Robot.robot_id}{positions.quadrant}")
+        self.world_state = World_State.get_object()
+
 
     def setup(self, **kwargs):
         return super().setup(**kwargs)
 
-    def update(self):
+    def update(self)->pt.common.Status:
 
         if self.robot is None or self.robot.state is None:
-            return py_trees.common.Status.FAILURE
-        if self.position is None:
-            return py_trees.common.Status.FAILURE
+            return py_trees.common.Status.FAILURE   
+        
+        target_pos_found = None
+        target_id_found  = None
 
-        if (
-            self.position % 4 == 0
-        ):  #######Esta no ultimo quarto do campo , irá chutar no gol
-            return py_trees.common.Status.FAILURE
-
-        best_target_pos = None
-        best_target_id = None
         if self.robot.robot_id == 2:
-
-            target0 = RobotID(0)
-            target1 = RobotID(1)
-
-            # Passar para o jogador mais proximo
-
+            target0 = RobotID.Kamiji
+            target1 = RobotID.Defender
             min_distance = 1000000
 
-            for robot_id in [target0, target1]:
-                pos = self.bb.get(f"{robot_id}{positions.position}")  # TODO ???????
+            for robot_id_enum in [target0, target1]:
+                pos = self.world_state.get_team_robot_pose(robot_id_enum)
                 if pos is not None:
-                    distance = (
-                        (self.robot.state.position.x - pos[0]) ** 2
-                        + (self.robot.state.position.y - pos[1]) ** 2
-                    ) ** 0.5
+                    distance = ((self.robot.state.position.x - pos.x)**2 + (self.robot.state.position.y - pos.y)**2)**0.5
                     if distance < min_distance:
                         min_distance = distance
-                        best_target_pos = pos
-                        best_target_id = robot_id
-
-                    if best_target_pos is not None:
-                        self.target = best_target_pos
-                        self.bb.on_pass(self.robot.robot_id.name)
+                        target_pos_found = pos
+                        target_id_found = robot_id_enum
 
         elif self.robot.robot_id == 1:
-            best_target_id = RobotID(0)
-            best_target_pos = self.bb.get(f"{best_target_id}{positions.position}")
-            if best_target_pos is not None:
-                self.target = best_target_pos
-                self.bb.on_pass(self.robot.robot_id.name)
-
+            target_id_found = RobotID.Kamiji
+            target_pos_found = self.world_state.get_team_robot_pose(target_id_found)                  
         else:
-            best_target_id = RobotID(1)
-            best_target_pos = self.bb.get(f"{best_target_id}{positions.position}")
-            if best_target_pos is not None:
-                self.target = best_target_pos
-                self.bb.on_pass(self.robot.robot_id.name)
-
-        if self.bb.get(f"{team_flags.Context.is_pass}"):
+            target_id_found = RobotID.Defender
+            target_pos_found = self.world_state.get_team_robot_pose(target_id_found) 
+        
+        if target_pos_found is not None and target_id_found is not None:
+            self.bb.set("pass_target_id", target_id_found)
+            self.bb.set("pass_target_pos", target_pos_found)
             return py_trees.common.Status.SUCCESS
         else:
             return py_trees.common.Status.FAILURE
 
-            # self.target = (1000,0)
-            # self.bb.set(f"{self.robot.robot_id.name}{positions.target_to_pass}",self.target)
-            # return py_trees.common.Status.SUCCESS
 
 
 class Align_for_pass(pt.behaviour.Behaviour):
@@ -362,7 +338,7 @@ class Align_for_pass(pt.behaviour.Behaviour):
             receiver_pose,
             goal_pose,
             opponents=[],
-            tolerance=self.tolerance,
+            tolerance_deg=self.tolerance,
         ):
             return pt.common.Status.SUCCESS
 
