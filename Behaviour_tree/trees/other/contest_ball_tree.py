@@ -1,6 +1,7 @@
 # behaviors/duels/fight_for_ball.py
 from __future__ import annotations
 
+import logging
 import time
 from typing import Optional
 
@@ -12,6 +13,8 @@ ball_flags = BB_flags_and_values.Flags.motion.ball
 positions_values = BB_flags_and_values.Values.Positions
 team_flags = BB_flags_and_values.Flags.Team_Flags
 _bb = Blackboard_Manager.get_instance()
+
+logger = logging.getLogger(__name__)
 
 
 class IsInTaskPosition(py_trees.behaviour.Behaviour):
@@ -52,18 +55,26 @@ class PressureOpponent(py_trees.behaviour.Behaviour):
     decide se irá tentar segurar o passe ou fazer pressão
     """
 
-    def __init__(self, name: str = "TeammateIsBestToReachBall", margin_s: float = 0.0):
+    def __init__(self, name: str = "TeammateIsBestToReachBall", robot_id=""):
         super().__init__(name)
         self.bb = py_trees.blackboard.Blackboard()
-        self.margin_s = margin_s
+        self.ball_reachable_str = (
+            f"{robot_id}{BB_flags_and_values.Flags.motion.ball.ball_visible}"
+        )
+
+    def setup(self, **kwargs) -> None:
+        return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
         """decide se irá tentar segurar o passe ou fazer pressão
 
         :return py_trees.common.Status: Falha se a distancia é grande demais para precionar o oponente, Sucesso se não for
         """
-        # pos_helper -> ball_reachable (podemos usar _bb pra isso)
-            # -> definir distancia maxima robo-bola 
+        if not _bb.get(self.ball_reachable_str):
+            logger.debug("não estou proximo o suficiente para press oponente")
+            return py_trees.common.Status.FAILURE
+
+        # -> definir distancia maxima robo-bola
         # pos helper -> get_press_position
         ...
 

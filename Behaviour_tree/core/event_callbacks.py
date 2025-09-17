@@ -57,7 +57,7 @@ class BB_flags_and_values:
         class motion:
             class ball:
                 has_ball = StaticBuilder("has_ball")
-                is_close = StaticBuilder("is_close")
+                is_reachable = StaticBuilder("is_reachable")
                 ball_visible = StaticBuilder("ball_visible")
 
             class navigation:
@@ -116,6 +116,10 @@ def foes_got_ball_posetion(robot_id: str):
         f"{robot_id}{BB_flags_and_values.Flags.Team_Flags.Ball_posetion.foes_have_ball}",
         True,
     )
+
+
+def on_ball_reachable(robot_id: str, value):
+    _bb.set(f"{robot_id}{BB_flags_and_values.Flags.motion.ball.is_reachable}", value)
 
 
 # ----------------------------------   MOTION   ----------------------------------#
