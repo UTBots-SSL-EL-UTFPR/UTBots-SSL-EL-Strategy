@@ -22,7 +22,7 @@ class Strategy_tree(Tree):
     def __init__(self):
         super().__init__(name="StrategyTree")
         self.current_context = ""
-
+    
     def create_tree(self) -> py_trees.behaviour.Behaviour:
         
         #---------------------------------------------------------------------#
@@ -41,7 +41,7 @@ class Strategy_tree(Tree):
                 c_condition_nodes.Has_ball(),
                 c_condition_nodes.Valid_Line(),
                 c_condition_nodes.Receiver_Unmarked(),
-                c_action_nodes.Choose_who_to_pass(),
+                c_action_nodes.Choose_who_to_pass(Robot=self.bob,name="Choose_Pass"),
                 s_action_nodes.Set_blackboard_value("context:Pass",contexts.is_pass,True)
             ]
         )

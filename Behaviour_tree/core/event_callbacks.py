@@ -133,6 +133,7 @@ def on_pass(robot_id):
     _bb.set(f"{robot_id}{BB_flags_and_values.Flags.Team_Flags.Context.is_pass}", True)
 
 
+
 def on_ball_visible(robot_id):
     _bb.set(f"{robot_id}{BB_flags_and_values.Flags.motion.ball.ball_visible}", True)
 
