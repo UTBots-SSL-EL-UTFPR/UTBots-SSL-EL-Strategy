@@ -367,6 +367,7 @@ class Align_for_pass(pt.behaviour.Behaviour):
                 f"{self.receiver.robot_id.name}_cmd_rotation", angle_diff_receiver
             )
 
+
         return pt.common.Status.RUNNING
 
     def terminate(self, new_status: pt.common.Status):

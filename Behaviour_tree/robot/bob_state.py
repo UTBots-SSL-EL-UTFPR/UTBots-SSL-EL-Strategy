@@ -77,6 +77,7 @@ class Bob_State:
         self.is_visible_from_ball()
         self.update_velocity()
         self.is_ball_reachable()
+        self.is_ball_with_robot()
         # ################# Verifica se a existe uma linha de passe ################# TODO ajeitar essa bomba
 
         # # primeiro a bola  esta no goleiro
