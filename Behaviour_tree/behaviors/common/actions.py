@@ -332,41 +332,33 @@ class Align_for_pass(pt.behaviour.Behaviour):
         receiver_pose = self.receiver.state.position
         goal_pose = self.bb.get("goal_pose")
 
-        # Verificação sem considerar oponentes
+        # Checa alinhamento geral
         if Positioning_helper.are_pass_orientations_aligned(
-            passer_pose,
-            receiver_pose,
-            goal_pose,
-            opponents=[],
-            tolerance_deg=self.tolerance,
+            passer_pose, receiver_pose, goal_pose,
+            opponents=[], tolerance_deg=self.tolerance,
         ):
             return pt.common.Status.SUCCESS
 
-        # Ângulo ideal receptor
+        # Ângulos desejados
         desired_receiver_angle = Positioning_helper.get_best_pass_orientation(
             passer_pose, receiver_pose, goal_pose, opponents=[]
         )
-        # Ângulo ideal passador (olhando pro receptor)
-        desired_passer_angle = math.atan2(
-            receiver_pose.y - passer_pose.y, receiver_pose.x - passer_pose.x
+        desired_passer_angle = Positioning_helper.get_passer_orientation(
+            passer_pose, receiver_pose
         )
 
-        # Ajustar passador
-        angle_diff_passer = (desired_passer_angle - passer_pose.theta + math.pi) % (
-            2 * math.pi
-        ) - math.pi
-        if abs(angle_diff_passer) > self.tolerance:
-            self.bb.set(f"{self.passer.robot_id.name}_cmd_rotation", angle_diff_passer)
+        # Gera comandos (se necessário)
+        cmd_passer = Positioning_helper.get_rotation_command(
+            passer_pose.theta, desired_passer_angle, self.tolerance
+        )
+        cmd_receiver = Positioning_helper.get_rotation_command(
+            receiver_pose.theta, desired_receiver_angle, self.tolerance
+        )
 
-        # Ajustar receptor
-        angle_diff_receiver = (
-            desired_receiver_angle - receiver_pose.theta + math.pi
-        ) % (2 * math.pi) - math.pi
-        if abs(angle_diff_receiver) > self.tolerance:
-            self.bb.set(
-                f"{self.receiver.robot_id.name}_cmd_rotation", angle_diff_receiver
-            )
-
+        if cmd_passer is not None:
+            self.bb.set(f"{self.passer.robot_id.name}_cmd_rotation", cmd_passer)
+        if cmd_receiver is not None:
+            self.bb.set(f"{self.receiver.robot_id.name}_cmd_rotation", cmd_receiver)
 
         return pt.common.Status.RUNNING
 

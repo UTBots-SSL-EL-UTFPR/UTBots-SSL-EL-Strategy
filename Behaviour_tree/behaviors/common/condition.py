@@ -33,13 +33,10 @@ class Has_ball(py_trees.behaviour.Behaviour):
 
     def setup(self, **kwargs: Any) -> None:
         return super().setup(**kwargs)
-    
-    def initialise(self):
-        pass
 
     def update(self) -> py_trees.common.Status:
         if _bb.get(f"{ball_flags.has_ball}"):
-            return py_trees.common.Status.SUCCESS
+            return py_trees.common.Status.RUNNING
         return py_trees.common.Status.FAILURE
 
 class Valid_Line(py_trees.behaviour.Behaviour):
@@ -49,15 +46,12 @@ class Valid_Line(py_trees.behaviour.Behaviour):
     
     def setup(self,**kwargs):
         return super().setup(**kwargs)
-    
-    def initialise(self):
-        pass
 
     def update(self) ->py_trees.common.Status:
         if _bb.get(
           f"{team_flags.Context.valid_line}"
         ):
-            return py_trees.common.Status.SUCCESS
+            return py_trees.common.Status.RUNNING
         return py_trees.common.Status.FAILURE
 
 
@@ -68,15 +62,12 @@ class Receiver_Unmarked(py_trees.behaviour.Behaviour):
     
     def setup(self,**kwargs):
         return super().setup(**kwargs)
-    
-    def initialise(self):
-        pass
 
     def update(self) ->py_trees.common.Status:
         if _bb.get(
           f"{team_flags.Context.unmarked_receiver}"
         ):
-            return py_trees.common.Status.SUCCESS
+            return py_trees.common.Status.RUNNING
         
         return py_trees.common.Status.FAILURE
 
@@ -121,4 +112,17 @@ class Ball_visible(py_trees.behaviour.Behaviour):
         else:
             print("blackboard com valor nulo no lugar de pos2d par mov desmarque")
         return py_trees.common.Status.FAILURE
+        
 
+class Team_kick(py_trees.behaviour.Behaviour):
+
+    def __init__(self, name: str = "Team_kick"):
+        super().__init__(name)
+
+    def setup(self, **kwargs: Any) -> None:
+        return super().setup(**kwargs)
+
+    def update(self) -> py_trees.common.Status:
+        if _bb.get(f"{team_flags.kick_actions.team_kick}"):
+            return py_trees.common.Status.SUCCESS
+        return py_trees.common.Status.FAILURE

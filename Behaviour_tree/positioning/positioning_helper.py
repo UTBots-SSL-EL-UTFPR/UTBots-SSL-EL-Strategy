@@ -759,55 +759,89 @@ class Positioning_helper:
 
         return best_angle
 
+    
     @staticmethod
     def are_pass_orientations_aligned(
-        passer_id: RobotID,
-        receiver_id: RobotID,
-        goal_pos: Pose2D,
-        opponents: List[Pose2D],
-        tolerance_deg: float = 10.0
+        passer_pose: Pose2D,
+        receiver_pose: Pose2D,
+        goal_pose: Pose2D,
+        tolerance: float = 0.15
     ) -> bool:
         """
-        Verifica se passador e receptor estão orientados corretamente para o passe.
-
-        - Passador: deve estar orientado em direção ao receptor.
-        - Receptor: deve estar orientado segundo o melhor ângulo (receber + progressão).
-
-        :param passer_id: Robô que irá passar a bola.
-        :param receiver_id: Robô que irá receber a bola.
-        :param goal_pos: Posição do gol adversário.
-        :param opponents: Lista de posições dos adversários.
-        :param tolerance_deg: Tolerância angular em graus.
-        :return: True se ambos estiverem alinhados.
+        Verifica se tanto passador quanto receptor estão alinhados corretamente
+        para realizar o passe.
         """
-        ws = World_State.get_object()
-
-        passer_pose = ws.get_team_robot_pose(passer_id.value)
-        receiver_pose = ws.get_team_robot_pose(receiver_id.value)
-
-        if passer_pose is None or receiver_pose is None:
-            return False
-
-        # --- Passador deve olhar pro receptor ---
+        desired_receiver_angle = Positioning_helper.get_best_pass_orientation(
+            passer_pose, receiver_pose, goal_pose
+        )
         desired_passer_angle = math.atan2(
+            receiver_pose.y - passer_pose.y, receiver_pose.x - passer_pose.x
+        )
+
+        angle_diff_passer = (desired_passer_angle - passer_pose.theta + math.pi) % (
+            2 * math.pi
+        ) - math.pi
+        angle_diff_receiver = (desired_receiver_angle - receiver_pose.theta + math.pi) % (
+            2 * math.pi
+        ) - math.pi
+
+        return abs(angle_diff_passer) <= tolerance and abs(angle_diff_receiver) <= tolerance
+
+
+    @staticmethod
+    def get_pass_alignment_angles(
+        passer_pose: Pose2D,
+        receiver_pose: Pose2D,
+        goal_pose: Pose2D
+    ) -> tuple[float, float]:
+        """
+        Retorna os ângulos desejados (passador, receptor) para alinhar o passe.
+        """
+        desired_receiver_angle = Positioning_helper.get_best_pass_orientation(
+            passer_pose, receiver_pose, goal_pose
+        )
+        desired_passer_angle = math.atan2(
+            receiver_pose.y - passer_pose.y, receiver_pose.x - passer_pose.x
+        )
+        return desired_passer_angle, desired_receiver_angle
+
+    @staticmethod
+    def normalize_angle(angle: float) -> float:
+        """
+        Normaliza ângulo para o intervalo [-pi, pi].
+        """
+        return (angle + math.pi) % (2 * math.pi) - math.pi
+
+    @staticmethod
+    def angle_difference(a: float, b: float) -> float:
+        """
+        Diferença angular entre `a` e `b`, resultado em [-pi, pi].
+        """
+        return Positioning_helper.normalize_angle(a - b)
+
+    @staticmethod
+    def is_angle_aligned(a: float, b: float, tolerance: float) -> bool:
+        """
+        Verifica se dois ângulos estão alinhados dentro da tolerância.
+        """
+        return abs(Positioning_helper.angle_difference(a, b)) <= tolerance
+
+    @staticmethod
+    def get_passer_orientation(passer_pose, receiver_pose) -> float:
+        """
+        Ângulo ideal do passador (apontando para o receptor).
+        """
+        return math.atan2(
             receiver_pose.y - passer_pose.y,
             receiver_pose.x - passer_pose.x
         )
 
-        # --- Receptor deve estar alinhado para receber + olhar pro gol ---
-        desired_receiver_angle = Positioning_helper.get_best_pass_orientation(
-            passer_pos=passer_pose,
-            receiver_pos=receiver_pose,
-            goal_pos=goal_pos,
-            opponents=opponents
-        )
-
-        tolerance_rad = math.radians(tolerance_deg)
-
-        def angle_diff(a, b):
-            return math.atan2(math.sin(a - b), math.cos(a - b))
-
-        passer_aligned = abs(angle_diff(desired_passer_angle, passer_pose.theta)) <= tolerance_rad
-        receiver_aligned = abs(angle_diff(desired_receiver_angle, receiver_pose.theta)) <= tolerance_rad
-
-        return passer_aligned and receiver_aligned
+    @staticmethod
+    def get_rotation_command(current_angle: float, desired_angle: float, tolerance: float) -> Optional[float]:
+        """
+        Retorna comando de rotação se necessário, senão None.
+        """
+        diff = Positioning_helper.angle_difference(desired_angle, current_angle)
+        if abs(diff) > tolerance:
+            return diff
+        return None
