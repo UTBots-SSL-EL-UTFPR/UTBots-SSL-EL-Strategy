@@ -64,6 +64,7 @@ class Bob_State:
         self.target_reached()
         self.is_visible_from_ball()
         self.is_ball_reachable()
+        self.is_ball_with_robot()
 
     def is_ball_with_robot(self):
         if self.has_ball != self.check_ball_possession():

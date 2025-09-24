@@ -110,3 +110,17 @@ class Ball_visible(py_trees.behaviour.Behaviour):
         else:
             print("blackboard com valor nulo no lugar de pos2d par mov desmarque")
         return py_trees.common.Status.FAILURE
+        
+
+class Team_kick(py_trees.behaviour.Behaviour):
+
+    def __init__(self, name: str = "Team_kick"):
+        super().__init__(name)
+
+    def setup(self, **kwargs: Any) -> None:
+        return super().setup(**kwargs)
+
+    def update(self) -> py_trees.common.Status:
+        if _bb.get(f"{team_flags.kick_actions.team_kick}"):
+            return py_trees.common.Status.SUCCESS
+        return py_trees.common.Status.FAILURE

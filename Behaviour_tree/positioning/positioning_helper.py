@@ -762,130 +762,86 @@ class Positioning_helper:
 
     @staticmethod
     def are_pass_orientations_aligned(
-        passer_id: RobotID,
-        receiver_id: RobotID,
-        goal_pos: Pose2D,
-        opponents: List[Pose2D],
-        tolerance_deg: float = 10.0,
+        passer_pose: Pose2D,
+        receiver_pose: Pose2D,
+        goal_pose: Pose2D,
+        tolerance: float = 0.15,
     ) -> bool:
         """
-        Verifica se passador e receptor estão orientados corretamente para o passe.
-
-        - Passador: deve estar orientado em direção ao receptor.
-        - Receptor: deve estar orientado segundo o melhor ângulo (receber + progressão).
-
-        :param passer_id: Robô que irá passar a bola.
-        :param receiver_id: Robô que irá receber a bola.
-        :param goal_pos: Posição do gol adversário.
-        :param opponents: Lista de posições dos adversários.
-        :param tolerance_deg: Tolerância angular em graus.
-        :return: True se ambos estiverem alinhados.
+        Verifica se tanto passador quanto receptor estão alinhados corretamente
+        para realizar o passe.
         """
-        ws = World_State.get_object()
-
-        passer_pose = ws.get_team_robot_pose(passer_id.value)
-        receiver_pose = ws.get_team_robot_pose(receiver_id.value)
-
-        if passer_pose is None or receiver_pose is None:
-            return False
-
-        # --- Passador deve olhar pro receptor ---
+        desired_receiver_angle = Positioning_helper.get_best_pass_orientation(
+            passer_pose, receiver_pose, goal_pose
+        )
         desired_passer_angle = math.atan2(
             receiver_pose.y - passer_pose.y, receiver_pose.x - passer_pose.x
         )
 
-        # --- Receptor deve estar alinhado para receber + olhar pro gol ---
+        angle_diff_passer = (desired_passer_angle - passer_pose.theta + math.pi) % (
+            2 * math.pi
+        ) - math.pi
+        angle_diff_receiver = (desired_receiver_angle - receiver_pose.theta + math.pi) % (
+            2 * math.pi
+        ) - math.pi
+
+        return abs(angle_diff_passer) <= tolerance and abs(angle_diff_receiver) <= tolerance
+
+
+    @staticmethod
+    def get_pass_alignment_angles(
+        passer_pose: Pose2D,
+        receiver_pose: Pose2D,
+        goal_pose: Pose2D
+    ) -> tuple[float, float]:
+        """
+        Retorna os ângulos desejados (passador, receptor) para alinhar o passe.
+        """
         desired_receiver_angle = Positioning_helper.get_best_pass_orientation(
-            passer_pos=passer_pose,
-            receiver_pos=receiver_pose,
-            goal_pos=goal_pos,
-            opponents=opponents,
+            passer_pose, receiver_pose, goal_pose
         )
-
-        tolerance_rad = math.radians(tolerance_deg)
-
-        def angle_diff(a, b):
-            return math.atan2(math.sin(a - b), math.cos(a - b))
-
-        passer_aligned = (
-            abs(angle_diff(desired_passer_angle, passer_pose.theta)) <= tolerance_rad
+        desired_passer_angle = math.atan2(
+            receiver_pose.y - passer_pose.y, receiver_pose.x - passer_pose.x
         )
-        receiver_aligned = (
-            abs(angle_diff(desired_receiver_angle, receiver_pose.theta))
-            <= tolerance_rad
-        )
-
-        return passer_aligned and receiver_aligned
+        return desired_passer_angle, desired_receiver_angle
 
     @staticmethod
-    def get_intercept_position(
-        distance_from_ball: int,
-    ) -> Pose2D:
+    def normalize_angle(angle: float) -> float:
         """
-        ponto intercep bola bom a um R fixo da bola
+        Normaliza ângulo para o intervalo [-pi, pi].
         """
-        origin_pos = Positioning_helper._world_state.get_ball_position()
-        target_pos = Pose2D(Positioning_helper._configuration.get_side_sign() * 2250, 0)
-
-        vec_x = origin_pos.x - target_pos.x
-        vec_y = origin_pos.y - target_pos.y
-
-        total_distance = math.hypot(vec_x, vec_y)
-
-        if total_distance == 0:
-            return origin_pos
-
-        if distance_from_ball >= total_distance:
-            return origin_pos
-
-        unit_vec_x = vec_x / total_distance
-        unit_vec_y = vec_y / total_distance
-        intercept_x = target_pos.x + unit_vec_x * distance_from_ball
-        intercept_y = target_pos.y + unit_vec_y * distance_from_ball
-
-        return Pose2D(int(intercept_x), int(intercept_y))
+        return (angle + math.pi) % (2 * math.pi) - math.pi
 
     @staticmethod
-    def get_pass_line(): ...
+    def angle_difference(a: float, b: float) -> float:
+        """
+        Diferença angular entre `a` e `b`, resultado em [-pi, pi].
+        """
+        return Positioning_helper.normalize_angle(a - b)
 
-    #     # primeiro a bola  esta no goleiro
-    #     if self.robot_id == RobotID(2):
-    #         pos_gol = self.get_position()
-    #         pos_1 = self.world_state.get_team_robot_pose(self.robot_id.value)
-    #         pos_2 = self.world_state.get_team_robot_pose(self.robot_id.value)
+    @staticmethod
+    def is_angle_aligned(a: float, b: float, tolerance: float) -> bool:
+        """
+        Verifica se dois ângulos estão alinhados dentro da tolerância.
+        """
+        return abs(Positioning_helper.angle_difference(a, b)) <= tolerance
 
-    #         obstacles = self.world_state.get_all_foes_position()
-    #         if not pos_1 or not pos_2:
-    #             return
+    @staticmethod
+    def get_passer_orientation(passer_pose, receiver_pose) -> float:
+        """
+        Ângulo ideal do passador (apontando para o receptor).
+        """
+        return math.atan2(
+            receiver_pose.y - passer_pose.y,
+            receiver_pose.x - passer_pose.x
+        )
 
-    #         if Positioning_helper.is_path_clear(
-    #             pos_gol, pos_1, obstacles, ROBOT_RADIUS
-    #         ) or Positioning_helper.is_path_clear(
-    #             pos_gol, pos_2, obstacles, ROBOT_RADIUS
-    #         ):
-    #             event_callbacks.on_valid_line(self.robot_id.name)
-    #     # se a bola esta com outro robo
-    #     elif self.robot_id == RobotID(1):
-    #         pos_1 = self.get_position()
-    #         pos_2 = self.world_state.get_team_robot_pose(self.robot_id.value)
-
-    #         obstacles = self.world_state.get_all_foes_position()
-
-    #         if Positioning_helper.is_path_clear(pos_1, pos_2, obstacles, ROBOT_RADIUS):
-    #             event_callbacks.on_valid_line(self.robot_id.name)
-
-    #     else:
-    #         pos_1 = self.get_position()
-    #         pos_2 = World_State.get_team_robot_pose(self, 1)
-
-    #         obstacles = self.world_state.get_all_foes_position()
-
-    #         if Positioning_helper.is_path_clear(pos_1, pos_2, obstacles, ROBOT_RADIUS):
-    #             event_callbacks.on_valid_line(self.robot_id.name)
-
-    #         #################   Verifica se o recebedor está desmarcado   #################
-
-    #         if Bob.is_free(RobotID(1)):
-    #             event_callbacks.unmarked_receiver(self.robot_id.name)
-    #         if Bob.is_free(RobotID(0)):
-    #             event_callbacks.unmarked_receiver(self.robot_id.name)
+    @staticmethod
+    def get_rotation_command(current_angle: float, desired_angle: float, tolerance: float) -> Optional[float]:
+        """
+        Retorna comando de rotação se necessário, senão None.
+        """
+        diff = Positioning_helper.angle_difference(desired_angle, current_angle)
+        if abs(diff) > tolerance:
+            return diff
+        return None
