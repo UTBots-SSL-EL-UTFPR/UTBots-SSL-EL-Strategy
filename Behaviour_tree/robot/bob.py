@@ -10,6 +10,7 @@ from Behaviour_tree.core.event_callbacks import BB_flags_and_values
 from utils import utilsp
 from utils.pose2D import Pose2D
 
+
 from ..core.blackboard import Blackboard_Manager
 from ..core.World_State import RobotID
 from .bob_config import Bob_Config
@@ -21,6 +22,14 @@ positions = BB_flags_and_values.Values.Positions
 
 from communication.sender.command_builder import CommandBuilder
 from communication.sender.command_sender_sim import CommandSenderSim
+
+import serial
+import time
+
+# Ajuste a porta e baudrate de acordo com a sua placa
+ser = serial.Serial('/dev/ttyUSB0', 115200, timeout=1)
+# time.sleep(2)  # espera a conexão estabilizar
+
 
 # --------------------------------------------DEFINES--------------------------------------------#
 LOWER = 0
@@ -139,7 +148,17 @@ class Bob:
         )
         self.cmd = self.cmd_builder.build()
         self.cmd_sender.send(self.cmd)
+    
+    def enviar_velocidades(id, u):
+        """
+        u: lista com 4 velocidades [w1, w2, w3, w4]
+        """
+        # monta mensagem no formato: "w1,w2,w3,w4\n"
+        msg = f"{int(id)},{int(u[0])},{int(u[1])},{int(u[2])},{int(u[3])}\n"
+        ser.write(msg.encode())
+        print("Enviado:", msg.strip())
 
+    # Exemplo de uso
     def rotate(self):
         if self.state is None:
             return
@@ -166,6 +185,7 @@ class Bob:
         )
         self.cmd = self.cmd_builder.build()
         self.cmd_sender.send(self.cmd)
+        self.enviar_velocidades(self.robot_id.value ,u)
 
     def kick_ball(self) -> bool:
         # TODO enviar comando para simulação

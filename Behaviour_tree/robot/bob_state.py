@@ -1,5 +1,4 @@
-from bob import Bob
-from robot import bob
+from .bob import Bob
 
 from Behaviour_tree.positioning.positioning_helper import Positioning_helper
 from SSL_configuration.configuration import Configuration
