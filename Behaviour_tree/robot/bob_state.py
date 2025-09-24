@@ -1,6 +1,3 @@
-from bob import Bob
-from robot import bob
-
 from Behaviour_tree.positioning.positioning_helper import Positioning_helper
 from SSL_configuration.configuration import Configuration
 from utils.defines import (
@@ -17,16 +14,7 @@ from ..core import event_callbacks
 from ..core.World_State import RobotID, World_State
 from .all_bob_states import AllBobs_State
 
-from utils.pose2D import Pose2D
-from SSL_configuration.configuration import Configuration
-from utils.defines import Quadrant, QuadrantType, Zone, ZoneType, RoleType, BALL_POSSESSION_DISTANCE
-from Behaviour_tree.positioning.positioning_helper import Positioning_helper
-
-from .bob import Bob
-from . import bob
-#TODO
-#   linha 112
-#
+ROBOT_RADIUS = 90
 
 
 class Bob_State:
@@ -75,52 +63,7 @@ class Bob_State:
         self.is_robot_stuck()
         self.target_reached()
         self.is_visible_from_ball()
-        self.update_velocity()
         self.is_ball_reachable()
-        # ################# Verifica se a existe uma linha de passe ################# TODO ajeitar essa bomba
-
-        # # primeiro a bola  esta no goleiro
-        # if self.robot_id == RobotID(2):
-        #     pos_gol = self.get_position()
-        #     pos_1 = World_State.get_team_robot_pose(self, 1)
-        #     pos_2 = World_State.get_team_robot_pose(self, 0)
-
-        #     obstacles = World_State.get_all_foes_position()
-
-        #     if Positioning_helper.is_path_clear(
-        #         pos_gol, pos_1, obstacles, bob.ROBOT_RADIUS
-        #     ) or Positioning_helper.is_path_clear(
-        #         pos_gol, pos_2, obstacles, bob.ROBOT_RADIUS
-        #     ):
-        #         event_callbacks.on_valid_line(self.robot_id.name)
-        # # se a bola esta com outro robo
-        # elif self.robot_id == RobotID(1):
-        #     pos_1 = self.get_position()
-        #     pos_2 = World_State.get_team_robot_pose(self, 0)
-
-        #     obstacles = World_State.get_all_foes_position()
-
-        #     if Positioning_helper.is_path_clear(
-        #         pos_1, pos_2, obstacles, bob.ROBOT_RADIUS
-        #     ):
-        #         event_callbacks.on_valid_line(self.robot_id.name)
-
-        # else:
-        #     pos_1 = self.get_position()
-        #     pos_2 = World_State.get_team_robot_pose(self, 1)
-
-        #     obstacles = World_State.get_all_foes_position()
-
-        #     if Positioning_helper.is_path_clear(
-        #         pos_1, pos_2, obstacles, bob.ROBOT_RADIUS
-        #     ):
-        #         event_callbacks.on_valid_line(self.robot_id.name)
-
-        #     #################   Verifica se o recebedor está desmarcado   #################
-        #     if Bob.is_free(RobotID(1)):
-        #         event_callbacks.unmarked_receiver(self.robot_id.name)
-        #     if Bob.is_free(RobotID(0)):
-        #         event_callbacks.unmarked_receiver(self.robot_id.name)
 
     def is_ball_with_robot(self):
         if self.has_ball != self.check_ball_possession():
@@ -131,50 +74,7 @@ class Bob_State:
                 event_callbacks.team_got_ball_posetion(self.robot_id.name)
             self.has_ball = not self.has_ball
 
-
-        ################# Verifica se a existe uma linha de passe #################  
-
-        #primeiro a bola  esta no goleiro 
-        if self.robot_id == RobotID(2):
-            pos_gol=self.get_position()
-            pos_1=World_State.get_team_robot_pose(self,1)
-            pos_2=World_State.get_team_robot_pose(self,0)
-            
-            obstacles = self.world_state.get_all_foes_position()
-            
-            if(Positioning_helper.is_path_clear(pos_gol,pos_1,obstacles,bob.ROBOT_RADIUS) or Positioning_helper.is_path_clear(pos_gol,pos_2,obstacles,bob.ROBOT_RADIUS)):
-                event_callbacks.on_valid_line(self.robot_id.name)
-        #se a bola esta com outro robo
-        elif self.robot_id == RobotID(1):
-            pos_1=self.get_position()
-            pos_2=World_State.get_team_robot_pose(self,0)
-        
-            
-            obstacles =self.world_state.get_all_foes_position()
-             
-            if(Positioning_helper.is_path_clear(pos_1,pos_2,obstacles,bob.ROBOT_RADIUS)):
-                event_callbacks.on_valid_line(self.robot_id.name)
-
-        else:
-            pos_1=self.get_position()
-            pos_2=World_State.get_team_robot_pose(self,1)
-        
-            
-            obstacles = self.world_state.get_all_foes_position()
-             
-            if(Positioning_helper.is_path_clear(pos_1,pos_2,obstacles,bob.ROBOT_RADIUS)):
-                event_callbacks.on_valid_line(self.robot_id.name)
-
-        #################   Verifica se o recebedor está desmarcado   #################
-
-       
-            if (Bob.is_free(RobotID(1))):
-                    event_callbacks.unmarked_receiver(self.robot_id.name)
-            if (Bob.is_free(RobotID(0))):
-                    event_callbacks.unmarked_receiver(self.robot_id.name)
-                    
-
-        #################   Verifica se preso na mesma pos e verifica quadrante   #################
+    def is_robot_stuck(self):
         new_pos = self.world_state.get_team_robot_pose(self.robot_id.value)
         if new_pos is None:
             return
