@@ -10,7 +10,6 @@ from Behaviour_tree.positioning.positioning_helper import Positioning_helper
 
 from bob import Bob, ROBOT_RADIUS, FREE_DISTANCE
 from robot import bob
-from .all_bob_states import AllBobs_State
 
 from SSL_configuration.configuration import Configuration
 
@@ -47,10 +46,10 @@ class Foes_State:
         event_callbacks.on_ball_not_visible(self.robot_id.name, Pose2D(0, 0))
 
     def update(self):
+        self.update_velocity()
         self.is_ball_with_robot()
         self.is_robot_stuck()
         self.is_visible_from_ball()
-        self.update_velocity()
         self.is_ball_reachable()
 
      # ---------------------------------------------------------------------------------------#
@@ -92,6 +91,16 @@ class Foes_State:
         new_vel = self.world_state.get_team_robot_velocity(self.robot_id.value)
         if new_vel is not None:
             self.velocity = new_vel
+            return 0
+        return -1
+            
+
+    def update_position(self):
+        new_pos = self.world_state.get_team_robot_pose(self.robot_id.value)
+        if new_pos is not None:
+            self.position = new_pos
+            return 0
+        return -1
 
     # =================== Métricas / consultas ===================
     def check_ball_possession(self) -> bool:
