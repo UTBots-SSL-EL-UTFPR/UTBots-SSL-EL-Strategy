@@ -4,15 +4,15 @@ import py_trees
 from py_trees.common import Status
 
 from Behaviour_tree.core.blackboard import Blackboard_Manager
-from Behaviour_tree.core.event_callbacks import BB_flags_and_values
+from Behaviour_tree.core.event_callbacks import BlackboardKeys
 from Behaviour_tree.core.World_State import RobotID
 from Behaviour_tree.positioning.positioning_helper import Positioning_helper
 from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
 
-ball_flags = BB_flags_and_values.Flags.motion.ball
-positions_values = BB_flags_and_values.Values.Positions
-team_flags = BB_flags_and_values.Flags.Team_Flags
+ball_flags = BlackboardKeys.Flags.motion.ball
+positions_values = BlackboardKeys.Values.Positions
+team_flags = BlackboardKeys.Flags.Team_Flags
 _bb = Blackboard_Manager.get_instance()
 _pos_helper = Positioning_helper.get_object()
 
@@ -110,7 +110,7 @@ class Ball_visible(py_trees.behaviour.Behaviour):
         else:
             print("blackboard com valor nulo no lugar de pos2d par mov desmarque")
         return py_trees.common.Status.FAILURE
-        
+
 
 class Team_kick(py_trees.behaviour.Behaviour):
 

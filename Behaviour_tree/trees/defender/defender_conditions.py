@@ -4,15 +4,15 @@ import py_trees
 from py_trees.common import Status
 
 from Behaviour_tree.core.blackboard import Blackboard_Manager
-from Behaviour_tree.core.event_callbacks import BB_flags_and_values
+from Behaviour_tree.core.event_callbacks import BlackboardKeys
 from Behaviour_tree.core.World_State import RobotID
 from Behaviour_tree.positioning.positioning_helper import Positioning_helper
 from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
 
-ball_flags = BB_flags_and_values.Flags.motion.ball
-positions_values = BB_flags_and_values.Values.Positions
-team_flags = BB_flags_and_values.Flags.Team_Flags
+ball_flags = BlackboardKeys.Flags.motion.ball
+positions_values = BlackboardKeys.Values.Positions
+team_flags = BlackboardKeys.Flags.Team_Flags
 _bb = Blackboard_Manager.get_instance()
 _pos_helper = Positioning_helper.get_object()
 
@@ -24,6 +24,7 @@ _pos_helper = Positioning_helper.get_object()
 # =======================================================================================#
 #                                         x                                             #
 # =======================================================================================#
+
 
 class Ball_in_defensive_area(py_trees.behaviour.Behaviour):
     """
@@ -42,7 +43,10 @@ class Ball_in_defensive_area(py_trees.behaviour.Behaviour):
         area_x_min, area_x_max = -2250, -1000
         area_y_min, area_y_max = -1300, 1300
 
-        if area_x_min <= ball_position.x <= area_x_max and area_y_min <= ball_position.y <= area_y_max:
+        if (
+            area_x_min <= ball_position.x <= area_x_max
+            and area_y_min <= ball_position.y <= area_y_max
+        ):
             return py_trees.common.Status.SUCCESS
         return py_trees.common.Status.FAILURE
 
@@ -65,7 +69,10 @@ class Opponent_in_danger_zone(py_trees.behaviour.Behaviour):
         danger_y_min, danger_y_max = -800, 800
 
         for opponent in opponents:
-            if danger_x_min <= opponent.x <= danger_x_max and danger_y_min <= opponent.y <= danger_y_max:
+            if (
+                danger_x_min <= opponent.x <= danger_x_max
+                and danger_y_min <= opponent.y <= danger_y_max
+            ):
                 return py_trees.common.Status.SUCCESS
         return py_trees.common.Status.FAILURE
 
@@ -88,7 +95,10 @@ class Opponent_has_ball_in_danger_zone(py_trees.behaviour.Behaviour):
         danger_y_min, danger_y_max = -800, 800
 
         for opponent in opponents:
-            if danger_x_min <= opponent.x <= danger_x_max and danger_y_min <= opponent.y <= danger_y_max:
+            if (
+                danger_x_min <= opponent.x <= danger_x_max
+                and danger_y_min <= opponent.y <= danger_y_max
+            ):
                 # Verifica se o oponente possui a bola
                 if _bb.get(f"{opponent.id}{ball_flags.has_ball}"):
                     return py_trees.common.Status.SUCCESS
@@ -114,7 +124,3 @@ class Ball_moving_towards_goal(py_trees.behaviour.Behaviour):
         if ball_velocity.x < 0 and -2250 <= ball_position.x <= -1000:
             return py_trees.common.Status.SUCCESS
         return py_trees.common.Status.FAILURE
-
-
-
-

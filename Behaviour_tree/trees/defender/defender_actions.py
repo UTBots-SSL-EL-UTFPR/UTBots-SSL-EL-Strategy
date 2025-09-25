@@ -9,41 +9,39 @@ import math
 import time
 from time import sleep
 
-from utils.pose2D import Pose2D
-from utils.defines import (
-    RoleType,
-    ZoneType,
-    QuadrantType,
-    BOB_RADIUS,
-    BALL_RADIUS,
-    FIELD_INVERTED_SIDE,
-    FIELD_X_MIN,
-    FIELD_X_MAX,
-)
-
 import py_trees
 
 from Behaviour_tree.core import event_callbacks as callbacks
 from Behaviour_tree.core.blackboard import Blackboard_Manager
-from Behaviour_tree.core.event_callbacks import BB_flags_and_values
+from Behaviour_tree.core.event_callbacks import BlackboardKeys
+from utils.defines import (
+    BALL_RADIUS,
+    BOB_RADIUS,
+    FIELD_INVERTED_SIDE,
+    FIELD_X_MAX,
+    FIELD_X_MIN,
+    QuadrantType,
+    RoleType,
+    ZoneType,
+)
+from utils.pose2D import Pose2D
 
-from ....core.event_callbacks import BB_flags_and_values
+from ....core.event_callbacks import BlackboardKeys
 from ....core.World_State import RobotID, World_State
 
-navigation_flags = BB_flags_and_values.Flags.motion.navigation
-positions = BB_flags_and_values.Values.Positions
-team_flags = BB_flags_and_values.Flags.Team_Flags
+navigation_flags = BlackboardKeys.Flags.motion.navigation
+positions = BlackboardKeys.Values.Positions
+team_flags = BlackboardKeys.Flags.Team_Flags
 import time
 from typing import Optional, Tuple
 
 import py_trees as pt
 
-team_flags = BB_flags_and_values.Flags.Team_Flags
-from ....positioning import positioning_helper as Positioning_helper
-
-
+team_flags = BlackboardKeys.Flags.Team_Flags
 from Behaviour_tree.positioning.positioning_helper import Positioning_helper
 from Behaviour_tree.robot.bob import Bob
+
+from ....positioning import positioning_helper as Positioning_helper
 
 # ---------------------------------------------------------------------------------------#
 #                                         MOVIMENTO                                     #
@@ -92,7 +90,9 @@ class DefenderActions(pt.behaviour.Behaviour):
         # Planejamento de caminho
         obstacles = self.world_state.get_all_robot_position()
         obstacles = [obs for obs in obstacles if obs != robot.state.position]
-        robot.state.path = robot.find_shortest_path(robot.state.position, target_pose, obstacles, BOB_RADIUS, ball, BALL_RADIUS)
+        robot.state.path = robot.find_shortest_path(
+            robot.state.position, target_pose, obstacles, BOB_RADIUS, ball, BALL_RADIUS
+        )
         robot.state.role = RoleType.DEFENDER
 
         self.logger.info(f"Defensor {robot_id} posicionado em {target_pose}")
@@ -117,12 +117,21 @@ class DefenderActions(pt.behaviour.Behaviour):
             return None
 
         # Calcula o ponto de interceptação
-        intercept_point = self.positioning_helper.calculate_interception_point(ball, ball_velocity, robot.state.position)
+        intercept_point = self.positioning_helper.calculate_interception_point(
+            ball, ball_velocity, robot.state.position
+        )
 
         # Planejamento de caminho
         obstacles = self.world_state.get_all_robot_position()
         obstacles = [obs for obs in obstacles if obs != robot.state.position]
-        robot.state.path = robot.find_shortest_path(robot.state.position, intercept_point, obstacles, BOB_RADIUS, ball, BALL_RADIUS)
+        robot.state.path = robot.find_shortest_path(
+            robot.state.position,
+            intercept_point,
+            obstacles,
+            BOB_RADIUS,
+            ball,
+            BALL_RADIUS,
+        )
         robot.state.role = RoleType.DEFENDER
 
         self.logger.info(f"Defensor {robot_id} interceptando bola em {intercept_point}")

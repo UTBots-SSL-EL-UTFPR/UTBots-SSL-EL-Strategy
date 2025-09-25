@@ -11,12 +11,12 @@ from ..commom_behaviours.strategy import (
 from ..commom_behaviours.strategy import (
     conditions as s_condition_nodes,
 )  # Mudado o nome por conta que
-from ..core.event_callbacks import BB_flags_and_values
+from ..core.event_callbacks import BlackboardKeys
 from .tree import Tree
 
 # e os conditions dos behavior commo
 
-contexts = BB_flags_and_values.Flags.Team_Flags.Context
+contexts = BlackboardKeys.Flags.Team_Flags.Context
 
 
 class Strategy_tree(Tree):
@@ -30,8 +30,7 @@ class Strategy_tree(Tree):
     def __init__(self):
         super().__init__(name="StrategyTree")
         self.current_context = ""
-    
-    
+
     def create_tree(self) -> py_trees.behaviour.Behaviour:
 
         # ---------------------------------------------------------------------#
@@ -56,12 +55,13 @@ class Strategy_tree(Tree):
                 c_condition_nodes.Has_ball(),
                 c_condition_nodes.Valid_Line(),
                 c_condition_nodes.Receiver_Unmarked(),
-                c_action_nodes.Choose_who_to_pass(Robot=self.bob,name="Choose_Pass"),
-                c_action_nodes.Align_for_pass(Robot=self.bob,name="Align_pass"),
-                s_action_nodes.Set_blackboard_value("context:Pass",contexts.is_pass,True)
-            ]
+                c_action_nodes.Choose_who_to_pass(Robot=self.bob, name="Choose_Pass"),
+                c_action_nodes.Align_for_pass(Robot=self.bob, name="Align_pass"),
+                s_action_nodes.Set_blackboard_value(
+                    "context:Pass", contexts.is_pass, True
+                ),
+            ],
         )
-        
 
         with_ball_complex_attack = py_trees.composites.Sequence(
             name="Ball_possetion: Attack_from_recovery",

@@ -13,20 +13,20 @@ import py_trees
 
 from Behaviour_tree.core import event_callbacks as callbacks
 from Behaviour_tree.core.blackboard import Blackboard_Manager
-from Behaviour_tree.core.event_callbacks import BB_flags_and_values
+from Behaviour_tree.core.event_callbacks import BlackboardKeys
 
-from ..core.event_callbacks import BB_flags_and_values
+from ..core.event_callbacks import BlackboardKeys
 from ..core.World_State import RobotID, World_State
 
-navigation_flags = BB_flags_and_values.Flags.motion.navigation
-positions = BB_flags_and_values.Values.Positions
-team_flags = BB_flags_and_values.Flags.Team_Flags
+navigation_flags = BlackboardKeys.Flags.motion.navigation
+positions = BlackboardKeys.Values.Positions
+team_flags = BlackboardKeys.Flags.Team_Flags
 import time
 from typing import Optional, Tuple
 
 import py_trees as pt
 
-team_flags = BB_flags_and_values.Flags.Team_Flags
+team_flags = BlackboardKeys.Flags.Team_Flags
 from Behaviour_tree.positioning.positioning_helper import Positioning_helper
 from Behaviour_tree.robot.bob import Bob
 

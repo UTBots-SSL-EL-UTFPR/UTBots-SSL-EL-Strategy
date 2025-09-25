@@ -6,7 +6,7 @@ from math import sqrt
 
 import numpy as np
 
-from Behaviour_tree.core.event_callbacks import BB_flags_and_values
+from Behaviour_tree.core.event_callbacks import BlackboardKeys
 from utils import utilsp
 from utils.pose2D import Pose2D
 
@@ -16,13 +16,12 @@ from .bob_config import Bob_Config
 from .bob_state import Bob_State
 from .foes import Foes_State
 
-navigation_flags = BB_flags_and_values.Flags.motion.navigation
-positions = BB_flags_and_values.Values.Positions
-
-from communication.sender.command_builder import CommandBuilder
-from communication.sender.command_sender_sim import CommandSenderSim
+navigation_flags = BlackboardKeys.Flags.motion.navigation
+positions = BlackboardKeys.Values.Positions
 
 import Behaviour_tree.positioning.visibilidade_gol as visibilidade_gol
+from communication.sender.command_builder import CommandBuilder
+from communication.sender.command_sender_sim import CommandSenderSim
 
 # --------------------------------------------DEFINES--------------------------------------------#
 LOWER = 0

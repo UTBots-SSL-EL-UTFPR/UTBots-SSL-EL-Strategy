@@ -6,7 +6,7 @@ import py_trees as pt
 from Behaviour_tree.bob_manager import BobManager
 from Behaviour_tree.core import event_callbacks as callbacks
 from Behaviour_tree.core.blackboard import Blackboard_Manager
-from Behaviour_tree.core.event_callbacks import BB_flags_and_values
+from Behaviour_tree.core.event_callbacks import BlackboardKeys
 from Behaviour_tree.core.World_State import RobotID, World_State
 from Behaviour_tree.positioning.positioning_helper import Positioning_helper
 from Behaviour_tree.robot.bob import Bob
@@ -16,8 +16,8 @@ from ....behaviors.common import actions as action_nodes
 from ....behaviors.common import condition as condition_nodes
 from ...tree import Tree
 
-navigation_flags = BB_flags_and_values.Flags.motion.navigation
-positions = BB_flags_and_values.Values.Positions
+navigation_flags = BlackboardKeys.Flags.motion.navigation
+positions = BlackboardKeys.Values.Positions
 
 TICK_INTERVAL = 0.1
 UPDATE_INTERVAL = TICK_INTERVAL / 2
@@ -70,15 +70,15 @@ if __name__ == "__main__":
     goalkeeper_tree.setup(timeout=1.0, visitor=None, **defensor_tree_setup_args)
 
     _bb.set(
-        f"{defensor.robot_id.name}{callbacks.BB_flags_and_values.Flags.Team_Flags.kick_actions.team_pass}",
+        f"{defensor.robot_id.name}{callbacks.BlackboardKeys.Flags.Team_Flags.kick_actions.team_pass}",
         False,
     )
     _bb.set(
-        f"{callbacks.BB_flags_and_values.Flags.Team_Flags.kick_actions.team_kick}",
+        f"{callbacks.BlackboardKeys.Flags.Team_Flags.kick_actions.team_kick}",
         True,
     )
     _bb.set(
-        f"{callbacks.BB_flags_and_values.Values.Positions.pos_pass_target}",
+        f"{callbacks.BlackboardKeys.Values.Positions.pos_pass_target}",
         Pose2D(1150, -1000),
     )
 
