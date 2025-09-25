@@ -506,7 +506,8 @@ class Bob:
         for foe in self.foes:
             distances.append(self.state.position.distance_to(foe.position))
         self.nearest_foe = utilsp.min(distances)
+        return self.nearest_foe
 
-    def is_free(self) -> bool:
+    def is_bob_free(self) -> bool:
         d_min = self.distance_nearest_foe()
         return d_min < FREE_DISTANCE

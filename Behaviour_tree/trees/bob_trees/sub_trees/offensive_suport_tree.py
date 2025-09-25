@@ -1,21 +1,33 @@
+from typing import Callable, Optional, Tuple
+
+import py_trees
+
 from Behaviour_tree.behaviors.common import actions, condition
-from typing import Callable, Tuple, Optional
-from utils.pose2D import Pose2D
-import py_trees
-from Behaviour_tree.robot.bob import Bob
-import py_trees
-from typing import Callable, Tuple, Optional
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.World_State import RobotID
+from Behaviour_tree.robot.bob import Bob
+from utils.pose2D import Pose2D
 
 
-#----------------------------------------------------------------------------------------------------------------------#
+# ----------------------------------------------------------------------------------------------------------------------#
+class GotPossetion(py_trees.behaviour.Behaviour):
+    """
+    Curto-circuito: se já temos posse, encerra a subárvore com SUCCESS.
+    """
 
-robot = Bob(RobotID.Defender)
-suport_repos = py_trees.composites.Selector("posicionamento receber passe ou rebote", False, 
-                                            children=[])
+    def __init__(self, robot: Bob, name: str = "AlreadyHavePossession"):
+        super().__init__(name)
+        self.bb = py_trees.blackboard.Blackboard()
+        self.robot = robot
 
-brigar_pela_bola = py_trees.composites.Sequence("suporte briga pela bola", True,
-                                                children=[suport_repos, actions.Move_node("Move_suport_repos", robot), ])
+    def update(self) -> py_trees.common.Status:
+        """_summary_
 
-
+        :return py_trees.common.Status: _description_
+        """
+        have = bool(
+            self.bb.get(f"{self.robot.robot_id.name}{ball_flags.has_ball}") or False
+        )
+        return (
+            py_trees.common.Status.SUCCESS if have else py_trees.common.Status.FAILURE
+        )

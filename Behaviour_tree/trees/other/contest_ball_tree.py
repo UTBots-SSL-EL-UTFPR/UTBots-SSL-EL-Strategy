@@ -8,6 +8,7 @@ from typing import Optional
 import py_trees
 from core.blackboard import Blackboard_Manager
 from core.event_callbacks import BB_flags_and_values
+from robot.bob import Bob
 
 ball_flags = BB_flags_and_values.Flags.motion.ball
 positions_values = BB_flags_and_values.Values.Positions
@@ -55,11 +56,11 @@ class PressureOpponent(py_trees.behaviour.Behaviour):
     decide se irá tentar segurar o passe ou fazer pressão
     """
 
-    def __init__(self, name: str = "TeammateIsBestToReachBall", robot_id=""):
+    def __init__(self, robot: Bob, name: str = "TeammateIsBestToReachBall"):
         super().__init__(name)
         self.bb = py_trees.blackboard.Blackboard()
         self.ball_reachable_str = (
-            f"{robot_id}{BB_flags_and_values.Flags.motion.ball.ball_visible}"
+            f"{robot.robot_id.name}{BB_flags_and_values.Flags.motion.ball.ball_visible}"
         )
 
     def setup(self, **kwargs) -> None:
@@ -74,29 +75,7 @@ class PressureOpponent(py_trees.behaviour.Behaviour):
             logger.debug("não estou proximo o suficiente para press oponente")
             return py_trees.common.Status.FAILURE
 
-        # -> definir distancia maxima robo-bola
-        # pos helper -> get_press_position
-        ...
-
-
-class GotPossetion(py_trees.behaviour.Behaviour):
-    """
-    Curto-circuito: se já temos posse, encerra a subárvore com SUCCESS.
-    """
-
-    def __init__(self, name: str = "AlreadyHavePossession"):
-        super().__init__(name)
-        self.bb = py_trees.blackboard.Blackboard()
-
-    def update(self) -> py_trees.common.Status:
-        """_summary_
-
-        :return py_trees.common.Status: _description_
-        """
-        have = bool(self.bb.get(BBKeys.HAVE_POSSESSION) or False)
-        return (
-            py_trees.common.Status.SUCCESS if have else py_trees.common.Status.FAILURE
-        )
+        return py_trees.common.Status.SUCCESS
 
 
 # ---------- Actions ----------
@@ -147,81 +126,3 @@ class PressureAndBlock(py_trees.behaviour.Behaviour):
             self.bb.set(BBKeys.HAVE_POSSESSION, True)
             return py_trees.common.Status.SUCCESS
         return py_trees.common.Status.RUNNING
-
-
-class AssistBlockPassingLanes(py_trees.behaviour.Behaviour):
-    """
-    Se um colega é o melhor para a bola, outro fecha linhas de passe curtas e cria 'screen'.
-    """
-
-    def __init__(self, name: str = "AssistBlockPassingLanes"):
-        super().__init__(name)
-        self.bb = py_trees.blackboard.Blackboard()
-
-    def update(self) -> py_trees.common.Status:
-        """
-        :returns: RUNNING enquanto bloqueia; SUCCESS se equipe obteve posse; FAILURE se incoerente.
-        """
-        # TODO: posicionar-se entre portador e receptores prováveis; micro-ajustes por gradient descent simples
-        team_have = bool(self.bb.get(BBKeys.HAVE_POSSESSION) or False)
-        return (
-            py_trees.common.Status.SUCCESS
-            if team_have
-            else py_trees.common.Status.RUNNING
-        )
-
-
-# ---------- Montagem da Subárvore ----------
-def create_fight_for_ball_subtree(
-    name: str = "FightForBall",
-) -> py_trees.behaviour.Behaviour:
-    """
-    Cria a subárvore de 'brigar pela bola'.
-
-    Estrutura (prioridade):
-    1) Se já temos posse -> SUCCESS (curto-circuito)
-    2) [Bola livre & Eu sou o melhor] -> Intercepta
-    3) [Oponente com controle] -> Pressão & Bloqueio
-    4) [Colega é o melhor] -> Assistência (fechar linhas)
-    5) Fallback -> Compactação
-
-    :param name: Nome do nó raiz desta subárvore.
-    :returns: Nó raiz (Selector) pronto para ser plugado na árvore principal.
-    """
-    root = py_trees.composites.Selector(name=name, memory=True)
-
-    # 1) Curto-circuito
-    have = AlreadyHavePossession("HavePossession?")
-    root.add_children([have])
-
-    # 2) Bola livre + sou melhor -> intercepta (Sequence)
-    seq_intercept = py_trees.composites.Sequence(
-        name="FreeBall_Intercept", memory=False
-    )
-    seq_intercept.add_children(
-        [
-            IsBallFree("BallFree?"),
-            AmIBestToReachBall("AmIBest?"),
-            InterceptBall("Intercept"),
-        ]
-    )
-    root.add_children([seq_intercept])
-
-    # 3) Adversário com controle -> pressionar/bloquear (Sequence)
-    seq_press = py_trees.composites.Sequence(name="OppControl_Press", memory=False)
-    seq_press.add_children(
-        [OpponentHasControlNearby("OppHasCtrl?"), PressureAndBlock("Press&Block")]
-    )
-    root.add_children([seq_press])
-
-    # 4) Colega é melhor -> assistência (Sequence)
-    seq_assist = py_trees.composites.Sequence(name="TeammateBest_Assist", memory=False)
-    seq_assist.add_children(
-        [TeammateIsBestToReachBall("TMisBest?"), AssistBlockPassingLanes("AssistBlock")]
-    )
-    root.add_children([seq_assist])
-
-    # 5) Fallback
-    root.add_children([CompactFallback("CompactFallback")])
-
-    return root

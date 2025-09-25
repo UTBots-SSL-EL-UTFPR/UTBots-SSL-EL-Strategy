@@ -717,7 +717,6 @@ class Positioning_helper:
 
         return pos
 
-    
     @staticmethod
     def get_best_pass_orientation(
         passer_pos: Pose2D,
@@ -725,7 +724,7 @@ class Positioning_helper:
         goal_pos: Pose2D,
         opponents: List[Pose2D],
         weight_receive: float = 0.6,
-        weight_goal: float = 0.4
+        weight_goal: float = 0.4,
     ) -> float:
         """
         Retorna o melhor ângulo (em radianos) para o receptor se orientar ao receber o passe.
@@ -750,8 +749,10 @@ class Positioning_helper:
 
         # Combinação ponderada dos ângulos (mantém continuidade da jogada)
         best_angle = math.atan2(
-            weight_receive * math.sin(angle_receive) + weight_goal * math.sin(angle_goal),
-            weight_receive * math.cos(angle_receive) + weight_goal * math.cos(angle_goal)
+            weight_receive * math.sin(angle_receive)
+            + weight_goal * math.sin(angle_goal),
+            weight_receive * math.cos(angle_receive)
+            + weight_goal * math.cos(angle_goal),
         )
 
         # Ajuste de segurança: verificar se caminho está livre até o receptor
@@ -761,13 +762,12 @@ class Positioning_helper:
 
         return best_angle
 
-    
     @staticmethod
     def are_pass_orientations_aligned(
         passer_pose: Pose2D,
         receiver_pose: Pose2D,
         goal_pose: Pose2D,
-        tolerance: float = 0.15
+        tolerance: float = 0.15,
     ) -> bool:
         """
         Verifica se tanto passador quanto receptor estão alinhados corretamente
