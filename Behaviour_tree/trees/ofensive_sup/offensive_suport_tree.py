@@ -2,7 +2,8 @@ from typing import Callable, Optional, Tuple
 
 import py_trees
 
-from Behaviour_tree.behaviors.common import actions, condition
+from Behaviour_tree.commom_behaviours import actions
+from Behaviour_tree.commom_behaviours import condition
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.World_State import RobotID
 from Behaviour_tree.robot.bob import Bob

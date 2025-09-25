@@ -3,12 +3,12 @@
 # trees/strategy_tree.py
 import py_trees
 
-from ..behaviors.common import actions as c_action_nodes
-from ..behaviors.common import condition as c_condition_nodes
-from ..behaviors.strategy import (
+from ..commom_behaviours import actions as c_action_nodes
+from ..commom_behaviours import condition as c_condition_nodes
+from ..commom_behaviours.strategy import (
     actions as s_action_nodes,
 )  # sera necessario pegar os actions
-from ..behaviors.strategy import (
+from ..commom_behaviours.strategy import (
     conditions as s_condition_nodes,
 )  # Mudado o nome por conta que
 from ..core.event_callbacks import BB_flags_and_values

@@ -1,17 +1,18 @@
-from ..core.World_State import World_State, RobotID
-from ..core.blackboard import Blackboard_Manager
-from utils.pose2D import Pose2D
 from utils.defines import BALL_POSSESSION_DISTANCE
+from utils.pose2D import Pose2D
+
+from ..core.blackboard import Blackboard_Manager
+from ..core.World_State import RobotID, World_State
 
 
 class Foes_State:
-    #ESTADO SIMPLIFICADO DOS ROBOS INIMIGOS
+    # ESTADO SIMPLIFICADO DOS ROBOS INIMIGOS
 
     def __init__(self, robot_id: RobotID):
         self.blackboard = Blackboard_Manager.get_instance()
         self.robot_id = robot_id
-        self.position:Pose2D = Pose2D()
-        self.velocity:Pose2D = Pose2D()
+        self.position: Pose2D = Pose2D()
+        self.velocity: Pose2D = Pose2D()
         self.has_ball = False
         self.world_state = World_State.get_object()
 
@@ -26,8 +27,3 @@ class Foes_State:
             return self.position.distance_to(ball_position) <= BALL_POSSESSION_DISTANCE
         print("ERRO, POS da BOLA OU do ROBO NULOS")
         return False
-
-
-
-    
-    

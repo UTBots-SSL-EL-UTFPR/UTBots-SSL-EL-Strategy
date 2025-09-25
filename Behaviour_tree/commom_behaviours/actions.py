@@ -15,8 +15,8 @@ from Behaviour_tree.core import event_callbacks as callbacks
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BB_flags_and_values
 
-from ...core.event_callbacks import BB_flags_and_values
-from ...core.World_State import RobotID, World_State
+from ..core.event_callbacks import BB_flags_and_values
+from ..core.World_State import RobotID, World_State
 
 navigation_flags = BB_flags_and_values.Flags.motion.navigation
 positions = BB_flags_and_values.Values.Positions
@@ -27,11 +27,10 @@ from typing import Optional, Tuple
 import py_trees as pt
 
 team_flags = BB_flags_and_values.Flags.Team_Flags
-from ...positioning import positioning_helper as Positioning_helper
-
-
 from Behaviour_tree.positioning.positioning_helper import Positioning_helper
 from Behaviour_tree.robot.bob import Bob
+
+from ...positioning import positioning_helper as Positioning_helper
 
 # ---------------------------------------------------------------------------------------#
 #                                         MOVIMENTO                                     #
@@ -249,17 +248,16 @@ class Choose_who_to_pass(py_trees.behaviour.Behaviour):
         self.bb = Blackboard_Manager.get_instance()
         self.world_state = World_State.get_object()
 
-
     def setup(self, **kwargs):
         return super().setup(**kwargs)
 
-    def update(self)->pt.common.Status:
+    def update(self) -> pt.common.Status:
 
         if self.robot is None or self.robot.state is None:
-            return py_trees.common.Status.FAILURE   
-        
+            return py_trees.common.Status.FAILURE
+
         target_pos_found = None
-        target_id_found  = None
+        target_id_found = None
 
         if self.robot.robot_id == 2:
             target0 = RobotID.Kamiji
@@ -269,7 +267,10 @@ class Choose_who_to_pass(py_trees.behaviour.Behaviour):
             for robot_id_enum in [target0, target1]:
                 pos = self.world_state.get_team_robot_pose(robot_id_enum)
                 if pos is not None:
-                    distance = ((self.robot.state.position.x - pos.x)**2 + (self.robot.state.position.y - pos.y)**2)**0.5
+                    distance = (
+                        (self.robot.state.position.x - pos.x) ** 2
+                        + (self.robot.state.position.y - pos.y) ** 2
+                    ) ** 0.5
                     if distance < min_distance:
                         min_distance = distance
                         target_pos_found = pos
@@ -277,18 +278,17 @@ class Choose_who_to_pass(py_trees.behaviour.Behaviour):
 
         elif self.robot.robot_id == 1:
             target_id_found = RobotID.Kamiji
-            target_pos_found = self.world_state.get_team_robot_pose(target_id_found)                  
+            target_pos_found = self.world_state.get_team_robot_pose(target_id_found)
         else:
             target_id_found = RobotID.Defender
-            target_pos_found = self.world_state.get_team_robot_pose(target_id_found) 
-        
+            target_pos_found = self.world_state.get_team_robot_pose(target_id_found)
+
         if target_pos_found is not None and target_id_found is not None:
             self.bb.set("pass_target_id", target_id_found)
             self.bb.set("pass_target_pos", target_pos_found)
             return py_trees.common.Status.SUCCESS
         else:
             return py_trees.common.Status.FAILURE
-
 
 
 class Align_for_pass(pt.behaviour.Behaviour):
@@ -334,8 +334,11 @@ class Align_for_pass(pt.behaviour.Behaviour):
 
         # Checa alinhamento geral
         if Positioning_helper.are_pass_orientations_aligned(
-            passer_pose, receiver_pose, goal_pose,
-            opponents=[], tolerance_deg=self.tolerance,
+            passer_pose,
+            receiver_pose,
+            goal_pose,
+            opponents=[],
+            tolerance_deg=self.tolerance,
         ):
             return pt.common.Status.SUCCESS
 
@@ -366,7 +369,7 @@ class Align_for_pass(pt.behaviour.Behaviour):
         self.bb.set(f"{self.passer.robot_id.name}_cmd_rotation", 0.0)
         self.bb.set(f"{self.receiver.robot_id.name}_cmd_rotation", 0.0)
 
+
 # --------------------------------------------------------------------------------------- #
 #                                      CHUTE                                              #
 # --------------------------------------------------------------------------------------- #
-
