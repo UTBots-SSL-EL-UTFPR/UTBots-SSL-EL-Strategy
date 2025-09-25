@@ -365,3 +365,46 @@ class Align_for_pass(pt.behaviour.Behaviour):
     def terminate(self, new_status: pt.common.Status):
         self.bb.set(f"{self.passer.robot_id.name}_cmd_rotation", 0.0)
         self.bb.set(f"{self.receiver.robot_id.name}_cmd_rotation", 0.0)
+
+
+    class execute_pass(pt.behaviour.Behaviour):
+        """
+        Nó que executa o passe, lendo a posição do alvo no Blackboard e
+        enviando o comando de chute ao robô passador.
+        """
+
+        def __init__(self, Robot: Bob, name: str = "execute_pass"):
+            super().__init__(name)
+            self.robot = Robot
+            self.bb = Blackboard_Manager.get_instance()
+
+        def setup(self, **kwargs):
+            if self.robot is None:
+                raise RuntimeError(f"[{self.name}] Robô não definido no setup()")
+            return super().setup(**kwargs)
+
+        def initialise(self):
+            pass
+
+        def update(self) -> pt.common.Status:
+            if self.robot is None or self.robot.state is None:
+                return pt.common.Status.FAILURE
+
+            target_pos = self.bb.get("pass_target_pos")
+            if target_pos is None:
+                return pt.common.Status.FAILURE
+
+            # Envia comando de chute
+            try:
+                self.robot.kick(self.kick_speed)
+                logging.info(f"{self.robot.robot_id} executou passe para {target_pos}")
+                # Limpa o alvo de passe no Blackboard
+                self.bb.set("pass_target_pos", None)
+                self.bb.set("pass_target_id", None)
+                return pt.common.Status.SUCCESS
+            except Exception as e:
+                logging.error(f"Erro ao executar passe: {e}")
+                return pt.common.Status.FAILURE
+
+        def terminate(self, new_status: pt.common.Status):
+            pass
