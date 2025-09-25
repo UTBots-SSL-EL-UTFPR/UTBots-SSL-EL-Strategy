@@ -22,6 +22,8 @@ HALF_LEGHT = int(4500 / 2)
 HALF_WID = int(3000 / 2)
 MIN_PASS_DISTANCE = 1000
 
+MAX_SHOOT_DISTANCE = 1500
+
 ROBOT_RADIUS = int(90)
 
 
@@ -845,3 +847,22 @@ class Positioning_helper:
         if abs(diff) > tolerance:
             return diff
         return None
+
+    @staticmethod
+    def get_position_to_shoot (kicker_pos: Pose2D,
+                               point_grid_step: float = GRID_STEP/10,
+                               square: Tuple[int, int, int] = []):
+        
+
+        x = kicker_pos.x
+        y = kicker_pos.y
+        goal_center = Positioning_helper.get_goal_center()
+        y_goal = goal_center.y
+        x_goal = goal_center.x
+
+        for x in range 
+
+        # IDEIA GERAL: Usando um grid , achar o melhor ponto de chute considerando:
+            # A maior visibilidade
+            # Deve estar fora da área do goleiro
+            # O caminho até lá deve estar desimpedido

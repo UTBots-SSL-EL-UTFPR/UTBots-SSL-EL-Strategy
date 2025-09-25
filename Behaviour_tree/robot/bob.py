@@ -22,6 +22,8 @@ positions = BB_flags_and_values.Values.Positions
 from communication.sender.command_builder import CommandBuilder
 from communication.sender.command_sender_sim import CommandSenderSim
 
+import Behaviour_tree.positioning.visibilidade_gol as visibilidade_gol
+
 # --------------------------------------------DEFINES--------------------------------------------#
 LOWER = 0
 UPPER = 1
