@@ -365,3 +365,8 @@ class Align_for_pass(pt.behaviour.Behaviour):
     def terminate(self, new_status: pt.common.Status):
         self.bb.set(f"{self.passer.robot_id.name}_cmd_rotation", 0.0)
         self.bb.set(f"{self.receiver.robot_id.name}_cmd_rotation", 0.0)
+
+# --------------------------------------------------------------------------------------- #
+#                                      CHUTE                                              #
+# --------------------------------------------------------------------------------------- #
+
