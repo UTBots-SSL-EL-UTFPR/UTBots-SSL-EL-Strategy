@@ -185,7 +185,6 @@ class Bob:
         )
         self.cmd = self.cmd_builder.build()
         self.cmd_sender.send(self.cmd)
-        self.enviar_velocidades(self.robot_id.value ,u)
 
     def kick_ball(self) -> bool:
         # TODO enviar comando para simulação
