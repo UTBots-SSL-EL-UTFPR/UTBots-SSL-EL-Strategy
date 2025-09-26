@@ -28,3 +28,4 @@ class StrategyHelper:
         return GeometryHelper.calculate_point_on_line(
             goal_position, ball_position, DISTANCE_BALL_POSETION
         )
+
