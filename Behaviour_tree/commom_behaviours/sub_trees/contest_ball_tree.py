@@ -12,6 +12,8 @@ from robot.bob import Bob
 
 from utils.pose2D import Pose2D
 
+from ..actions import MovimentoUnico, RecuperarBola
+
 _bb = Blackboard_Manager.get_instance()
 logger = logging.getLogger(__name__)
 
@@ -39,50 +41,6 @@ class PressureOpponent(py_trees.behaviour.Behaviour):
             logger.debug("os oponentes nao estao com a bola")
             return py_trees.common.Status.FAILURE
         self.robot.state.target_position = StrategyHelper.get_press_oponent_position()
-        return py_trees.common.Status.SUCCESS
-
-
-class RecuperarBola(py_trees.behaviour.Behaviour):
-    """
-    decide se ira tentar recuperar a bola, faz isso se a bola nao estiver com ninguem do time
-    se der falha, entao a bola é confirmada como em nossa posse
-    ja da um followball inteligente, mirando ficar atras da bola
-    TODO testar com mov willian
-    por enquanto assume estar em boa pos para tal, mas deve ser verificado
-    """
-
-    def __init__(self, robot: Bob, name: str = "TeammateIsBestToReachBall"):
-        super().__init__(name)
-        self.bb = py_trees.blackboard.Blackboard()
-        self.robot = robot
-        self.team_has_ball = f"{BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL}"
-
-    def setup(self, **kwargs) -> None:
-        return super().setup(**kwargs)
-
-    def update(self) -> py_trees.common.Status:
-        """vai atras da bola"""
-        if not _bb.get(self.team_has_ball):
-            logger.debug("estamos com a bola")
-            return py_trees.common.Status.FAILURE
-        self.robot.state.target_position = StrategyHelper.get_ball_recovery_position()
-        return py_trees.common.Status.SUCCESS
-
-
-class MovimentoUnico(py_trees.behaviour.Behaviour):
-    """
-    envia um movimento e retorna Sucess
-    """
-
-    def __init__(self, robot: Bob, name: str = "TeammateIsBestToReachBall"):
-        super().__init__(name)
-        self.robot = robot
-
-    def setup(self, **kwargs) -> None:
-        return super().setup(**kwargs)
-
-    def update(self) -> py_trees.common.Status:
-        self.robot.fast_movement()
         return py_trees.common.Status.SUCCESS
 
 
