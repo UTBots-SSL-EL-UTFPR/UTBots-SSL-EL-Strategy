@@ -1,6 +1,6 @@
 import math
 from dataclasses import dataclass
-from typing import Iterable, List, Tuple
+from typing import Iterable, List, Tuple, Optional
 
 from SSL_configuration.configuration import Configuration
 from utils import defines
@@ -860,7 +860,7 @@ class Positioning_helper:
         y_goal = goal_center.y
         x_goal = goal_center.x
 
-        for x in range 
+       #for x in range:
 
         # IDEIA GERAL: Usando um grid , achar o melhor ponto de chute considerando:
             # A maior visibilidade

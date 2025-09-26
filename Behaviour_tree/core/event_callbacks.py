@@ -64,6 +64,8 @@ class BlackboardKeys:
             PATH_BLOCKED = "path_blocked"
             IS_STUCK = "is_stuck"
             LOST_PATH = "lost_path"
+        class Motion(StringEnum):
+            navigation = "navigation_flag"
 
     class Values:
         class Positions(StringEnum):
