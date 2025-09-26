@@ -2,69 +2,100 @@
 from __future__ import annotations
 
 import logging
-import time
-from typing import Optional
+import math
 
 import py_trees
 from core.blackboard import Blackboard_Manager
 from core.event_callbacks import BlackboardKeys
+from positioning.strategy_helper import StrategyHelper
 from robot.bob import Bob
 
-ball_flags = BlackboardKeys.Flags.motion.ball
-positions_values = BlackboardKeys.Values.Positions
-team_flags = BlackboardKeys.Flags.Team_Flags
+from utils.pose2D import Pose2D
+
 _bb = Blackboard_Manager.get_instance()
-
 logger = logging.getLogger(__name__)
-
-
-sequence_MarkOpponent = py_trees.composites.Sequence("Mark_opponent", True)
-sequence_Fight_for_posetion = py_trees.composites.Sequence("Fight_for_posetion", True)
-
-
-class Foes_got_ball(py_trees.behaviour.Behaviour):
-    """
-    Verifica se a bola está com adversário (TODO)
-    """
-
-    def __init__(self, name: str = "IsBallFree"):
-        super().__init__(name)
-
-    def initialise(self) -> None:
-        """Reseta/atualiza contexto no início da verificação."""
-        ...
-
-    def setup(self, **kwargs) -> None:
-        return super().setup(**kwargs)
-
-    def update(self) -> py_trees.common.Status:
-        if _bb.get(
-            f"{team_flags.Ball_posetion.foes_have_ball}"
-        ):  # (TODO) -> update de foes
-            return py_trees.common.Status.SUCCESS
-        return py_trees.common.Status.FAILURE
 
 
 class PressureOpponent(py_trees.behaviour.Behaviour):
     """
-    decide se irá tentar segurar o passe ou fazer pressão
+    decide se o robo deve marcar inimigo
+    depende do inimigo estar com a bola
+    ja calc uma pos adequada para isso
+    é usado quando ja se espera estar em alguma pos entre o inimigo e o gol
     """
 
     def __init__(self, robot: Bob, name: str = "TeammateIsBestToReachBall"):
         super().__init__(name)
         self.bb = py_trees.blackboard.Blackboard()
+        self.robot = robot
         self.foes_with_ball = f"{BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL}"
 
     def setup(self, **kwargs) -> None:
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
-        """decide se irá tentar segurar o passe ou fazer pressão
-
-        :return py_trees.common.Status: Falha se a distancia é grande demais para precionar o oponente, Sucesso se não for
-        """
-        if not _bb.get():
-            logger.debug("não estou proximo o suficiente para press oponente")
+        """se prepara para press oponente"""
+        if not _bb.get(self.foes_with_ball):
+            logger.debug("os oponentes nao estao com a bola")
             return py_trees.common.Status.FAILURE
-
+        self.robot.state.target_position = StrategyHelper.get_press_oponent_position()
         return py_trees.common.Status.SUCCESS
+
+
+class RecuperarBola(py_trees.behaviour.Behaviour):
+    """
+    decide se ira tentar recuperar a bola, faz isso se a bola nao estiver com ninguem do time
+    se der falha, entao a bola é confirmada como em nossa posse
+    ja da um followball inteligente, mirando ficar atras da bola
+    TODO testar com mov willian
+    por enquanto assume estar em boa pos para tal, mas deve ser verificado
+    """
+
+    def __init__(self, robot: Bob, name: str = "TeammateIsBestToReachBall"):
+        super().__init__(name)
+        self.bb = py_trees.blackboard.Blackboard()
+        self.robot = robot
+        self.team_has_ball = f"{BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL}"
+
+    def setup(self, **kwargs) -> None:
+        return super().setup(**kwargs)
+
+    def update(self) -> py_trees.common.Status:
+        """vai atras da bola"""
+        if not _bb.get(self.team_has_ball):
+            logger.debug("estamos com a bola")
+            return py_trees.common.Status.FAILURE
+        self.robot.state.target_position = StrategyHelper.get_ball_recovery_position()
+        return py_trees.common.Status.SUCCESS
+
+
+class MovimentoUnico(py_trees.behaviour.Behaviour):
+    """
+    envia um movimento e retorna Sucess
+    """
+
+    def __init__(self, robot: Bob, name: str = "TeammateIsBestToReachBall"):
+        super().__init__(name)
+        self.robot = robot
+
+    def setup(self, **kwargs) -> None:
+        return super().setup(**kwargs)
+
+    def update(self) -> py_trees.common.Status:
+        self.robot.fast_movement()
+        return py_trees.common.Status.SUCCESS
+
+
+def get_luta_pela_bola_sub_tree(robot: Bob) -> py_trees.composites.Sequence:
+    press_op = PressureOpponent(robot)
+    rec_bola = RecuperarBola(robot)
+    onde_ir = py_trees.composites.Selector(
+        "onde ir", False, children=[press_op, rec_bola]
+    )
+
+    mov_unico = MovimentoUnico(robot)
+
+    sequencia_brigar_pela_bola = py_trees.composites.Sequence(
+        "brigar pela bola", memory=False, children=[onde_ir, mov_unico]
+    )
+    return sequencia_brigar_pela_bola

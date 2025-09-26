@@ -57,7 +57,7 @@ class Bob:
         self._bb = Blackboard_Manager.get_instance()
         self.robot_id = robot_id
         self.config = Bob_Config(robot_id)
-        self.state: Bob_State | None = Bob_State(robot_id)
+        self.state: Bob_State = Bob_State(robot_id)
         self._has_ball = False
         self.foes: list[Foes_State]  # TODO
         self.cmd_builder = CommandBuilder()
@@ -505,8 +505,12 @@ class Bob:
         for foe in self.foes:
             distances.append(self.state.position.distance_to(foe.position))
         self.nearest_foe = utilsp.min(distances)
-        return self.nearest_foe
-
-    def is_bob_free(self) -> bool:
-        d_min = self.distance_nearest_foe()
+        return self.nearest_foe    @classmethod
+    def get_press_oponent_position(cls):
+        ball_position = cls._ws.get_ball_position()
+        goal_position = FieldHelper.get_goal_center()
+        return GeometryHelper.calculate_point_on_line(
+            ball_position, goal_position, DISTANCE_PRESS_OPPONENT
+        )
+t_foe()
         return d_min < FREE_DISTANCE

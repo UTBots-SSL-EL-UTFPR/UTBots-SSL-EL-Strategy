@@ -100,10 +100,11 @@ class Ball_visible(py_trees.behaviour.Behaviour):
         if not self.robot or not self.robot.state:
             return py_trees.common.Status.FAILURE
 
-        if _bb.get(f"{self.robot.robot_id.name}{ball_flags.ball_visible}"):
+        if _bb.get(
+            f"{self.robot.robot_id.name}{BlackboardKeys.Flags.BallMotion.BALL_VISIBLE}"
+        ):
             return py_trees.common.Status.SUCCESS
-        key = f"{self.robot.robot_id.name}{positions_values.pos_ball_visible}"
-        pos = _bb.get(key)
+        pos = _bb.get(f"{self.robot.robot_id.name}{positions_values.POS_BALL_VISIBLE}")
 
         if isinstance(pos, Pose2D):
             self.robot.adicionar_ponto_trajetoria(pos)
@@ -122,5 +123,26 @@ class Team_kick(py_trees.behaviour.Behaviour):
 
     def update(self) -> py_trees.common.Status:
         if _bb.get(f"{team_flags.kick_actions.team_kick}"):
+            return py_trees.common.Status.SUCCESS
+        return py_trees.common.Status.FAILURE
+
+
+class Foes_got_ball(py_trees.behaviour.Behaviour):
+    """
+    Verifica se a bola está com adversário (TODO)
+    """
+
+    def __init__(self, name: str = "IsBallFree"):
+        super().__init__(name)
+
+    def initialise(self) -> None:
+        """Reseta/atualiza contexto no início da verificação."""
+        ...
+
+    def setup(self, **kwargs) -> None:
+        return super().setup(**kwargs)
+
+    def update(self) -> py_trees.common.Status:
+        if _bb.get(f"{BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL}"):
             return py_trees.common.Status.SUCCESS
         return py_trees.common.Status.FAILURE
