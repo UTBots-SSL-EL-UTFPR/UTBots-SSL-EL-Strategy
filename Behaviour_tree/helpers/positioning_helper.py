@@ -5,14 +5,27 @@ from typing import Iterable, List, Optional, Tuple
 
 from SSL_configuration.configuration import Configuration
 from utils import defines
-from utils.defines import (INFLUENCE_RADIUS, MAX_SHOOT_DISTANCE,
-                           MIN_PASS_DISTANCE, ROBOT_RADIUS)
+from utils.defines import (
+    INFLUENCE_RADIUS,
+    MAX_SHOOT_DISTANCE,
+    MIN_PASS_DISTANCE,
+    ROBOT_RADIUS,
+)
 from utils.pose2D import Pose2D
 
 from ..core.World_State import RobotID, World_State
-from .field_helper import (GOAL_LENGHT, GRID_STEP, HALF_GOALKEEPER_AREA_WIDTH,
-                           HALF_LEGHT, KEEPER_MARGIN, WALL_MARGIN, Quadrant,
-                           QuadrantType, RoleType, ZoneType)
+from .field_helper import (
+    GOAL_LENGHT,
+    GRID_STEP,
+    HALF_GOALKEEPER_AREA_WIDTH,
+    HALF_LEGHT,
+    KEEPER_MARGIN,
+    WALL_MARGIN,
+    Quadrant,
+    QuadrantType,
+    RoleType,
+    ZoneType,
+)
 
 
 class ShadowCone:
@@ -64,7 +77,9 @@ class PositioningHelper:
         return PositioningHelper._instance
 
     @classmethod
-    def is_valid_placement(cls, x: float, y: float, obstacules: list[Pose2D], raio: float) -> bool:
+    def is_valid_placement(
+        cls, x: float, y: float, obstacules: list[Pose2D], raio: float
+    ) -> bool:
         for obs in obstacules:
             if sqrt((x - obs.x) ** 2 + (y - obs.y) ** 2) < raio * 2.2:
                 return False
