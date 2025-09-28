@@ -42,6 +42,8 @@ logger = logging.getLogger(__name__)
 
 def get_goalkeeper_tree(robot: Bob) -> pt.behaviour.Behaviour:
 
+
+    #caso de bola solta e suas folhas=======================================
     recuperar_bola = RecuperarBola(robot, name="RecuperarBola")
     movimento_unico = MovimentoUnico(robot, name="MovimentoUnico")
 
@@ -49,6 +51,7 @@ def get_goalkeeper_tree(robot: Bob) -> pt.behaviour.Behaviour:
         name="Bola_Solta", memory=False, children=[recuperar_bola, movimento_unico]
     )
 
+    #caso de defesa comum e suas folhas======================================
     foesHasBall = FoesHaveBall()
     goalkeeperCommonPosition = GoalkeeperCommonPosition(robot)
 
@@ -58,8 +61,28 @@ def get_goalkeeper_tree(robot: Bob) -> pt.behaviour.Behaviour:
         children=[foesHasBall, goalkeeperCommonPosition],
     )
 
+    #caso Ultimo Homem e suas folhas=========================================
+    checkLastMan = CheckLastMan(robot)
+    follow_ball = followBall(robot)
+
+    ultimo_homem = py_trees.composites.Sequence(
+        name="Ultimo_Homem",
+        memory=False,
+        children=[checkLastMan, follow_ball],
+    )
+
+    #tem a bola==============================================================
+    passe = passe(robot)
+    chutar = chute(robot)
+    hasBall = HasBall()
+
+    tem_a_bola = py_trees.composites.Sequence(
+        name="Tem_a_Bola", memory=False, children=[hasBall, passe, chutar]
+    )
+
+    #Raiz da arvore==========================================================
     root = py_trees.composites.Selector(
-        name="GoalkeeperTree", children=[bola_solta, defesa_comum]
+        name="GoalkeeperTree", children=[bola_solta, defesa_comum, ultimo_homem, tem_a_bola]
     )
 
     return root
@@ -88,3 +111,63 @@ class GoalkeeperCommonPosition(py_trees.behaviour.Behaviour):
         self.robot.fast_movement()
 
         return py_trees.common.Status.SUCCESS
+
+class CheckLastMan(py_trees.behaviour.Behaviour):
+    def __init__(self, robot: Bob, name: str = "CheckLastMan"):
+        super().__init__(name)
+        self.robot = robot
+        self._pos_helper = PositioningHelper.get_object()
+        self._bb = Blackboard_Manager.get_instance()
+    
+    def setup(self, **kwargs) -> None:
+        return super().setup(**kwargs)
+
+    def update(self) -> py_trees.common.Status:
+        bm = BobManager.get_instance()
+        if bm.get_last_man_id() != None:
+            
+            if bm.get_last_man_id() == self.robot.state.robot_id:
+                return py_trees.common.Status.SUCCESS
+
+        return py_trees.common.Status.FAILURE
+
+class followBall(py_trees.behaviour.Behaviour):
+    def __init__(self, robot: Bob, name: str = "followBall"):
+        super().__init__(name)
+        self.robot = robot
+        self._pos_helper = PositioningHelper.get_object()
+        self._bb = Blackboard_Manager.get_instance()
+    
+    def setup(self, **kwargs) -> None:
+        return super().setup(**kwargs)
+
+    def update(self) -> py_trees.common.Status:
+        ...
+
+class passe(py_trees.behaviour.Behaviour):
+    def __init__(self, robot: Bob, name: str = "passear"):
+        super().__init__(name)
+        self.robot = robot
+        self._pos_helper = PositioningHelper.get_object()
+        self._bb = Blackboard_Manager.get_instance()
+    
+    def setup(self, **kwargs) -> None:
+        return super().setup(**kwargs)
+
+    def update(self) -> py_trees.common.Status:
+        ...
+
+class chute(py_trees.behaviour.Behaviour):
+    def __init__(self, robot: Bob, name: str = "chutar"):
+        super().__init__(name)
+        self.robot = robot
+        self._pos_helper = PositioningHelper.get_object()
+        self._bb = Blackboard_Manager.get_instance()
+    
+    def setup(self, **kwargs) -> None:
+        return super().setup(**kwargs)
+
+    def update(self) -> py_trees.common.Status:
+        ...
+
+
