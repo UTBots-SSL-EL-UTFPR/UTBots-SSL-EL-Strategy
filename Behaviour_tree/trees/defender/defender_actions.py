@@ -16,10 +16,10 @@ from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
 from utils.defines import (
     BALL_RADIUS,
-    BOB_RADIUS,
     FIELD_INVERTED_SIDE,
     FIELD_X_MAX,
     FIELD_X_MIN,
+    ROBOT_RADIUS,
     QuadrantType,
     RoleType,
     ZoneType,
@@ -38,7 +38,7 @@ from typing import Optional, Tuple
 import py_trees as pt
 
 team_flags = BlackboardKeys.Flags.Team_Flags
-from Behaviour_tree.positioning.positioning_helper import Positioning_helper
+from Behaviour_tree.positioning.positioning_helper import PositioningHelper
 from Behaviour_tree.robot.bob import Bob
 
 from ....positioning import positioning_helper as Positioning_helper
@@ -58,7 +58,7 @@ class DefenderActions(pt.behaviour.Behaviour):
         super().__init__(name)
         self.blackboard = blackboard
         self.world_state = World_State.get_object()
-        self.positioning_helper = Positioning_helper.get_object()
+        self.positioning_helper = PositioningHelper.get_object()
         self.logger = logging.getLogger(__name__)
 
     def set_defensive_position(self, robot_id: RobotID):
@@ -91,7 +91,12 @@ class DefenderActions(pt.behaviour.Behaviour):
         obstacles = self.world_state.get_all_robot_position()
         obstacles = [obs for obs in obstacles if obs != robot.state.position]
         robot.state.path = robot.find_shortest_path(
-            robot.state.position, target_pose, obstacles, BOB_RADIUS, ball, BALL_RADIUS
+            robot.state.position,
+            target_pose,
+            obstacles,
+            ROBOT_RADIUS,
+            ball,
+            BALL_RADIUS,
         )
         robot.state.role = RoleType.DEFENDER
 
@@ -128,7 +133,7 @@ class DefenderActions(pt.behaviour.Behaviour):
             robot.state.position,
             intercept_point,
             obstacles,
-            BOB_RADIUS,
+            ROBOT_RADIUS,
             ball,
             BALL_RADIUS,
         )

@@ -5,7 +5,7 @@ import time
 from math import sqrt
 
 import numpy as np
-
+from helpers import MotionHelper
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
 from utils import utilsp
 from utils.pose2D import Pose2D
@@ -16,10 +16,10 @@ from .bob_config import Bob_Config
 from .bob_state import Bob_State
 from .foes import Foes_State
 
-navigation_flags = BlackboardKeys.Flags.motion.navigation
+
 positions = BlackboardKeys.Values.Positions
 
-import Behaviour_tree.positioning.visibilidade_gol as visibilidade_gol
+#from Behaviour_tree.helpers.positioning_helper import visibilidade_gol TODO @DANILO sla oq q c ta importando aq, mas c tem q trazer a classe toda
 from communication.sender.command_builder import CommandBuilder
 from communication.sender.command_sender_sim import CommandSenderSim
 
@@ -79,7 +79,7 @@ class Bob:
     def update(self):
         if self.state:
             self._bb.set(
-                f"{self.robot_id.name}{navigation_flags.target_reached}", False
+                f"{self.robot_id.name}{BlackboardKeys.Flags.Navigation.TARGET_REACHED}", False
             )
             self.state.update()
 
@@ -114,6 +114,19 @@ class Bob:
         self.cmd = self.cmd_builder.build()
         self.cmd_sender.send(self.cmd)
 
+    def go_to_point_avoiding_obstacles(
+        self, dest: Pose2D, obstacules: list[Pose2D], raio: float
+    ) -> bool:
+        if self.state is None:
+            return False
+        start = self.state.get_position()
+        path = MotionHelper.find_shortest_path(start, dest, obstacules)
+        if path and len(path) > 1:
+            next_step = path[1]
+            return self.move(next_step.x, next_step.y)
+        else:
+            return self.move(dest.x, dest.y)
+    
     def fast_movement(self):
         if self.state is None:
             return
@@ -372,83 +385,10 @@ class Bob:
     # ===================================================#
     # ==== metodos auxiliares para os metodos do BOB ====#
 
-    @staticmethod
-    def is_free(x: float, y: float, obstacules: list[Pose2D], raio: float) -> bool:
-        # Verifica se (x,y) está distante o suficiente de cada obstáculo
-        for obs in obstacules:
-            if sqrt((x - obs.x) ** 2 + (y - obs.y) ** 2) < raio * 2.2:
-                return False
-        return True
-
-    def find_shortest_path(
-        self,
-        start: Pose2D,
-        end: Pose2D,
-        obstacules: list[Pose2D],
-        raio: float,
-        ball: Pose2D = Pose2D(0, 0),
-        raio_ball: float = 0,
-    ):
-        from collections import deque
-
-        step = 20  # Resolução da grade (ajuste conforme necessário)
-        start_cell = (int(start.x // step), int(start.y // step))
-        end_cell = (int(end.x // step), int(end.y // step))
-
-        # BFS tradicional
-        queue = deque([start_cell])
-        visited = {start_cell: None}
-
-        while queue:
-            current = queue.popleft()
-            if current == end_cell:
-                # Reconstrói caminho
-                path_rev = []
-                while current is not None:
-                    cx, cy = current
-                    path_rev.append(Pose2D(cx * step, cy * step))
-                    current = visited[current]
-                return list(reversed(path_rev))
-
-            cx, cy = current
-            # Movimentos 8-direções (ou 4, se preferir)
-            for nx, ny in [
-                (cx + 1, cy),
-                (cx - 1, cy),
-                (cx, cy + 1),
-                (cx, cy - 1),
-                (cx + 1, cy + 1),
-                (cx - 1, cy - 1),
-                (cx + 1, cy - 1),
-                (cx - 1, cy + 1),
-            ]:
-                if (nx, ny) not in visited:
-                    wx, wy = nx * step, ny * step
-                    if Bob.is_free(wx, wy, obstacules, raio):
-
-                        if raio_ball > 0 and not Bob.is_free(wx, wy, [ball], raio_ball):
-                            continue
-
-                        visited[(nx, ny)] = current  # type: ignore
-                        queue.append((nx, ny))
-
-        return [start]  # Caso não encontre caminho
-
+    
     def go_to_ball(self, ball_position: Pose2D) -> bool:
         return self.move(ball_position.x, ball_position.y)
 
-    def go_to_point_avoiding_obstacles(
-        self, dest: Pose2D, obstacules: list[Pose2D], raio: float
-    ) -> bool:
-        if self.state is None:
-            return False
-        start = self.state.get_position()
-        path = self.find_shortest_path(start, dest, obstacules, raio)
-        if path and len(path) > 1:
-            next_step = path[1]
-            return self.move(next_step.x, next_step.y)
-        else:
-            return self.move(dest.x, dest.y)
 
     def shoot_to_goal(self, goal_position: Pose2D) -> bool:
         if self.state is None:
@@ -512,5 +452,5 @@ class Bob:
         return GeometryHelper.calculate_point_on_line(
             ball_position, goal_position, DISTANCE_PRESS_OPPONENT
         )
-t_foe()
+t       _foe()
         return d_min < FREE_DISTANCE

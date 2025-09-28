@@ -1,4 +1,4 @@
-from Behaviour_tree.positioning.positioning_helper import Positioning_helper
+from Behaviour_tree.positioning.positioning_helper import PositioningHelper
 from SSL_configuration.configuration import Configuration
 from utils.defines import (
     BALL_POSSESSION_DISTANCE,
@@ -25,7 +25,7 @@ class Bob_State:
 
         self.world_state = World_State.get_object()
         self.configuration = Configuration.getObject()
-        self.pos_helper = Positioning_helper.get_object()
+        self.pos_helper = PositioningHelper.get_object()
 
         self.position: Pose2D = Pose2D(3333, 3333)
         self.velocity: Pose2D = Pose2D()
@@ -112,7 +112,7 @@ class Bob_State:
                 self.target_position = self.path[self.path_index]
 
     def is_visible_from_ball(self):
-        visible, best_position = Positioning_helper.get_clear_pass_position(
+        visible, best_position = PositioningHelper.get_clear_pass_position(
             self.position
         )
         if visible != self.ball_visible:

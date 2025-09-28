@@ -5,16 +5,15 @@ import time
 import py_trees as pt
 
 from Behaviour_tree.bob_manager import BobManager
+from Behaviour_tree.commom_behaviours import actions as s_action_nodes
+from Behaviour_tree.commom_behaviours import condition as c_condition_nodes
 from Behaviour_tree.core import event_callbacks as callbacks
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
 from Behaviour_tree.core.World_State import RobotID, World_State
-from Behaviour_tree.positioning.positioning_helper import Positioning_helper
+from Behaviour_tree.positioning.positioning_helper import PositioningHelper
 from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
-
-from ....behaviors.common import condition as c_condition_nodes
-from ....behaviors.strategy import actions as s_action_nodes
 
 TICK_INTERVAL = 0.1
 
@@ -34,6 +33,10 @@ def main() -> None:
 
     # --- DEFINIÇÃO DAS ÁRVORES DE COMPORTAMENTO ---
 
+    # @DANILO - voce precisa instanciar as classes antes de colocar em children
+    # segue um exemplo
+    # has_ball = c_condition_nodes.HasBall(passer)
+
     pass_sequence = pt.composites.Sequence(
         name="Pass Tactic",
         memory=True,
@@ -48,4 +51,5 @@ def main() -> None:
         ],
     )
 
+    # @DANILO acho q eu ja fiz a arvore do recebedor nos suportes
     # FALTA A ARVORE DO RECEBEDOR E TERMINAR DE MONTAR AS ARVORES E a main para testar

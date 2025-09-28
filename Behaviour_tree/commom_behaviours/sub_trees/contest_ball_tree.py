@@ -52,7 +52,6 @@ def get_luta_pela_bola_sub_tree(robot: Bob) -> py_trees.composites.Sequence:
     )
 
     mov_unico = MovimentoUnico(robot)
-
     sequencia_brigar_pela_bola = py_trees.composites.Sequence(
         "brigar pela bola", memory=False, children=[onde_ir, mov_unico]
     )

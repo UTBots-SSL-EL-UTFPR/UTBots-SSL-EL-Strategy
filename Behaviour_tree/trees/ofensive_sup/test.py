@@ -8,7 +8,7 @@ from Behaviour_tree.core import event_callbacks as callbacks
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
 from Behaviour_tree.core.World_State import RobotID, World_State
-from Behaviour_tree.positioning.positioning_helper import Positioning_helper
+from Behaviour_tree.positioning.positioning_helper import PositioningHelper
 from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
 
@@ -30,7 +30,7 @@ def main() -> None:
     kamiji = bob_state.get_bob(RobotID.Kamiji)
     defensor = bob_state.get_bob(RobotID.Defender)
     goalkeeper = bob_state.get_bob(RobotID.Goalkeeper)
-    ph = Positioning_helper.get_object()
+    ph = PositioningHelper.get_object()
 
     if kamiji is None or defensor is None or goalkeeper is None:
         return

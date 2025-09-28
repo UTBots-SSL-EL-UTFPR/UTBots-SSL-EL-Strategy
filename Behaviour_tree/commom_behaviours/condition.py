@@ -6,22 +6,18 @@ from py_trees.common import Status
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
 from Behaviour_tree.core.World_State import RobotID
-from Behaviour_tree.positioning.positioning_helper import Positioning_helper
+from Behaviour_tree.positioning.positioning_helper import PositioningHelper
 from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
 
 positions_values = BlackboardKeys.Values.Positions
 _bb = Blackboard_Manager.get_instance()
-_pos_helper = Positioning_helper.get_object()
+_pos_helper = PositioningHelper.get_object()
 
 # =======================================================================================#
 #                                     IMPLEMENTADOS                                     #
 # =======================================================================================#
 
-
-# =======================================================================================#
-#                                         x                                             #
-# =======================================================================================#
 
 class FoesHaveBall(py_trees.behaviour.Behaviour):
     """
@@ -54,9 +50,16 @@ class HasBall(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
-        if _bb.get(f"{self.robot.state.robot_id.name}{BlackboardKeys.Flags.BallMotion.HAS_BALL}"):
+        if _bb.get(
+            f"{self.robot.state.robot_id.name}{BlackboardKeys.Flags.BallMotion.HAS_BALL}"
+        ):
             return py_trees.common.Status.SUCCESS
         return py_trees.common.Status.FAILURE
+
+
+# =======================================================================================#
+#                                         x                                             #
+# =======================================================================================#
 
 
 class ValidLine(py_trees.behaviour.Behaviour):
