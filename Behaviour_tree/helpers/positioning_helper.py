@@ -4,13 +4,14 @@ from math import sqrt
 from typing import Iterable, List, Optional, Tuple, Optional
 
 from SSL_configuration.configuration import Configuration
+from utils import defines
 from utils.defines import (
     INFLUENCE_RADIUS,
     MAX_SHOOT_DISTANCE,
     MIN_PASS_DISTANCE,
     ROBOT_RADIUS,
 )
-from utils.pose2D import Pose2D, Quadrant, QuadrantType, ZoneType
+from utils.pose2D import Pose2D
 
 from ..core.World_State import RobotID, World_State
 from .field_helper import (
