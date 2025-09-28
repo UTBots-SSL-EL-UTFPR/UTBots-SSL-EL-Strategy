@@ -6,19 +6,55 @@ from py_trees.common import Status
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
 from Behaviour_tree.core.World_State import RobotID
-from Behaviour_tree.positioning.positioning_helper import Positioning_helper
+from Behaviour_tree.positioning.positioning_helper import PositioningHelper
 from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
 
-ball_flags = BlackboardKeys.Flags.motion.ball
 positions_values = BlackboardKeys.Values.Positions
-team_flags = BlackboardKeys.Flags.Team_Flags
 _bb = Blackboard_Manager.get_instance()
-_pos_helper = Positioning_helper.get_object()
+_pos_helper = PositioningHelper.get_object()
 
 # =======================================================================================#
 #                                     IMPLEMENTADOS                                     #
 # =======================================================================================#
+
+
+class FoesHaveBall(py_trees.behaviour.Behaviour):
+    """
+    Verifica se a bola está com adversário (TODO)
+    """
+
+    def __init__(self, name: str = "IsBallFree"):
+        super().__init__(name)
+
+    def initialise(self) -> None:
+        """Reseta/atualiza contexto no início da verificação."""
+        ...
+
+    def setup(self, **kwargs) -> None:
+        return super().setup(**kwargs)
+
+    def update(self) -> py_trees.common.Status:
+        if _bb.get(f"{BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL}"):
+            return py_trees.common.Status.SUCCESS
+        return py_trees.common.Status.FAILURE
+
+
+class HasBall(py_trees.behaviour.Behaviour):
+
+    def __init__(self, robot: Bob, name: str = "Has_ball"):
+        super().__init__(name)
+        self.robot = robot
+
+    def setup(self, **kwargs: Any) -> None:
+        return super().setup(**kwargs)
+
+    def update(self) -> py_trees.common.Status:
+        if _bb.get(
+            f"{self.robot.state.robot_id.name}{BlackboardKeys.Flags.BallMotion.HAS_BALL}"
+        ):
+            return py_trees.common.Status.SUCCESS
+        return py_trees.common.Status.FAILURE
 
 
 # =======================================================================================#
@@ -26,22 +62,7 @@ _pos_helper = Positioning_helper.get_object()
 # =======================================================================================#
 
 
-class Has_ball(py_trees.behaviour.Behaviour):
-
-    def __init__(self, name: str = "Has_ball", robot_id=""):
-        super().__init__(name)
-        self.rob_id = robot_id
-
-    def setup(self, **kwargs: Any) -> None:
-        return super().setup(**kwargs)
-
-    def update(self) -> py_trees.common.Status:
-        if _bb.get(f"{self.rob_id}{ball_flags.has_ball}"):
-            return py_trees.common.Status.RUNNING
-        return py_trees.common.Status.FAILURE
-
-
-class Valid_Line(py_trees.behaviour.Behaviour):
+class ValidLine(py_trees.behaviour.Behaviour):
 
     def __init__(self, name: str = "Valid_Line"):
         super().__init__(name)
@@ -55,7 +76,7 @@ class Valid_Line(py_trees.behaviour.Behaviour):
         return py_trees.common.Status.FAILURE
 
 
-class Receiver_Unmarked(py_trees.behaviour.Behaviour):
+class ReceiverUnmarked(py_trees.behaviour.Behaviour):
 
     def __init__(self, name: str = "Receiver_Unmarked"):
         super().__init__(name)
@@ -87,7 +108,7 @@ class Receiver_Unmarked(py_trees.behaviour.Behaviour):
 ########PASSE#########################   ACIMAAAAAAAA
 
 
-class Ball_visible(py_trees.behaviour.Behaviour):
+class BallVisible(py_trees.behaviour.Behaviour):
     def __init__(self, name: str, robot: Bob):
         super().__init__(name)
         self.robot = robot
@@ -100,10 +121,11 @@ class Ball_visible(py_trees.behaviour.Behaviour):
         if not self.robot or not self.robot.state:
             return py_trees.common.Status.FAILURE
 
-        if _bb.get(f"{self.robot.robot_id.name}{ball_flags.ball_visible}"):
+        if _bb.get(
+            f"{self.robot.robot_id.name}{BlackboardKeys.Flags.BallMotion.BALL_VISIBLE}"
+        ):
             return py_trees.common.Status.SUCCESS
-        key = f"{self.robot.robot_id.name}{positions_values.pos_ball_visible}"
-        pos = _bb.get(key)
+        pos = _bb.get(f"{self.robot.robot_id.name}{positions_values.POS_BALL_VISIBLE}")
 
         if isinstance(pos, Pose2D):
             self.robot.adicionar_ponto_trajetoria(pos)
@@ -112,7 +134,7 @@ class Ball_visible(py_trees.behaviour.Behaviour):
         return py_trees.common.Status.FAILURE
 
 
-class Team_kick(py_trees.behaviour.Behaviour):
+class Teamkick(py_trees.behaviour.Behaviour):
 
     def __init__(self, name: str = "Team_kick"):
         super().__init__(name)

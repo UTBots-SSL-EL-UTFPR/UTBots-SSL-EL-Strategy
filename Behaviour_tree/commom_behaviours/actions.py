@@ -27,7 +27,7 @@ from typing import Optional, Tuple
 import py_trees as pt
 
 team_flags = BlackboardKeys.Flags.Team_Flags
-from Behaviour_tree.positioning.positioning_helper import Positioning_helper
+from Behaviour_tree.positioning.positioning_helper import PositioningHelper
 from Behaviour_tree.robot.bob import Bob
 
 from ...positioning import positioning_helper as Positioning_helper
@@ -185,7 +185,7 @@ class Receive_pass(pt.behaviour.Behaviour):
             logger.warning("pos de passe nula")
             return pt.common.Status.FAILURE
 
-        pose_target = Positioning_helper.compute_pose_facing_goal(target)
+        pose_target = PositioningHelper.compute_pose_facing_goal(target)
 
         self.robot.adicionar_ponto_trajetoria(pose_target)
 
@@ -227,7 +227,7 @@ class Rebound_position(pt.behaviour.Behaviour):
             logger.debug("nao é team kick")
             return pt.common.Status.FAILURE
 
-        target_pose = Positioning_helper.calculate_rebound_position(
+        target_pose = PositioningHelper.calculate_rebound_position(
             self.robot.state.position
         )
         self.robot.adicionar_ponto_trajetoria(target_pose)
@@ -333,7 +333,7 @@ class Align_for_pass(pt.behaviour.Behaviour):
         goal_pose = self.bb.get("goal_pose")
 
         # Checa alinhamento geral
-        if Positioning_helper.are_pass_orientations_aligned(
+        if PositioningHelper.are_pass_orientations_aligned(
             passer_pose,
             receiver_pose,
             goal_pose,
@@ -343,18 +343,18 @@ class Align_for_pass(pt.behaviour.Behaviour):
             return pt.common.Status.SUCCESS
 
         # Ângulos desejados
-        desired_receiver_angle = Positioning_helper.get_best_pass_orientation(
+        desired_receiver_angle = PositioningHelper.get_best_pass_orientation(
             passer_pose, receiver_pose, goal_pose, opponents=[]
         )
-        desired_passer_angle = Positioning_helper.get_passer_orientation(
+        desired_passer_angle = PositioningHelper.get_passer_orientation(
             passer_pose, receiver_pose
         )
 
         # Gera comandos (se necessário)
-        cmd_passer = Positioning_helper.get_rotation_command(
+        cmd_passer = PositioningHelper.get_rotation_command(
             passer_pose.theta, desired_passer_angle, self.tolerance
         )
-        cmd_receiver = Positioning_helper.get_rotation_command(
+        cmd_receiver = PositioningHelper.get_rotation_command(
             receiver_pose.theta, desired_receiver_angle, self.tolerance
         )
 
@@ -370,6 +370,46 @@ class Align_for_pass(pt.behaviour.Behaviour):
         self.bb.set(f"{self.receiver.robot_id.name}_cmd_rotation", 0.0)
 
 
-# --------------------------------------------------------------------------------------- #
-#                                      CHUTE                                              #
-# --------------------------------------------------------------------------------------- #
+# =+==============================++++++==================++++++=================+++++=============#
+class RecuperarBola(py_trees.behaviour.Behaviour):
+    """
+    decide se ira tentar recuperar a bola, faz isso se a bola nao estiver com ninguem do time
+    se der falha, entao a bola é confirmada como em nossa posse
+    ja da um followball inteligente, mirando ficar atras da bola
+    TODO testar com mov willian
+    por enquanto assume estar em boa pos para tal, mas deve ser verificado
+    """
+
+    def __init__(self, robot: Bob, name: str = "TeammateIsBestToReachBall"):
+        super().__init__(name)
+        self.bb = py_trees.blackboard.Blackboard()
+        self.robot = robot
+        self.team_has_ball = f"{BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL}"
+
+    def setup(self, **kwargs) -> None:
+        return super().setup(**kwargs)
+
+    def update(self) -> py_trees.common.Status:
+        """vai atras da bola"""
+        if not _bb.get(self.team_has_ball):
+            logger.debug("estamos com a bola")
+            return py_trees.common.Status.FAILURE
+        self.robot.state.target_position = StrategyHelper.get_ball_recovery_position()
+        return py_trees.common.Status.SUCCESS
+
+
+class MovimentoUnico(py_trees.behaviour.Behaviour):
+    """
+    envia um movimento e retorna Sucess
+    """
+
+    def __init__(self, robot: Bob, name: str = "TeammateIsBestToReachBall"):
+        super().__init__(name)
+        self.robot = robot
+
+    def setup(self, **kwargs) -> None:
+        return super().setup(**kwargs)
+
+    def update(self) -> py_trees.common.Status:
+        self.robot.fast_movement()
+        return py_trees.common.Status.SUCCESS
