@@ -177,8 +177,28 @@ class Bob:
         self.cmd = self.cmd_builder.build()
         self.cmd_sender.send(self.cmd)
 
-    def kick_ball(self) -> bool:
-        # TODO enviar comando para simulação
+    def kick_ball(self, ballSpeed: float = 3.0) -> bool:
+
+        # 3 m/s é a velocidade maxima permitida para a bola no EL, não utilize valores maiores!!!!!
+
+        """
+        a bola tem q estar encostada no chutador na frente do robo, o chutador 
+        no simulador nao se projeta pra frente, ele so pisca em vermelho como 
+        indicativo visual de q foi acionado.
+        """
+
+        if self.state is None:
+            return False
+        if not self._has_ball:
+            return False
+        
+        self.cmd_builder.command_robots(
+            id = self.robot_id.value,
+            kick_x = ballSpeed
+        )
+
+        self.cmd = self.cmd_builder.build()
+        self.cmd_sender.send(self.cmd)
         return True
 
     def compute_world_velocity(

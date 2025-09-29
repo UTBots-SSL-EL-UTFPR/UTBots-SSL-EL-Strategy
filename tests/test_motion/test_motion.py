@@ -362,66 +362,11 @@ if __name__ == "__main__":
 
     count = 0
 
-    while True:
 
-        #if time.time() >= delay + t0:
-        # lê pose UMA vez por ciclo
-        pose = get_pose_from_receiver_multicam(receiver, "blue", 0, timeout=0.03)
-
-        # valores default
-        vx_s = vy_s = w = 0.0
-        phi = phi_prev if phi_prev is not None else 0.0
-
-        if pose is not None:
-            x, y, phi = pose
-            vx_s, vy_s, w = compute_world_velocity(
-                current=Pose2D(x, y, phi),
-                goal=Pose2D(xg, yg, theta_g),
-                mode=MODE
-            )
-
-            # saturação angular final
-            w = max(-wmax_global, min(w, wmax_global))
-
-            # verificação de chegada (debounce)
-            dx, dy = (xg - x), (yg - y)
-            dist = math.hypot(dx, dy)
-            ang_err = ((theta_g - phi + math.pi) % (2*math.pi)) - math.pi
-            if (MODE == "maintain_orientation" and dist < toleranciaPonto) or \
-            (MODE != "maintain_orientation" and dist < toleranciaPonto and abs(ang_err) < math.radians(toleranciaAngulo)):
-                arrived_count += 1
-                builder.command_robots(id=0, wheelsspeed=True, wheel1=0.0, wheel2=0.0, wheel3=0.0, wheel4=0.0)
-                sender.send(builder.build())
-                break
-            else:
-                arrived_count = 0
-
-        # monta q e cinemática
-        q = np.array([[w], [vx_s], [vy_s]], dtype=float)
-        u = motorVel(q, phi)
-        u = np.clip(u, -120.0, 120.0)
-
-        builder.command_robots(
-            id=0, wheelsspeed=True,
-            wheel1=-u[0].item(), wheel2=-u[1].item(),
-            wheel3=-u[2].item(), wheel4=-u[3].item()
-        )
-        sender.send(builder.build())
-
-        u_prev = u
-
-        """if arrived_count >= need_hits:
-            builder.command_robots(id=0, wheelsspeed=True, wheel1=0.0, wheel2=0.0, wheel3=0.0, wheel4=0.0)
-            sender.send(builder.build())
-            break"""
-
-        phi_prev = phi
-        t0 = time.time()
-        count += 1
-        if count % 100 == 0:  # a cada 100 ticks
-            elapsed = time.time() - start
-            freq = count / elapsed
-            print(f"Frequência média: {freq:.1f} Hz")
+    builder.command_robots(
+        id = 0, kick_x=3
+    )
+    sender.send(builder.build())
         
 
 
