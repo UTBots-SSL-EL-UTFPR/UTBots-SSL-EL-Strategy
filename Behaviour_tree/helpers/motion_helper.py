@@ -14,7 +14,7 @@ class MotionHelper:
         end: Pose2D,
         obstacules: list[Pose2D],
         ball: Pose2D | None = None,
-    ):
+    ) -> list[Pose2D]:
 
         step = 20  # Resolução da grade (ajuste conforme necessário)
         start_cell = (int(start.x // step), int(start.y // step))
@@ -61,4 +61,4 @@ class MotionHelper:
                         visited[(nx, ny)] = current  # type: ignore
                         queue.append((nx, ny))
 
-        return [start]  # Caso não encontre caminho
+        return [start]

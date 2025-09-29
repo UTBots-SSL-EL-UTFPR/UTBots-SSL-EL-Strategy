@@ -4,15 +4,24 @@ from math import sqrt
 from typing import Iterable, List, Optional, Tuple
 
 from SSL_configuration.configuration import Configuration
-from utils import defines
-from utils.defines import (INFLUENCE_RADIUS, MAX_SHOOT_DISTANCE,
-                           MIN_PASS_DISTANCE, ROBOT_RADIUS)
-from utils.pose2D import Pose2D
+from utils.defines import (
+    INFLUENCE_RADIUS,
+    MAX_SHOOT_DISTANCE,
+    MIN_PASS_DISTANCE,
+    ROBOT_RADIUS,
+)
+from utils.pose2D import Pose2D, Quadrant, QuadrantType, ZoneType
 
 from ..core.World_State import RobotID, World_State
-from .field_helper import (GOAL_LENGHT, GRID_STEP, HALF_GOALKEEPER_AREA_WIDTH,
-                           HALF_LEGHT, KEEPER_MARGIN, WALL_MARGIN, Quadrant,
-                           QuadrantType, RoleType, ZoneType)
+from .field_helper import (
+    GOAL_LENGHT,
+    GRID_STEP,
+    HALF_GOALKEEPER_AREA_WIDTH,
+    HALF_LEGHT,
+    KEEPER_MARGIN,
+    WALL_MARGIN,
+)
+from .geometry_helper import GeometryHelper
 
 
 class ShadowCone:
@@ -64,7 +73,9 @@ class PositioningHelper:
         return PositioningHelper._instance
 
     @classmethod
-    def is_valid_placement(cls, x: float, y: float, obstacules: list[Pose2D], raio: float) -> bool:
+    def is_valid_placement(
+        cls, x: float, y: float, obstacules: list[Pose2D], raio: float
+    ) -> bool:
         for obs in obstacules:
             if sqrt((x - obs.x) ** 2 + (y - obs.y) ** 2) < raio * 2.2:
                 return False
@@ -749,13 +760,14 @@ class PositioningHelper:
 
         return best_angle
 
-    # @staticmethod
-    # def are_pass_orientations_aligned(
-    #     passer_pose: Pose2D,
-    #     receiver_pose: Pose2D,
-    #     goal_pose: Pose2D,
-    #     tolerance: float = 0.15,
-    # ) -> bool:
+    @staticmethod
+    def are_pass_orientations_aligned(
+        passer_pose: Pose2D,
+        receiver_pose: Pose2D,
+        goal_pose: Pose2D,
+        tolerance: float = 0.15,
+    ) -> bool: ...
+
     #     """
     #     Verifica se tanto passador quanto receptor estão alinhados corretamente
     #     para realizar o passe.
@@ -776,12 +788,11 @@ class PositioningHelper:
 
     #     return abs(angle_diff_passer) <= tolerance and abs(angle_diff_receiver) <= tolerance
 
-    # @staticmethod
-    # def get_pass_alignment_angles(
-    #     passer_pose: Pose2D,
-    #     receiver_pose: Pose2D,
-    #     goal_pose: Pose2D
-    # ) -> tuple[float, float]:
+    @staticmethod
+    def get_pass_alignment_angles(
+        passer_pose: Pose2D, receiver_pose: Pose2D, goal_pose: Pose2D
+    ) -> tuple[float, float]: ...
+
     #     """
     #     Retorna os ângulos desejados (passador, receptor) para alinhar o passe.
     #     """
@@ -793,26 +804,13 @@ class PositioningHelper:
     #     )
     #     return desired_passer_angle, desired_receiver_angle
 
-    @staticmethod
-    def normalize_angle(angle: float) -> float:
-        """
-        Normaliza ângulo para o intervalo [-pi, pi].
-        """
-        return (angle + math.pi) % (2 * math.pi) - math.pi
-
-    @staticmethod
-    def angle_difference(a: float, b: float) -> float:
-        """
-        Diferença angular entre `a` e `b`, resultado em [-pi, pi].
-        """
-        return PositioningHelper.normalize_angle(a - b)
-
-    @staticmethod
-    def is_angle_aligned(a: float, b: float, tolerance: float) -> bool:
-        """
-        Verifica se dois ângulos estão alinhados dentro da tolerância.
-        """
-        return abs(PositioningHelper.angle_difference(a, b)) <= tolerance
+    # @staticmethod
+    # def normalize_angle(angle: float) -> float:
+    # @staticmethod
+    # def angle_difference(a: float, b: float) -> float:
+    # @staticmethod
+    # def is_angle_aligned(a: float, b: float, tolerance: float) -> bool:
+    # foram movidas para geometry_Helper
 
     @staticmethod
     def get_passer_orientation(passer_pose, receiver_pose) -> float:
@@ -830,7 +828,7 @@ class PositioningHelper:
         """
         Retorna comando de rotação se necessário, senão None.
         """
-        diff = PositioningHelper.angle_difference(desired_angle, current_angle)
+        diff = GeometryHelper.angle_difference(desired_angle, current_angle)
         if abs(diff) > tolerance:
             return diff
         return None

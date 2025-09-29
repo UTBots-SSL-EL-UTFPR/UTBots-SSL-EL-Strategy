@@ -2,14 +2,12 @@
 #                                  IMPORTS                                   #
 # -------------------------------------------------------------------------- #
 
-from core.World_State import RobotID, World_State
-
-from Behaviour_tree.robot.bob import Bob
+from Behaviour_tree.core.World_State import RobotID, World_State
 from SSL_configuration.configuration import Configuration
 from utils.defines import DISTANCE_PRESS_OPPONENT, MIN_PASS_DISTANCE
-from utils.pose2D import Pose2D
+from utils.pose2D import Pose2D, Quadrant, QuadrantType, RoleType
 
-from .field_helper import GRID_STEP, FieldHelper, Quadrant, QuadrantType, RoleType
+from .field_helper import GRID_STEP, FieldHelper
 from .geometry_helper import GeometryHelper
 from .motion_helper import MotionHelper
 from .positioning_helper import PositioningHelper
@@ -40,12 +38,12 @@ class StrategyHelper:
         )
 
     @classmethod
-    def set_offensive_suport_position(cls, robot: Bob):
+    def set_offensive_suport_position(cls, robot_position: Pose2D):
         """
         Calcula a posição do SUPORTE OFENSIVO de forma determinística, buscando
         o maior espaço com visibilidade tanto do cobrador quanto do gol.
         """
-        robot_pos = robot.state.position
+        robot_pos = robot_position
 
         opponents = cls._ws.get_all_foes_position()
         goal_center = FieldHelper.get_goal_center()
@@ -105,12 +103,12 @@ class StrategyHelper:
                     )
                     break
 
-        robot.state.path = cls.get_Robot_path(target_pose, robot_pos, ball_pos)
-        robot.state.role = RoleType.OFFENSIVE_SUPPORT
-        return target_pose
+        return cls.get_Robot_path(target_pose, robot_pos, ball_pos)
 
     @classmethod
-    def get_Robot_path(cls, target_pose: Pose2D, robot_position: Pose2D, ball_position: Pose2D):
+    def get_Robot_path(
+        cls, target_pose: Pose2D, robot_position: Pose2D, ball_position: Pose2D
+    ):
         obstacles = cls._ws.get_all_robot_position()
         obstacles = [obs for obs in obstacles if obs != robot_position]
         return MotionHelper.find_shortest_path(

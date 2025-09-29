@@ -38,10 +38,10 @@ from typing import Optional, Tuple
 import py_trees as pt
 
 team_flags = BlackboardKeys.Flags.Team_Flags
-from Behaviour_tree.positioning.positioning_helper import PositioningHelper
+from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from Behaviour_tree.robot.bob import Bob
 
-from ....positioning import positioning_helper as Positioning_helper
+from ....helpers import positioning_helper as Positioning_helper
 
 # ---------------------------------------------------------------------------------------#
 #                                         MOVIMENTO                                     #

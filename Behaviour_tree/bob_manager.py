@@ -4,26 +4,15 @@ from __future__ import annotations
 import math
 from typing import Dict
 
+from Behaviour_tree.helpers.field_helper import FIELD_X_MAX, FIELD_X_MIN, HALF_LEGHT
+from Behaviour_tree.helpers.motion_helper import MotionHelper
+from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from Behaviour_tree.trees.tree import Tree
 from SSL_configuration.configuration import Configuration
-from utils.defines import (
-    BALL_RADIUS,
-    FIELD_INVERTED_SIDE,
-    FIELD_X_MAX,
-    FIELD_X_MIN,
-    ROBOT_RADIUS,
-    QuadrantType,
-    RoleType,
-    ZoneType,
-)
-from utils.pose2D import Pose2D
+from utils.defines import BALL_RADIUS, FIELD_INVERTED_SIDE, ROBOT_RADIUS
+from utils.pose2D import Pose2D, QuadrantType, RoleType
 
 from .core.World_State import RobotID, World_State
-from .positioning.positioning_helper import (
-    HALF_LEGHT,
-    MIN_PASS_DISTANCE,
-    PositioningHelper,
-)
 from .robot.bob import Bob
 
 
@@ -62,7 +51,7 @@ class BobManager:
             tree (Tree): Classe da árvore associada.
         """
         bob = Bob(robot_id=robot_id)
-        bob.state.reset()
+        #bob.state.reset()
         self.bobs[robot_id] = bob
         # self.trees[robot_id] = tree(bob)
 
@@ -100,14 +89,13 @@ class BobManager:
         for obs in obstacles:
             if obs == robot.state.position:
                 obstacles.remove(obs)
-        robot.state.path = robot.find_shortest_path(
+        new_path = MotionHelper.find_shortest_path(
             robot.state.position,
             target,
             obstacles,
-            ROBOT_RADIUS,
             self.ball_pos,
-            BALL_RADIUS,
         )
+        robot.set_path(new_path)
 
     # ------------------------------------------------------------------------------------------------------------------------------------------------------------------#
     # ------------------------------------------------------------------------------------------------------------------------------------------------------------------#
@@ -157,14 +145,13 @@ class BobManager:
         obstacles = [obs for obs in obstacles if obs != robot.state.position]
 
         robot.state.target_position = target_pose
-        robot.state.path = robot.find_shortest_path(
+        new_path = MotionHelper.find_shortest_path(
             robot.state.position,
             target_pose,
             obstacles,
-            ROBOT_RADIUS,
             self.ball_pos,
-            BALL_RADIUS,
         )
+        robot.set_path(new_path)
         robot.state.role = RoleType.DEFENSIVE_SUPPORT
 
         return target_pose
@@ -179,14 +166,13 @@ class BobManager:
         obstacles = [obs for obs in obstacles if obs != robot_pos]
 
         target_pose = Pose2D(-100, 0)
-        robot.state.path = robot.find_shortest_path(
+        new_path = MotionHelper.find_shortest_path(
             robot.state.position,
             target_pose,
             obstacles,
-            ROBOT_RADIUS,
             self.ball_pos,
-            BALL_RADIUS,
         )
+        robot.set_path(new_path)
         robot.state.role = RoleType.OFFENSIVE_SUPPORT
 
     def set_goalkeeper_defense_position(self, id: RobotID):
@@ -241,7 +227,7 @@ class BobManager:
             target_x = goal_x + (area_x_min - goal_x) * depth_factor
 
         # Clamp final dentro da área
-        target_x = max(area_x_min + 20, min(target_x, area_x_max - 20))
+        target_x = int(max(area_x_min + 20, min(target_x, area_x_max - 20)))
 
         target_pose = Pose2D(target_x, target_y)
 
@@ -249,45 +235,16 @@ class BobManager:
         obstacles = self.world_state.get_all_robot_position()
         obstacles = [obs for obs in obstacles if obs != robot.state.position]
         robot.state.target_position = target_pose
-        robot.state.path = robot.find_shortest_path(
+        new_path = MotionHelper.find_shortest_path(
             robot.state.position,
             target_pose,
             obstacles,
-            ROBOT_RADIUS,
             self.ball_pos,
-            BALL_RADIUS,
         )
+        robot.set_path(new_path)
         robot.state.role = RoleType.GOALKEEPER
         return target_pose
 
-    def set_bob_freekick_position(self):
-        """
-        Decide metas de posicionamento para **goleiro**, **cobrador** e **apoio** em bola parada ofensiva.
-        Para bola parada defenciva, podemos ter goleiro cobrador e  2 apoio
-        """
-        if self.ball_pos.x < self.configuration.max_ball_y_to_goalkeeper_kick:  # type: ignore
-            self.set_offensive_suport_position(RobotID.Kamiji)
-            aux = self.bobs.get(RobotID.Kamiji)
-            if not aux or not aux.state:
-                return
-            pos = aux.state.path[len(aux.state.path) - 1]
-            self.set_midlle_suport_position(RobotID.Defender, pos)  # type: ignore
-            self.set_kicker_position(RobotID.Goalkeeper)
-        else:
-            self.set_kicker_position(RobotID.Kamiji)
-
-            self.set_offensive_suport_position(RobotID.Defender)
-
-            self.set_goalkeeper_position(RobotID.Goalkeeper)
-
-        return
-
 
 if __name__ == "__main__":
-    p1 = Pose2D(0, 0)
-    p3 = Pose2D(1000, 1500)
-
-    print("---- Teste 3: Diagonal ----")
-
-    pt_diag = Pose2D.align_two(p1, p3, margin=200, is_left_team=True)
-    print("Obtido:  ", pt_diag, "\n")
+    pass
