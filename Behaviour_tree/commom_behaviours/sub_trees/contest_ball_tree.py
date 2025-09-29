@@ -2,14 +2,13 @@
 from __future__ import annotations
 
 import logging
-import math
 
 import py_trees
-from core.blackboard import Blackboard_Manager
-from core.event_callbacks import BlackboardKeys
-from positioning.strategy_helper import StrategyHelper
-from robot.bob import Bob
 
+from Behaviour_tree.core.blackboard import Blackboard_Manager
+from Behaviour_tree.core.event_callbacks import BlackboardKeys
+from Behaviour_tree.helpers.strategy_helper import StrategyHelper
+from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
 
 from ..actions import MovimentoUnico, RecuperarBola
@@ -26,13 +25,14 @@ class PressureOpponent(py_trees.behaviour.Behaviour):
     é usado quando ja se espera estar em alguma pos entre o inimigo e o gol
     """
 
-    def __init__(self, robot: Bob, name: str = "TeammateIsBestToReachBall"):
+    def __init__(self, robot: Bob, name: str = "PressureOpponent"):
         super().__init__(name)
         self.bb = py_trees.blackboard.Blackboard()
         self.robot = robot
         self.foes_with_ball = f"{BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL}"
 
     def setup(self, **kwargs) -> None:
+        logger.debug(f"setup {self.name}")
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:

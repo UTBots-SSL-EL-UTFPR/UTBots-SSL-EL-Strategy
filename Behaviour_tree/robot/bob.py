@@ -2,10 +2,9 @@
 
 import math
 import time
-from math import sqrt
 
 import numpy as np
-from helpers import MotionHelper
+
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
 from utils import utilsp
 from utils.pose2D import Pose2D
@@ -16,10 +15,9 @@ from .bob_config import Bob_Config
 from .bob_state import Bob_State
 from .foes import Foes_State
 
-
 positions = BlackboardKeys.Values.Positions
 
-#from Behaviour_tree.helpers.positioning_helper import visibilidade_gol TODO @DANILO sla oq q c ta importando aq, mas c tem q trazer a classe toda
+# from Behaviour_tree.helpers.positioning_helper import visibilidade_gol TODO @DANILO sla oq q c ta importando aq, mas c tem q trazer a classe toda
 from communication.sender.command_builder import CommandBuilder
 from communication.sender.command_sender_sim import CommandSenderSim
 
@@ -79,13 +77,24 @@ class Bob:
     def update(self):
         if self.state:
             self._bb.set(
-                f"{self.robot_id.name}{BlackboardKeys.Flags.Navigation.TARGET_REACHED}", False
+                f"{self.robot_id.name}{BlackboardKeys.Flags.Navigation.TARGET_REACHED}",
+                False,
             )
             self.state.update()
 
     def adicionar_ponto_trajetoria(self, target: Pose2D):
         if self.state:
             self.state.path.append(target)
+
+    def set_path(self, path: list[Pose2D]):
+        self.state.path = path
+        self.state.path_index = 0
+
+    def set_new_target(self, target_position: Pose2D):
+        self.state.path.clear()
+        self.state.path_index = 0
+
+        self.adicionar_ponto_trajetoria(target_position)
 
     def precision_movement(self):  # usa o movimento de precisao
         if self.state is None:
@@ -114,19 +123,6 @@ class Bob:
         self.cmd = self.cmd_builder.build()
         self.cmd_sender.send(self.cmd)
 
-    def go_to_point_avoiding_obstacles(
-        self, dest: Pose2D, obstacules: list[Pose2D], raio: float
-    ) -> bool:
-        if self.state is None:
-            return False
-        start = self.state.get_position()
-        path = MotionHelper.find_shortest_path(start, dest, obstacules)
-        if path and len(path) > 1:
-            next_step = path[1]
-            return self.move(next_step.x, next_step.y)
-        else:
-            return self.move(dest.x, dest.y)
-    
     def fast_movement(self):
         if self.state is None:
             return
@@ -385,10 +381,8 @@ class Bob:
     # ===================================================#
     # ==== metodos auxiliares para os metodos do BOB ====#
 
-    
     def go_to_ball(self, ball_position: Pose2D) -> bool:
         return self.move(ball_position.x, ball_position.y)
-
 
     def shoot_to_goal(self, goal_position: Pose2D) -> bool:
         if self.state is None:
@@ -398,8 +392,8 @@ class Bob:
         my_pos = self.state.get_position()
         dx = goal_position.x - my_pos.x
         dy = goal_position.y - my_pos.y
-        angle_to_goal = math.atan2(dy, dx)
-        self.rotate(angle_to_goal)
+        self.state.target_theta = math.atan2(dy, dx)
+        self.rotate()
         return self.kick_ball()
 
     def mark_opponent(self, opponent_pos: Pose2D, own_goal: Pose2D) -> bool:
@@ -414,8 +408,8 @@ class Bob:
         my_pos = self.state.get_position()
         dx = teammate_pos.x - my_pos.x
         dy = teammate_pos.y - my_pos.y
-        angle = math.atan2(dy, dx)
-        self.rotate(angle)
+        self.state.target_theta = math.atan2(dy, dx)
+        self.rotate()
         return self.kick_ball()
 
     def dribble_towards(self, target_pos: Pose2D) -> bool:
@@ -445,12 +439,4 @@ class Bob:
         for foe in self.foes:
             distances.append(self.state.position.distance_to(foe.position))
         self.nearest_foe = utilsp.min(distances)
-        return self.nearest_foe    @classmethod
-    def get_press_oponent_position(cls):
-        ball_position = cls._ws.get_ball_position()
-        goal_position = FieldHelper.get_goal_center()
-        return GeometryHelper.calculate_point_on_line(
-            ball_position, goal_position, DISTANCE_PRESS_OPPONENT
-        )
-t       _foe()
-        return d_min < FREE_DISTANCE
+        return self.nearest_foe

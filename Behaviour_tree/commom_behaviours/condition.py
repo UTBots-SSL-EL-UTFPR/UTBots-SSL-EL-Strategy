@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 import py_trees
@@ -6,7 +7,7 @@ from py_trees.common import Status
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
 from Behaviour_tree.core.World_State import RobotID
-from Behaviour_tree.positioning.positioning_helper import PositioningHelper
+from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
 
@@ -17,6 +18,33 @@ _pos_helper = PositioningHelper.get_object()
 # =======================================================================================#
 #                                     IMPLEMENTADOS                                     #
 # =======================================================================================#
+
+logger = logging.getLogger(__name__)
+
+
+class TeamHasBall(py_trees.behaviour.Behaviour):
+    """
+    Verifica se a bola está com adversário (TODO)
+    """
+
+    def __init__(self, name: str = "IsBallFree"):
+        super().__init__(name)
+
+    def initialise(self) -> None:
+        """Reseta/atualiza contexto no início da verificação."""
+        ...
+
+    def setup(self, **kwargs) -> None:
+        logger.debug(f"setup {self.name}")
+        return super().setup(**kwargs)
+
+    def update(self) -> py_trees.common.Status:
+        if _bb.get(f"{BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL}"):
+            logger.debug("time nao tem a posse de bola")
+
+            return py_trees.common.Status.SUCCESS
+        logger.debug("time possui a bola")
+        return py_trees.common.Status.FAILURE
 
 
 class FoesHaveBall(py_trees.behaviour.Behaviour):
@@ -32,6 +60,7 @@ class FoesHaveBall(py_trees.behaviour.Behaviour):
         ...
 
     def setup(self, **kwargs) -> None:
+        logger.debug(f"setup {self.name}")
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
@@ -47,13 +76,16 @@ class HasBall(py_trees.behaviour.Behaviour):
         self.robot = robot
 
     def setup(self, **kwargs: Any) -> None:
+        logger.debug(f"setup {self.name}")
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
         if _bb.get(
             f"{self.robot.state.robot_id.name}{BlackboardKeys.Flags.BallMotion.HAS_BALL}"
         ):
+            logger.debug(f" robo {self.robot.robot_id.name} tem posse de bola")
             return py_trees.common.Status.SUCCESS
+        logger.debug(f" robo {self.robot.robot_id.name} não esta com a bola")
         return py_trees.common.Status.FAILURE
 
 
@@ -71,7 +103,7 @@ class ValidLine(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
-        if _bb.get(f"{team_flags.Context.valid_line}"):
+        if _bb.get(f"{BlackboardKeys.Flags.TeamContext.VALID_LINE}"):
             return py_trees.common.Status.RUNNING
         return py_trees.common.Status.FAILURE
 
@@ -85,7 +117,7 @@ class ReceiverUnmarked(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
-        if _bb.get(f"{team_flags.Context.unmarked_receiver}"):
+        if _bb.get(f"{BlackboardKeys.Flags.TeamContext.UNMARKED_RECEIVER}"):
             return py_trees.common.Status.RUNNING
 
         return py_trees.common.Status.FAILURE
@@ -143,6 +175,6 @@ class Teamkick(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
-        if _bb.get(f"{team_flags.kick_actions.team_kick}"):
+        if _bb.get(f"{BlackboardKeys.Flags.KickActions.TEAM_KICK}"):
             return py_trees.common.Status.SUCCESS
         return py_trees.common.Status.FAILURE

@@ -29,10 +29,10 @@ team_flags = BlackboardKeys.Flags.Team_Flags
 from commom_behaviours.actions import MovimentoUnico, RecuperarBola
 from commom_behaviours.condition import FoesHaveBall, HasBall
 
-from Behaviour_tree.positioning.positioning_helper import PositioningHelper
+from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from Behaviour_tree.robot.bob import Bob
 
-from ...positioning import positioning_helper as Positioning_helper
+from ...helpers import positioning_helper as Positioning_helper
 
 # ---------------------------------------------------------------------------------------#
 #                                         MOVIMENTO                                     #

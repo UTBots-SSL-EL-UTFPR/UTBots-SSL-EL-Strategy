@@ -1,9 +1,13 @@
 # ----------------------------------------------------------------------------#
 #               CLASSES PARA ACOMODAR FLAGS, MAIS FACIL DE USAR              #
 # ----------------------------------------------------------------------------#
+import logging
 from enum import Enum
 
 from .blackboard import Blackboard_Manager
+from .test_World_State import RobotID
+
+logger = logging.getLogger(__name__)
 
 # ----------------------------------------------------------------------------#
 #                                INSTRUÇÃO GERAL                             #
@@ -84,37 +88,48 @@ _bb = Blackboard_Manager.get_instance()
 
 # ----------------------------------ball posetion----------------------------------#
 def team_got_ball_posetion(robot_id: str):
+    logger.debug("TEAM got ball posetion")
+
     _bb.set(f"{robot_id}{BlackboardKeys.Flags.BallMotion.HAS_BALL}", True)
     _bb.set(
-        f"{robot_id}{BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL}",
+        f"{BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL}",
         True,
     )
     _bb.set(
-        f"{robot_id}{BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL}",
+        f"{BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL}",
         False,
     )
 
 
 def lost_ball_posetion(robot_id: str):
+    logger.debug("lost ball posetion")
     _bb.set(f"{robot_id}{BlackboardKeys.Flags.BallMotion.HAS_BALL}", False)
+    aux = False
+    for i in RobotID:
+        if _bb.get(f"{i.name}{BlackboardKeys.Flags.BallMotion.HAS_BALL}"):
+            aux = True
+    
+    if not aux:
+        _bb.set(
+            f"{BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL}",
+            False,
+        )
     _bb.set(
-        f"{robot_id}{BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL}",
-        False,
-    )
-    _bb.set(
-        f"{robot_id}{BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL}",
+        f"{BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL}",
         False,
     )
 
 
 def foes_got_ball_posetion(robot_id: str):
-    _bb.set(f"{robot_id}{BlackboardKeys.Flags.BallMotion.HAS_BALL}", True)
+    logger.debug("FOES got ball posetion")
+
+    _bb.set(f"{robot_id}{BlackboardKeys.Flags.BallMotion.HAS_BALL}", False)
     _bb.set(
-        f"{robot_id}{BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL}",
+        f"{BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL}",
         False,
     )
     _bb.set(
-        f"{robot_id}{BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL}",
+        f"{BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL}",
         True,
     )
 
