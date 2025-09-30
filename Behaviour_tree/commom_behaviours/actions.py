@@ -28,6 +28,12 @@ import Behaviour_tree.helpers as hp
 from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
 
+import Behaviour_tree.helpers.visiblidade_gol as vis_gol
+from Behaviour_tree.helpers.positioning_helper import PositioningHelper
+
+_pos_helper = PositioningHelper.get_object()
+_ws = World_State.get_object()
+
 # ---------------------------------------------------------------------------------------#
 #                                         MOVIMENTO                                     #
 # ---------------------------------------------------------------------------------------#
@@ -435,3 +441,110 @@ class Align_for_pass(pt.behaviour.Behaviour):
 
 
 # =+==============================++++++==================++++++=================+++++=============#
+
+# --------------------------------------------------------------------------------------- #
+#                                      CHUTE                                              #
+# --------------------------------------------------------------------------------------- #
+
+class Align_for_shoot(pt.behaviour.Behaviour):
+  def __init__(
+      self,
+      attacker: Bob,
+      name: str = "Align_for_shoot",
+      tolerance = 0.15
+  ):
+      super().__init__(name)
+      self.attacker = attacker
+      self.bb = Blackboard_Manager.get_instance()
+      self.tolerance = tolerance
+
+
+  def setup(self, **kwargs):
+      if self.attacker is None:
+          raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
+      return super().setup(**kwargs)
+
+
+  def initialise(self):
+      self.bb.set(f"{self.attacker.robot_id.name}_team_kick", True)
+      self.bb.set(f"{self.attacker.robot_id.name}_cmd_rotation", 0.0)
+
+
+  def update(self) -> pt.common.Status:
+      if (
+          self.attacker is None
+          or self.attacker.state is None
+      ):
+          return pt.common.Status.FAILURE
+    
+      attacker_pose = self.attacker.state.position
+      goal_pose = _pos_helper.get_goal_center()
+      x_goal = goal_pose.x
+      obstacles_pose = _ws.get_all_robot_position()
+
+      max_angle_visibility_field, min_angle_visibility_field = vis_gol.limits_of_visibility(obstacles_pose, attacker_pose, x_goal)
+      # Esse angulo é dado em relacação ao eixo x+ quando x_gol>0 e x- quando x_gol<0
+      visArea_center_rad = (max_angle_visibility_field + min_angle_visibility_field) / 2
+     
+      if x_goal < 0 :
+          visArea_center_rad = (visArea_center_rad + math.pi)*-1
+
+      if hp.PositioningHelper.is_aligned_to_goal(
+            attacker_pose,
+            visArea_center_rad,
+            tolerance = self.tolerance,
+        ):
+            return pt.common.Status.SUCCESS
+
+      rotate_cmd = self.attacker.rotate(visArea_center_rad)
+
+      if not rotate_cmd:
+          return pt.common.Status.FAILURE
+      else:
+          return pt.common.Status.RUNNING
+
+
+  def terminate(self, new_status: pt.common.Status):
+      self.bb.set(f"{self.attacker.robot_id.name}_cmd_rotation", 0.0)
+
+
+
+class Shoot_to_goal(pt.behaviour.Behaviour):
+  def __init__(
+      self,
+      attacker: Bob,
+      name: str = "Shoot_to_goal",
+  ):
+      super().__init__(name)
+      self.attacker = attacker
+      self.bb = Blackboard_Manager.get_instance()
+
+
+  def setup(self, **kwargs):
+      if self.attacker is None:
+          raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
+      return super().setup(**kwargs)
+
+
+  def initialise(self):
+      self.bb.set(f"{self.attacker.robot_id.name}_cmd_rotation", 0.0)
+
+
+  def update(self) -> pt.common.Status:
+      if (
+          self.attacker is None
+          or self.attacker.state is None
+      ):
+          return pt.common.Status.FAILURE
+     
+      kick_cmd = self.attacker.kick_ball()
+
+
+      if not kick_cmd:
+          return pt.common.Status.FAILURE
+      else:
+          return pt.common.Status.SUCCESS
+     
+     
+  def terminate(self, new_status: pt.common.Status):
+      self.bb.set(f"{self.attacker.robot_id.name}_team_kick", False)

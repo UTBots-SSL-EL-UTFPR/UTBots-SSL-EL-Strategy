@@ -7,13 +7,17 @@ from py_trees.common import Status
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
 from Behaviour_tree.core.World_State import RobotID
+from Behaviour_tree.core.World_State import World_State
 from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
+from utils.defines import (MAX_SHOOT_DISTANCE)
+import Behaviour_tree.helpers.visiblidade_gol as vis_gol
 
 positions_values = BlackboardKeys.Values.Positions
 _bb = Blackboard_Manager.get_instance()
 _pos_helper = PositioningHelper.get_object()
+_ws = World_State.get_object()
 
 # =======================================================================================#
 #                                     IMPLEMENTADOS                                     #
@@ -179,3 +183,57 @@ class Teamkick(py_trees.behaviour.Behaviour):
         if _bb.get(f"{BlackboardKeys.Flags.KickActions.TEAM_KICK}"):
             return py_trees.common.Status.SUCCESS
         return py_trees.common.Status.FAILURE
+    
+class Goal_visibility(py_trees.behaviour.Behaviour):
+    def __init__(
+      self,
+      attacker: Bob,
+      name: str = "Goal_visibility"
+  ):
+      super().__init__(name)
+      self.attacker = attacker
+
+def setup(self, **kwargs: Any) -> None:
+      if self.attacker is None:
+          raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
+      return super().setup(**kwargs)
+def update(self) -> py_trees.common.Status:
+      obstacles_pose = _ws.get_all_robot_position()
+      attacker_id = self.attacker.robot_id.value   # Transforma de enum para int
+      attacker_pose = _ws.get_team_robot_pose(attacker_id)
+      goal_center = _pos_helper.get_goal_center()
+      x_goal = goal_center.x
+    
+      if(vis_gol.max_range_of_visibility(obstacles_pose, attacker_pose, x_goal)):
+          return py_trees.common.Status.SUCCESS
+      return py_trees.common.Status.FAILURE
+
+
+
+
+class Goal_distance(py_trees.behaviour.Behaviour):
+  def __init__(
+      self,
+      attacker: Bob,
+      name: str = "Goal_distance",
+  ):
+      super().__init__(name)
+      self.attacker = attacker
+
+def setup(self, **kwargs: Any) -> None:
+      if self.attacker is None:
+          raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
+      return super().setup(**kwargs)
+
+def update(self) -> py_trees.common.Status:
+      attacker_id = self.attacker.robot_id.value   # Transforma de enum para int
+      attacker_pose = _ws.get_team_robot_pose(attacker_id)
+
+      goal_center = _pos_helper.get_goal_center()
+      x_goal = goal_center.x
+
+      distance_to_goal = attacker_pose.distance_to(Pose2D(x_goal, goal_center.y))
+      if(distance_to_goal <= MAX_SHOOT_DISTANCE):
+          return py_trees.common.Status.SUCCESS
+      return py_trees.common.Status.FAILURE
+
