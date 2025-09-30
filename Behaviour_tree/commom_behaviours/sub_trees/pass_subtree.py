@@ -54,9 +54,9 @@ class PassTree:
             memory=True,  
             children=[
                 has_ball,
-                choose_who_to_pass,
-                receiver_unmarked,
                 valid_line,
+                receiver_unmarked,
+                choose_who_to_pass,
                 align_for_pass,
                 execute_pass,
             ],

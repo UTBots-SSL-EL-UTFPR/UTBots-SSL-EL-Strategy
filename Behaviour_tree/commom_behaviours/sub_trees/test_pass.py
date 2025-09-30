@@ -1,6 +1,7 @@
 import logging
 import time
 import py_trees as pt
+import py_trees.display
 from utils.pose2D import Pose2D
 from Behaviour_tree.core.World_State import RobotID
 from Behaviour_tree.bob_manager import BobManager
@@ -17,7 +18,7 @@ from .pass_subtree import PassTree
 
 if __name__ == "__main__":
     # --- 1. INICIALIZAÇÃO GERAL ---
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-8s | %(message)s")
+    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s | %(levelname)-8s | %(message)s")
     logger = logging.getLogger(__name__)
 
     bob_manager = BobManager.get_object()
@@ -46,10 +47,17 @@ if __name__ == "__main__":
 
     # --- 4. CONFIGURAR O ESTADO INICIAL DO MUNDO (CONDIÇÕES DO TESTE) ---
     logger.info("Configurando condições iniciais no Blackboard...")
-    blackboard.set(BlackboardKeys.BALL_POSITION, Pose2D(x=-1000, y=500))
-    world_state.update_team_robot_pose(passer.robot_id, Pose2D(x=-1050, y=500, theta=0))
-    world_state.update_team_robot_pose(receiver.robot_id, Pose2D(x=1000, y=-500, theta=3.14))
+    blackboard.set(BlackboardKeys.Values.Positions.BALL_POSITION, Pose2D(x=-1000, y=500))
+   
 
+    passer_id_name = passer.robot_id.name
+    has_ball_key = f"{passer_id_name}{BlackboardKeys.Flags.BallMotion.HAS_BALL}"
+    blackboard.set(has_ball_key, True)
+    logger.info(">>>>>> FLAG VALID_LINE FOI DEFINIDA COMO TRUE! <<<<<<")
+
+
+    valid_line_key = f"{passer_id_name}{BlackboardKeys.Flags.TeamContext.VALID_LINE}"
+    blackboard.set(valid_line_key, True)
     logger.info("Início do teste de PASSE no grSim")
 
     # --- 5. LOOP DE SIMULAÇÃO ---
@@ -63,6 +71,7 @@ if __name__ == "__main__":
             # Executa um tick da árvore de comportamento do PASSE
             passer_tree.tick()
 
+            #print(py_trees.display.unicode_snapshot(root=passer_tree.root))
             # Aguarda o próximo tick
             elapsed_time = time.time() - start_time
             if elapsed_time < TICK_INTERVAL:

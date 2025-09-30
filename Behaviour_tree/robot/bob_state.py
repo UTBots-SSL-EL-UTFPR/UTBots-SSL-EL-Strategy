@@ -109,6 +109,7 @@ class Bob_State:
         if visible != self.ball_visible:
             if visible:
                 event_callbacks.on_ball_visible(self.robot_id.name)
+                event_callbacks.on_valid_line(self.robot_id.name)
             else:
                 event_callbacks.on_ball_not_visible(self.robot_id.name, best_position)
 

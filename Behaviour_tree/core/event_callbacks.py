@@ -43,7 +43,7 @@ class BlackboardKeys:
         class TeamContext(StringEnum):
             IS_SIMPLE_ATTACK = "is_simple_atack"
             IS_PASS = "is_pass"
-            VALID_LINE = "valide_line"
+            VALID_LINE = "valid_line"
             UNMARKED_RECEIVER = "unmarked_receiver"
             IS_ATTACK_FROM_RECOVERY = "is_atack_from_recovery"
             IS_DEFENSE_EXEMPLE = "is_defense_exemple"
@@ -77,6 +77,7 @@ class BlackboardKeys:
             ZONE = "zone"
             POS_BALL_VISIBLE = "pos_ball_visible"
             POS_PASS_TARGET = "pos_pass_target"
+            BALL_POSITION = "ball_position"
 
 
 # ----------------------------------------------------------------------------#

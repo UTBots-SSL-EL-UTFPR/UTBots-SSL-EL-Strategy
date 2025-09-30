@@ -102,9 +102,10 @@ class ValidLine(py_trees.behaviour.Behaviour):
     def setup(self, **kwargs):
         return super().setup(**kwargs)
 
+
     def update(self) -> py_trees.common.Status:
         if _bb.get(f"{BlackboardKeys.Flags.TeamContext.VALID_LINE}"):
-            return py_trees.common.Status.RUNNING
+            return py_trees.common.Status.SUCCESS
         return py_trees.common.Status.FAILURE
 
 
@@ -118,26 +119,11 @@ class ReceiverUnmarked(py_trees.behaviour.Behaviour):
 
     def update(self) -> py_trees.common.Status:
         if _bb.get(f"{BlackboardKeys.Flags.TeamContext.UNMARKED_RECEIVER}"):
-            return py_trees.common.Status.RUNNING
+            return py_trees.common.Status.SUCCESS
 
         return py_trees.common.Status.FAILURE
 
 
-###class rotation_done(py_trees.behaviour.Behaviour):#rotacionar em relaçaom ao alvo para realizar o passe
-# DENTRO DO NO DE AÇAO CHOOSE WHO TO PASS
-## def __init__(self, Robot:Bob, name: str = "Rotation_done"):
-##   super().__init__(name)
-# self.robot = Robot
-# self.bb = Blackboard_Manager.get_instance()
-
-# def update(self) -> py_trees.common.Status:
-# if self.bb.get(
-#   f"{self.robot.robot_id}{positions_values.rotation_done}"
-#  ):
-# return py_trees.common.Status.SUCCESS
-#   return py_trees.common.Status.RUNNING
-
-########PASSE#########################   ACIMAAAAAAAA
 
 
 class BallVisible(py_trees.behaviour.Behaviour):
