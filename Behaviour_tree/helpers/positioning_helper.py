@@ -836,20 +836,15 @@ class PositioningHelper:
             return diff
         return None
 
-    # @staticmethod
-    # def get_position_to_shoot (kicker_pos: Pose2D,
-    #                            point_grid_step: float = GRID_STEP/10,
-    #                            square: Tuple[int, int, int] = (0,0,0)):
-
-    #     x = kicker_pos.x
-    #     y = kicker_pos.y
-    #     goal_center = Positioning_helper.get_goal_center()
-    #     y_goal = goal_center.y
-    #     x_goal = goal_center.x
-
-    #     for x in range
-
-    #     # IDEIA GERAL: Usando um grid , achar o melhor ponto de chute considerando:
-    #         # A maior visibilidade
-    #         # Deve estar fora da área do goleiro
-    #         # O caminho até lá deve estar desimpedido
+    @staticmethod
+    def is_aligned_to_goal (
+            attacker_pose: Pose2D, 
+            desired_angle: float,
+            tolerance: float = 0.15
+    ) -> bool : 
+        
+        if abs(attacker_pose.theta - desired_angle) <= tolerance:
+            return True  
+        else :
+            return False
+        
