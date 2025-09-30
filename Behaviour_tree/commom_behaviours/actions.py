@@ -296,11 +296,11 @@ class MovimentoUnico(py_trees.behaviour.Behaviour):
 # ---------------------------------------------------------------------------------------#
 
 
-class Choose_who_to_pass(py_trees.behaviour.Behaviour):
+class ChooseWhoToPass(py_trees.behaviour.Behaviour):
 
-    def __init__(self, Robot: Bob, name):
+    def __init__(self, robot: Bob, name):
         super().__init__(name)
-        self.robot = Robot
+        self.robot = robot
         self.bb = Blackboard_Manager.get_instance()
         self.world_state = World_State.get_object()
 
@@ -348,7 +348,7 @@ class Choose_who_to_pass(py_trees.behaviour.Behaviour):
             return py_trees.common.Status.FAILURE
 
 
-class Align_for_pass(pt.behaviour.Behaviour):
+class AlignForPass(pt.behaviour.Behaviour):
     """
     Nó que garante que passador e receptor estejam orientados corretamente.
     Se não estiverem, envia comandos de rotação até alinhar.
@@ -427,7 +427,7 @@ class Align_for_pass(pt.behaviour.Behaviour):
         self.bb.set(f"{self.receiver.robot_id.name}_cmd_rotation", 0.0)
 
 
-    class execute_pass(pt.behaviour.Behaviour):
+    class ExecutePass(pt.behaviour.Behaviour):
         """
         Nó que executa o passe, lendo a posição do alvo no Blackboard e
         enviando o comando de chute ao robô passador.
@@ -456,7 +456,7 @@ class Align_for_pass(pt.behaviour.Behaviour):
 
             # Envia comando de chute
             try:
-                self.robot.kick(self.kick_speed)
+                self.robot.kick_ball(self.kick_speed)
                 logging.info(f"{self.robot.robot_id} executou passe para {target_pos}")
                 # Limpa o alvo de passe no Blackboard
                 self.bb.set("pass_target_pos", None)

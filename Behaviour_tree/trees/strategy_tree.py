@@ -55,8 +55,9 @@ class Strategy_tree(Tree):
                 c_condition_nodes.Has_ball(),
                 c_condition_nodes.Valid_Line(),
                 c_condition_nodes.Receiver_Unmarked(),
-                c_action_nodes.Choose_who_to_pass(Robot=self.bob, name="Choose_Pass"),
-                c_action_nodes.Align_for_pass(Robot=self.bob, name="Align_pass"),
+                c_action_nodes.ChooseWhoToPass(Robot=self.bob, name="Choose_Pass"),
+                c_action_nodes.AlignForPass(Robot=self.bob, name="Align_pass"),
+                c_action_nodes.ExecutePass(Robot=self.bob, name="Execute_Pass"),
                 s_action_nodes.Set_blackboard_value(
                     "context:Pass", contexts.is_pass, True
                 ),

@@ -20,10 +20,10 @@ from .field_helper import (
     HALF_LEGHT,
     KEEPER_MARGIN,
     WALL_MARGIN,
-    Quadrant,
-    QuadrantType,
-    RoleType,
-    ZoneType,
+    #Quadrant,
+    #QuadrantType,
+    #RoleType,
+    #ZoneType,
 )
 
 
