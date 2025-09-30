@@ -1,20 +1,10 @@
-from Behaviour_tree.positioning.positioning_helper import Positioning_helper
+from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from SSL_configuration.configuration import Configuration
-from utils.defines import (
-    BALL_POSSESSION_DISTANCE,
-    Quadrant,
-    QuadrantType,
-    RoleType,
-    Zone,
-    ZoneType,
-)
-from utils.pose2D import Pose2D
+from utils.defines import BALL_POSSESSION_DISTANCE
+from utils.pose2D import Pose2D, RoleType
 
 from ..core import event_callbacks
 from ..core.World_State import RobotID, World_State
-from .all_bob_states import AllBobs_State
-
-ROBOT_RADIUS = 90
 
 
 class Bob_State:
@@ -25,7 +15,7 @@ class Bob_State:
 
         self.world_state = World_State.get_object()
         self.configuration = Configuration.getObject()
-        self.pos_helper = Positioning_helper.get_object()
+        self.pos_helper = PositioningHelper.get_object()
 
         self.position: Pose2D = Pose2D(3333, 3333)
         self.velocity: Pose2D = Pose2D()
@@ -33,9 +23,9 @@ class Bob_State:
         self.path: list[Pose2D] = []
         self.path_index = 0
         self.target_position: Pose2D | None = Pose2D()
-
+        self.target_theta: float = 0
         self.active_function = None
-        self.current_command = None
+        self.current_command: str = "None"
         self.role: RoleType | None = None
 
         self.ball_visible = False
@@ -69,6 +59,7 @@ class Bob_State:
     def is_ball_with_robot(self):
         if self.has_ball != self.check_ball_possession():
             if self.has_ball:
+                print(self.robot_id)
                 event_callbacks.lost_ball_posetion(self.robot_id.name)
             else:
                 self.ball_visible = True
@@ -112,7 +103,7 @@ class Bob_State:
                 self.target_position = self.path[self.path_index]
 
     def is_visible_from_ball(self):
-        visible, best_position = Positioning_helper.get_clear_pass_position(
+        visible, best_position = PositioningHelper.get_clear_pass_position(
             self.position
         )
         if visible != self.ball_visible:
@@ -156,7 +147,7 @@ class Bob_State:
         self.velocity = Pose2D()
         self.target_position = Pose2D()
         self.active_function = None
-        self.current_command = None
+        self.current_command = "None"
         self.has_ball = False
         self.quadrant_index = None
         self.role = None

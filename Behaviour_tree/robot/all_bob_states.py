@@ -20,6 +20,8 @@ class AllBobs_State:
             raise RuntimeError("Use AllBobStates.get_instance()")
         self._states: Dict[object, "Bob_State"] = {}
 
+        
+
     @classmethod
     def get_instance(cls) -> "AllBobs_State":
         if cls._instance is None:
