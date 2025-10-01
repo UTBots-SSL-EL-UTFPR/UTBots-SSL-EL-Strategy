@@ -126,8 +126,10 @@ class World_State:
     def get_team_robot_pose(self, robot_id: int) -> Pose2D | None:
         team_color = self.configuration.team_collor
         if not team_color:
+            print("AQUIII11111")  
             return None
         if robot_id not in self._robot_positions.get(team_color, {}):
+            print("AQUIII22222")
             return None
         x, y = self._robot_positions[team_color][robot_id]
         theta = self._robot_orientations[team_color][robot_id]

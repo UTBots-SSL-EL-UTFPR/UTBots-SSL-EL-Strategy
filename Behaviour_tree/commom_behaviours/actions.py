@@ -309,7 +309,6 @@ class ChooseWhoToPass(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def update(self) -> pt.common.Status:
-
         if self.robot is None or self.robot.state is None:
             return py_trees.common.Status.FAILURE
 
@@ -336,13 +335,18 @@ class ChooseWhoToPass(py_trees.behaviour.Behaviour):
         elif self.robot.robot_id == 1:
             target_id_found = RobotID.Kamiji
             target_pos_found = self.world_state.get_team_robot_pose(target_id_found)
+
         else:
             target_id_found = RobotID.Defender
             target_pos_found = self.world_state.get_team_robot_pose(target_id_found)
+            #print(target_id_found)
+            print(target_pos_found)
 
         if target_pos_found is not None and target_id_found is not None:
+            #NAO ESTA ENTRANDOO AQUIIIIIIII
             self.bb.set("pass_target_id", target_id_found)
             self.bb.set("pass_target_pos", target_pos_found)
+          
             return py_trees.common.Status.SUCCESS
         else:
             return py_trees.common.Status.FAILURE

@@ -3,6 +3,8 @@ from SSL_configuration.configuration import Configuration
 from utils.defines import BALL_POSSESSION_DISTANCE
 from utils.pose2D import Pose2D, RoleType
 
+
+
 from ..core import event_callbacks
 from ..core.World_State import RobotID, World_State
 
@@ -16,6 +18,7 @@ class Bob_State:
         self.world_state = World_State.get_object()
         self.configuration = Configuration.getObject()
         self.pos_helper = PositioningHelper.get_object()
+        self.bb = event_callbacks.Blackboard_Manager.get_instance()
 
         self.position: Pose2D = Pose2D(3333, 3333)
         self.velocity: Pose2D = Pose2D()
@@ -40,6 +43,8 @@ class Bob_State:
         event_callbacks.on_robot_stuck(self.robot_id.name)
         event_callbacks.target_reset(self.robot_id.name)
         event_callbacks.on_ball_not_visible(self.robot_id.name, Pose2D(0, 0))
+        event_callbacks.on_valid_line(self.robot_id.name)
+        
 
     # ---------------------------------------------------------------------------------------#
     #                                       UPDATE                                          #
@@ -55,6 +60,8 @@ class Bob_State:
         self.is_visible_from_ball()
         self.is_ball_reachable()
         self.is_ball_with_robot()
+        self.valid_line()
+    
 
     def is_ball_with_robot(self):
         if self.has_ball != self.check_ball_possession():
@@ -109,7 +116,7 @@ class Bob_State:
         if visible != self.ball_visible:
             if visible:
                 event_callbacks.on_ball_visible(self.robot_id.name)
-                event_callbacks.on_valid_line(self.robot_id.name)
+               
             else:
                 event_callbacks.on_ball_not_visible(self.robot_id.name, best_position)
 
@@ -120,6 +127,16 @@ class Bob_State:
             self.world_state.get_ball_position()
         )
         event_callbacks.on_ball_reachable(self.robot_id.name, reachable)
+
+
+    def valid_line(self):
+        
+        end_pos = self.bb.get("pass_target_pos")
+        if end_pos is None:
+            print("ERRO, END_POS NULO NO BOB_STATE")
+        if self.pos_helper.is_path_clear(self.position,end_pos,self.world_state.get_all_foes_position()):
+            event_callbacks.on_valid_line(self.robot_id.name)
+        
 
     # ---------------------------------------------------------------------------------------#
     #                                         Setters                                       #

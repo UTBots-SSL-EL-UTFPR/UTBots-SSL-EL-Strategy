@@ -53,11 +53,8 @@ if __name__ == "__main__":
     passer_id_name = passer.robot_id.name
     has_ball_key = f"{passer_id_name}{BlackboardKeys.Flags.BallMotion.HAS_BALL}"
     blackboard.set(has_ball_key, True)
-    logger.info(">>>>>> FLAG VALID_LINE FOI DEFINIDA COMO TRUE! <<<<<<")
 
-
-    valid_line_key = f"{passer_id_name}{BlackboardKeys.Flags.TeamContext.VALID_LINE}"
-    blackboard.set(valid_line_key, True)
+    
     logger.info("Início do teste de PASSE no grSim")
 
     # --- 5. LOOP DE SIMULAÇÃO ---
