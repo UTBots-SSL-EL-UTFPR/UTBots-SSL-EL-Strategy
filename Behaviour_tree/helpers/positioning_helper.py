@@ -20,11 +20,8 @@ from .field_helper import (
     HALF_LEGHT,
     KEEPER_MARGIN,
     WALL_MARGIN,
-    Quadrant,
-    QuadrantType,
-    RoleType,
-    ZoneType,
 )
+from .geometry_helper import GeometryHelper
 
 
 class ShadowCone:
@@ -837,14 +834,11 @@ class PositioningHelper:
         return None
 
     @staticmethod
-    def is_aligned_to_goal (
-            attacker_pose: Pose2D, 
-            desired_angle: float,
-            tolerance: float = 0.15
-    ) -> bool : 
-        
+    def is_aligned_to_goal(
+        attacker_pose: Pose2D, desired_angle: float, tolerance: float = 0.15
+    ) -> bool:
+
         if abs(attacker_pose.theta - desired_angle) <= tolerance:
-            return True  
-        else :
+            return True
+        else:
             return False
-        
