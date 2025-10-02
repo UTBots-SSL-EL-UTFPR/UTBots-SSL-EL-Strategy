@@ -1,6 +1,6 @@
 import logging
 import time
-import py_trees
+import py_trees as pt
 import py_trees.display
 from utils.pose2D import Pose2D
 from Behaviour_tree.core.World_State import RobotID

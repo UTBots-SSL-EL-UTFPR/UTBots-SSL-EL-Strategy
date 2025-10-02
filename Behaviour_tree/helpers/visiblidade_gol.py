@@ -5,12 +5,8 @@
 """
 import math
 from utils.pose2D import Pose2D
-
-
-# está em mm
-ROBOT_RADIUS = 85 
-YGOL_MIN = -750
-YGOL_MAX = 750
+from utils.defines import (ROBOT_RADIUS)
+from .field_helper import (GOAL_LENGHT)
 
 
 """_summary_: Classe dos obstáculos, que guarda suas posições (x, y) e os
@@ -76,8 +72,11 @@ que partem de (x0, y0) e passam por (xr, yr) cruzam o gol.
 return _type_: list
 """
 def calc_visible_bobs(
-   x0, y0, obstacles_coord, x_gol, theta_max, theta_min
+   x0, y0, obstacles_coord, goal_pose, theta_max, theta_min
 ):
+   x_gol = gol_center.x
+   y_golMax =  gol_center.y + GOAL_LENGHT / 2
+   y_golMin =  gol_center.y - GOAL_LENGHT / 2
    visible_bobs = []
    for i in range(len(obstacles_coord)):
        xr = obstacles_coord[i].x
@@ -86,7 +85,7 @@ def calc_visible_bobs(
            continue
        m = (yr - y0) / (xr - x0)
        intersec_y = m * (x_gol - x0) + y0
-       if (intersec_y >= YGOL_MIN and intersec_y <= YGOL_MAX) or (
+       if (intersec_y >= y_golMin and intersec_y <= y_golMax) or (
            haIntersecao(xr, yr, x0, y0, theta_min)
            or haIntersecao(xr, yr, x0, y0, theta_max)
        ):
@@ -129,18 +128,21 @@ superior de um obstáculo até a tangente superior do próximo.
 
 return _type_: float (módulo do ângulo em graus)
 """
-def limits_of_visibility(obstacles: list[Pose2D], p0: Pose2D, x_gol: float) -> list[float]:
+def limits_of_visibility(obstacles: list[Pose2D], p0: Pose2D, gol_center: Pose2D) -> list[float]:
+   x_gol = gol_center.x
+   y_golMax =  gol_center.y + GOAL_LENGHT / 2
+   y_golMin =  gol_center.y - GOAL_LENGHT / 2
    x0 = p0.x
    y0 = p0.y
-
+   
 
    kick_angle = [0, 0]
    if x_gol == x0:
        return kick_angle
 
 
-   theta_max = math.atan((YGOL_MAX - y0) / ((x_gol - x0)))
-   theta_min = math.atan((YGOL_MIN - y0) / ((x_gol - x0)))
+   theta_max = math.atan((y_golMax - y0) / ((x_gol - x0)))
+   theta_min = math.atan((y_golMin - y0) / ((x_gol - x0)))
    if x_gol < 0:
        theta_min *= -1
        theta_max *= -1
@@ -174,6 +176,20 @@ def limits_of_visibility(obstacles: list[Pose2D], p0: Pose2D, x_gol: float) -> l
    return kick_angle
 
 
-def max_range_of_visibility(obstacles: list[Pose2D], p0: Pose2D, x_gol: float) -> float:
-   kick_angle = limits_of_visibility(obstacles, p0, x_gol)
+def max_range_of_visibility(obstacles: list[Pose2D], p0: Pose2D, gol_center: Pose2D) -> float:
+   kick_angle = limits_of_visibility(obstacles, p0, gol_center)
    return abs(kick_angle[1] - kick_angle[0])
+
+# Teste
+
+
+if __name__ == "__main__":
+    obstacles = [(Pose2D)(600, 0), (Pose2D)(1600, 100), (Pose2D)(-1000, 0), (Pose2D)(1400, -200)]
+    obstacles = [(1400, 100)]
+    p0 = (Pose2D)(0,0)
+    gol_center = (Pose2D)(2250, 0)
+    inicio, fim = limits_of_visibility(obstacles, p0, gol_center)
+    print(math.degrees(inicio))
+    print(math.degrees(fim))
+    angle = (limits_of_visibility(obstacles, p0, gol_center))
+    print(angle)
