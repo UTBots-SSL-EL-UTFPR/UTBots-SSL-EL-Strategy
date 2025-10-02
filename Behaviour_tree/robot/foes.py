@@ -1,10 +1,8 @@
-from ..core.World_State import World_State, RobotID
-from ..core.blackboard import Blackboard_Manager
-from ..core import event_callbacks
-
+from utils.defines import BALL_POSSESSION_DISTANCE
 from utils.pose2D import Pose2D
-from utils import utilsp
-from utils.defines import Quadrant, QuadrantType, Zone, ZoneType, RoleType, BALL_POSSESSION_DISTANCE
+
+from ..core.blackboard import Blackboard_Manager
+from ..core.World_State import RobotID, World_State
 
 from Behaviour_tree.positioning.positioning_helper import Positioning_helper
 
@@ -14,11 +12,13 @@ from robot import bob
 from SSL_configuration.configuration import Configuration
 
 class Foes_State:
-    #ESTADO SIMPLIFICADO DOS ROBOS INIMIGOS
+    # ESTADO SIMPLIFICADO DOS ROBOS INIMIGOS
 
     def __init__(self, robot_id: RobotID):
         self.robot_id = robot_id
-
+        self.position: Pose2D = Pose2D()
+        self.velocity: Pose2D = Pose2D()
+        self.has_ball = False
         self.world_state = World_State.get_object()
         self.configuration = Configuration.getObject()
         self.pos_helper = Positioning_helper.get_object()

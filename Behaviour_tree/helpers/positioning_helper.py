@@ -1,28 +1,27 @@
 import math
 from dataclasses import dataclass
-from typing import Iterable, List, Tuple
+from math import sqrt
+from typing import Iterable, List, Optional, Tuple
 
 from SSL_configuration.configuration import Configuration
-from utils import defines
-from utils.defines import Quadrant, QuadrantType, RoleType, ZoneType
-from utils.pose2D import Pose2D
+from utils.defines import (
+    INFLUENCE_RADIUS,
+    MAX_SHOOT_DISTANCE,
+    MIN_PASS_DISTANCE,
+    ROBOT_RADIUS,
+)
+from utils.pose2D import Pose2D, Quadrant, QuadrantType, ZoneType
 
 from ..core.World_State import RobotID, World_State
-
-GOALKEEPER_DISTANCE_X = 2250
-HALF_GOALKEEPER_AREA_WIDTH = 675
-GOAL_LENGHT = 500
-
-WALL_MARGIN = 200
-KEEPER_MARGIN = 200
-INFLUENCE_RADIUS = 500
-GRID_STEP = 250
-
-HALF_LEGHT = int(4500 / 2)
-HALF_WID = int(3000 / 2)
-MIN_PASS_DISTANCE = 1000
-
-ROBOT_RADIUS = int(90)
+from .field_helper import (
+    GOAL_LENGHT,
+    GRID_STEP,
+    HALF_GOALKEEPER_AREA_WIDTH,
+    HALF_LEGHT,
+    KEEPER_MARGIN,
+    WALL_MARGIN,
+)
+from .geometry_helper import GeometryHelper
 
 
 class ShadowCone:
@@ -59,7 +58,7 @@ class ShadowCone:
             self.ray_right = (0, 0)
 
 
-class Positioning_helper:
+class PositioningHelper:
     _instance = None
     _world_state = World_State.get_object()
     _configuration = Configuration.getObject()
@@ -69,9 +68,18 @@ class Positioning_helper:
 
     @staticmethod
     def get_object():
-        if not Positioning_helper._instance:
-            Positioning_helper._instance = Positioning_helper()
-        return Positioning_helper._instance
+        if not PositioningHelper._instance:
+            PositioningHelper._instance = PositioningHelper()
+        return PositioningHelper._instance
+
+    @classmethod
+    def is_valid_placement(
+        cls, x: float, y: float, obstacules: list[Pose2D], raio: float
+    ) -> bool:
+        for obs in obstacules:
+            if sqrt((x - obs.x) ** 2 + (y - obs.y) ** 2) < raio * 2.2:
+                return False
+        return True
 
     @staticmethod
     def distance_to_quadrant_border(pose: Pose2D, quad: Quadrant) -> float:
@@ -90,7 +98,7 @@ class Positioning_helper:
     @staticmethod
     def verify_quadrant_free(quad: Quadrant, max_dist_from_border: int) -> bool:
         all_robots: list[Pose2D]
-        all_robots = Positioning_helper._world_state.get_all_foes_position()
+        all_robots = PositioningHelper._world_state.get_all_foes_position()
 
         robots_in_quad = [
             position
@@ -101,7 +109,7 @@ class Positioning_helper:
         if not robots_in_quad:
             return True
         return all(
-            Positioning_helper.distance_to_quadrant_border(robot, quad)
+            PositioningHelper.distance_to_quadrant_border(robot, quad)
             <= max_dist_from_border
             for robot in robots_in_quad
         )
@@ -116,7 +124,7 @@ class Positioning_helper:
 
         for q_data in attack_zone_quadrants:
 
-            if Positioning_helper.verify_quadrant_free(q_data, max_dist_from_border):
+            if PositioningHelper.verify_quadrant_free(q_data, max_dist_from_border):
                 free_quadrants_enums.append(QuadrantType[q_data.name])
 
         return free_quadrants_enums
@@ -131,11 +139,7 @@ class Positioning_helper:
         if not y_in_range:
             return False
         x_abs = abs(pose.x)
-        x_in_range = (
-            GOALKEEPER_DISTANCE_X - GOAL_LENGHT - margin
-            < x_abs
-            < GOALKEEPER_DISTANCE_X + margin
-        )
+        x_in_range = HALF_LEGHT - GOAL_LENGHT - margin < x_abs < HALF_LEGHT + margin
         return x_in_range
 
     @staticmethod
@@ -144,7 +148,7 @@ class Positioning_helper:
 
     @staticmethod
     def outside_enemies_influence(pose: Pose2D) -> bool:
-        foes = Positioning_helper._world_state.get_all_foes_position()
+        foes = PositioningHelper._world_state.get_all_foes_position()
         for e in foes:
             if pose.distance_to(e) < INFLUENCE_RADIUS:
                 return False
@@ -201,7 +205,7 @@ class Positioning_helper:
 
                 is_start_visible = True
                 for s in shadows:
-                    if Positioning_helper.is_point_in_shadow_vectorized(
+                    if PositioningHelper.is_point_in_shadow_vectorized(
                         top_left_candidate, origin, s
                     ):
                         is_start_visible = False
@@ -231,7 +235,7 @@ class Positioning_helper:
                         is_visible = True
                         for corner in corners:
                             for s in shadows:
-                                if Positioning_helper.is_point_in_shadow_vectorized(
+                                if PositioningHelper.is_point_in_shadow_vectorized(
                                     corner, origin, s
                                 ):
                                     is_visible = False
@@ -258,23 +262,23 @@ class Positioning_helper:
         """
         Limita uma Pose2D para que esteja dentro do campo e fora da área do goleiro adversário.
         """
-        our_goal_is_negative_x = Positioning_helper._configuration.is_left_team
+        our_goal_is_negative_x = PositioningHelper._configuration.is_left_team
 
         clamped_x = Pose2D._clamp(
             pose.x, -HALF_LEGHT + WALL_MARGIN, HALF_LEGHT - WALL_MARGIN
         )
         clamped_y = Pose2D._clamp(
-            pose.y, -HALF_WID + WALL_MARGIN, HALF_WID - WALL_MARGIN
+            pose.y, -HALF_LEGHT + WALL_MARGIN, HALF_LEGHT - WALL_MARGIN
         )
 
         constrained_pose = Pose2D(clamped_x, clamped_y)
 
         if our_goal_is_negative_x:
-            gk_area_x_min = GOALKEEPER_DISTANCE_X - GOAL_LENGHT
+            gk_area_x_min = HALF_LEGHT - GOAL_LENGHT
             gk_area_x_max = HALF_LEGHT
         else:
             gk_area_x_min = -HALF_LEGHT
-            gk_area_x_max = -(GOALKEEPER_DISTANCE_X - GOAL_LENGHT)
+            gk_area_x_max = -(HALF_LEGHT - GOAL_LENGHT)
 
         gk_area_y_max = HALF_GOALKEEPER_AREA_WIDTH
 
@@ -308,7 +312,7 @@ class Positioning_helper:
         origin_kicker: Pose2D,
         origin_goal: Pose2D,
         opponents: List[Pose2D],
-        grid_step: float = 100,
+        grid_step: int = 100,
     ) -> Tuple[int, int, int] | None:
         """
         Encontra o maior quadrado que é visível SIMULTANEAMENTE a partir do
@@ -329,7 +333,7 @@ class Positioning_helper:
 
                 is_start_visible = True
                 for s in shadows_from_kicker:
-                    if Positioning_helper.is_point_in_shadow_vectorized(
+                    if PositioningHelper.is_point_in_shadow_vectorized(
                         top_left_candidate, origin_kicker, s
                     ):
                         is_start_visible = False
@@ -339,7 +343,7 @@ class Positioning_helper:
                     continue
 
                 for s in shadows_from_goal:
-                    if Positioning_helper.is_point_in_shadow_vectorized(
+                    if PositioningHelper.is_point_in_shadow_vectorized(
                         top_left_candidate, origin_goal, s
                     ):
                         is_start_visible = False
@@ -369,7 +373,7 @@ class Positioning_helper:
                         is_fully_visible = True
                         for corner in corners:
                             for s in shadows_from_kicker:
-                                if Positioning_helper.is_point_in_shadow_vectorized(
+                                if PositioningHelper.is_point_in_shadow_vectorized(
                                     corner, origin_kicker, s
                                 ):
                                     is_fully_visible = False
@@ -378,7 +382,7 @@ class Positioning_helper:
                                 break
 
                             for s in shadows_from_goal:
-                                if Positioning_helper.is_point_in_shadow_vectorized(
+                                if PositioningHelper.is_point_in_shadow_vectorized(
                                     corner, origin_goal, s
                                 ):
                                     is_fully_visible = False
@@ -399,8 +403,6 @@ class Positioning_helper:
             y += grid_step
 
         return best_square if best_square[2] > 0 else None
-
-    # Dentro da classe Positioning_helper
 
     @staticmethod
     def find_best_point_in_square(
@@ -509,8 +511,6 @@ class Positioning_helper:
 
         return (p.x - projection_x) ** 2 + (p.y - projection_y) ** 2
 
-    # Dentro da sua classe Positioning_helper
-
     @staticmethod
     def _project_point_on_ray(
         point: Pose2D, ray_origin: Pose2D, ray_direction: Tuple[float, float]
@@ -550,7 +550,7 @@ class Positioning_helper:
         collision_dist_sq = (robot_radius + robot_radius) ** 2
 
         for opp in opponents:
-            dist_sq = Positioning_helper._distance_point_to_segment_sq(
+            dist_sq = PositioningHelper._distance_point_to_segment_sq(
                 opp, start_pos, end_pos
             )
             if dist_sq < collision_dist_sq:
@@ -563,11 +563,11 @@ class Positioning_helper:
         Verifica a visibilidade e, se obstruído, calcula o ponto visível mais próximo
         da posição atual do robô, saindo do cone de sombra do bloqueador.
         """
-        ball_pos = Positioning_helper._world_state.get_ball_position()
-        all_robots = Positioning_helper._world_state.get_all_robot_position()
+        ball_pos = PositioningHelper._world_state.get_ball_position()
+        all_robots = PositioningHelper._world_state.get_all_robot_position()
         obstacles = [obs for obs in all_robots if obs != robot_pos]
 
-        if Positioning_helper.is_path_clear(
+        if PositioningHelper.is_path_clear(
             ball_pos, robot_pos, obstacles, ROBOT_RADIUS
         ):
             return True, ball_pos
@@ -576,7 +576,7 @@ class Positioning_helper:
         blockers = []
         for obs in obstacles:
             if (
-                Positioning_helper._distance_point_to_segment_sq(
+                PositioningHelper._distance_point_to_segment_sq(
                     obs, ball_pos, robot_pos
                 )
                 < collision_dist_sq
@@ -609,10 +609,10 @@ class Positioning_helper:
             right_ray_dir[1] / norm_right,
         )
 
-        escape_point1 = Positioning_helper._project_point_on_ray(
+        escape_point1 = PositioningHelper._project_point_on_ray(
             robot_pos, ball_pos, left_ray_dir_unit
         )
-        escape_point2 = Positioning_helper._project_point_on_ray(
+        escape_point2 = PositioningHelper._project_point_on_ray(
             robot_pos, ball_pos, right_ray_dir_unit
         )
 
@@ -640,7 +640,7 @@ class Positioning_helper:
         ty: int = 0
         tx, ty, _ = target_position
 
-        goal = Positioning_helper.get_goal_center()
+        goal = PositioningHelper.get_goal_center()
 
         gx, gy, _ = goal
         theta = math.atan2(gy - ty, gx - tx)
@@ -653,15 +653,15 @@ class Positioning_helper:
         Calcula uma posição para um rebote, assumindo um chute
         A lógica não usa a velocidade da bola, apenas as posições.
         """
-        opponents = Positioning_helper._world_state.get_all_foes_position()
+        opponents = PositioningHelper._world_state.get_all_foes_position()
         potential_blockers = []
         robot_radius = ROBOT_RADIUS
         shot_corridor_width_sq = (robot_radius * 2) ** 2
-        s = Positioning_helper._configuration.get_side_sign()
-        kicker_pos = Positioning_helper._world_state.get_ball_position()
-        goal_center = Positioning_helper.get_goal_center()
+        s = PositioningHelper._configuration.get_side_sign()
+        kicker_pos = PositioningHelper._world_state.get_ball_position()
+        goal_center = PositioningHelper.get_goal_center()
         for opp in opponents:
-            dist_sq = Positioning_helper._distance_point_to_segment_sq(
+            dist_sq = PositioningHelper._distance_point_to_segment_sq(
                 opp, kicker_pos, goal_center
             )
             if dist_sq < shot_corridor_width_sq:
@@ -711,11 +711,10 @@ class Positioning_helper:
             primary_blocker.y + rebound_dir_y * intercept_distance,
         )
 
-        pos = Positioning_helper.constrain_position(rebound_pos)
+        pos = PositioningHelper.constrain_position(rebound_pos)
 
         return pos
 
-    
     @staticmethod
     def get_best_pass_orientation(
         passer_pos: Pose2D,
@@ -723,7 +722,7 @@ class Positioning_helper:
         goal_pos: Pose2D,
         opponents: List[Pose2D],
         weight_receive: float = 0.6,
-        weight_goal: float = 0.4
+        weight_goal: float = 0.4,
     ) -> float:
         """
         Retorna o melhor ângulo (em radianos) para o receptor se orientar ao receber o passe.
@@ -748,12 +747,14 @@ class Positioning_helper:
 
         # Combinação ponderada dos ângulos (mantém continuidade da jogada)
         best_angle = math.atan2(
-            weight_receive * math.sin(angle_receive) + weight_goal * math.sin(angle_goal),
-            weight_receive * math.cos(angle_receive) + weight_goal * math.cos(angle_goal)
+            weight_receive * math.sin(angle_receive)
+            + weight_goal * math.sin(angle_goal),
+            weight_receive * math.cos(angle_receive)
+            + weight_goal * math.cos(angle_goal),
         )
 
         # Ajuste de segurança: verificar se caminho está livre até o receptor
-        if not Positioning_helper.is_path_clear(passer_pos, receiver_pos, opponents):
+        if not PositioningHelper.is_path_clear(passer_pos, receiver_pos, opponents):
             # Se caminho bloqueado, orientar receptor para bola diretamente (prioridade em receber)
             return angle_receive
 
@@ -761,53 +762,83 @@ class Positioning_helper:
 
     @staticmethod
     def are_pass_orientations_aligned(
-        passer_id: RobotID,
-        receiver_id: RobotID,
-        goal_pos: Pose2D,
-        opponents: List[Pose2D],
-        tolerance_deg: float = 10.0
+        passer_pose: Pose2D,
+        receiver_pose: Pose2D,
+        goal_pose: Pose2D,
+        tolerance: float = 0.15,
+    ) -> bool: ...
+
+    #     """
+    #     Verifica se tanto passador quanto receptor estão alinhados corretamente
+    #     para realizar o passe.
+    #     """
+    #     desired_receiver_angle = Positioning_helper.get_best_pass_orientation(
+    #         passer_pose, receiver_pose, goal_pose
+    #     )
+    #     desired_passer_angle = math.atan2(
+    #         receiver_pose.y - passer_pose.y, receiver_pose.x - passer_pose.x
+    #     )
+
+    #     angle_diff_passer = (desired_passer_angle - passer_pose.theta + math.pi) % (
+    #         2 * math.pi
+    #     ) - math.pi
+    #     angle_diff_receiver = (desired_receiver_angle - receiver_pose.theta + math.pi) % (
+    #         2 * math.pi
+    #     ) - math.pi
+
+    #     return abs(angle_diff_passer) <= tolerance and abs(angle_diff_receiver) <= tolerance
+
+    @staticmethod
+    def get_pass_alignment_angles(
+        passer_pose: Pose2D, receiver_pose: Pose2D, goal_pose: Pose2D
+    ) -> tuple[float, float]: ...
+
+    #     """
+    #     Retorna os ângulos desejados (passador, receptor) para alinhar o passe.
+    #     """
+    #     desired_receiver_angle = Positioning_helper.get_best_pass_orientation(
+    #         passer_pose, receiver_pose, goal_pose
+    #     )
+    #     desired_passer_angle = math.atan2(
+    #         receiver_pose.y - passer_pose.y, receiver_pose.x - passer_pose.x
+    #     )
+    #     return desired_passer_angle, desired_receiver_angle
+
+    # @staticmethod
+    # def normalize_angle(angle: float) -> float:
+    # @staticmethod
+    # def angle_difference(a: float, b: float) -> float:
+    # @staticmethod
+    # def is_angle_aligned(a: float, b: float, tolerance: float) -> bool:
+    # foram movidas para geometry_Helper
+
+    @staticmethod
+    def get_passer_orientation(passer_pose, receiver_pose) -> float:
+        """
+        Ângulo ideal do passador (apontando para o receptor).
+        """
+        return math.atan2(
+            receiver_pose.y - passer_pose.y, receiver_pose.x - passer_pose.x
+        )
+
+    @staticmethod
+    def get_rotation_command(
+        current_angle: float, desired_angle: float, tolerance: float
+    ) -> Optional[float]:
+        """
+        Retorna comando de rotação se necessário, senão None.
+        """
+        diff = GeometryHelper.angle_difference(desired_angle, current_angle)
+        if abs(diff) > tolerance:
+            return diff
+        return None
+
+    @staticmethod
+    def is_aligned_to_goal(
+        attacker_pose: Pose2D, desired_angle: float, tolerance: float = 0.15
     ) -> bool:
-        """
-        Verifica se passador e receptor estão orientados corretamente para o passe.
 
-        - Passador: deve estar orientado em direção ao receptor.
-        - Receptor: deve estar orientado segundo o melhor ângulo (receber + progressão).
-
-        :param passer_id: Robô que irá passar a bola.
-        :param receiver_id: Robô que irá receber a bola.
-        :param goal_pos: Posição do gol adversário.
-        :param opponents: Lista de posições dos adversários.
-        :param tolerance_deg: Tolerância angular em graus.
-        :return: True se ambos estiverem alinhados.
-        """
-        ws = World_State.get_object()
-
-        passer_pose = ws.get_team_robot_pose(passer_id.value)
-        receiver_pose = ws.get_team_robot_pose(receiver_id.value)
-
-        if passer_pose is None or receiver_pose is None:
+        if abs(attacker_pose.theta - desired_angle) <= tolerance:
+            return True
+        else:
             return False
-
-        # --- Passador deve olhar pro receptor ---
-        desired_passer_angle = math.atan2(
-            receiver_pose.y - passer_pose.y,
-            receiver_pose.x - passer_pose.x
-        )
-
-        # --- Receptor deve estar alinhado para receber + olhar pro gol ---
-        desired_receiver_angle = Positioning_helper.get_best_pass_orientation(
-            passer_pos=passer_pose,
-            receiver_pos=receiver_pose,
-            goal_pos=goal_pos,
-            opponents=opponents
-        )
-
-        tolerance_rad = math.radians(tolerance_deg)
-
-        def angle_diff(a, b):
-            return math.atan2(math.sin(a - b), math.cos(a - b))
-
-        passer_aligned = abs(angle_diff(desired_passer_angle, passer_pose.theta)) <= tolerance_rad
-        receiver_aligned = abs(angle_diff(desired_receiver_angle, receiver_pose.theta)) <= tolerance_rad
-
-        return passer_aligned and receiver_aligned
