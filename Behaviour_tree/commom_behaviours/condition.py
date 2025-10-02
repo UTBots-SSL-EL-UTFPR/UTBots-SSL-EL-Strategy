@@ -202,9 +202,8 @@ def update(self) -> py_trees.common.Status:
       attacker_id = self.attacker.robot_id.value   # Transforma de enum para int
       attacker_pose = _ws.get_team_robot_pose(attacker_id)
       goal_center = _pos_helper.get_goal_center()
-      x_goal = goal_center.x
     
-      if(vis_gol.max_range_of_visibility(obstacles_pose, attacker_pose, x_goal)):
+      if(vis_gol.max_range_of_visibility(obstacles_pose, attacker_pose, goal_center)):
           return py_trees.common.Status.SUCCESS
       return py_trees.common.Status.FAILURE
 
