@@ -37,7 +37,7 @@ class OffSupRepos(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def initialise(self) -> None:
-        self._last_update_time = 0.0
+        self._last_update_time = 0.1
 
     def update(self) -> py_trees.common.Status:
         """

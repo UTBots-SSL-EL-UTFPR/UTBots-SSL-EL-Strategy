@@ -36,7 +36,7 @@ class BobManager:
         self.trees: Dict[RobotID, Tree] = {}
         self.configuration = Configuration.getObject()
         self.world_state = World_State.get_object()
-        self.positioning_helper = Positioning_helper.get_object()
+        self.positioning_helper = PositioningHelper.get_object()
 
         self._create_bob(RobotID.Kamiji)
         self._create_bob(RobotID.Defender)
