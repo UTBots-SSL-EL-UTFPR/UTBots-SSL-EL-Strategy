@@ -1,7 +1,5 @@
 # kick subtree.py
 import py_trees
-
-import py_trees
 from Behaviour_tree.core.World_State import RobotID
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.bob_manager import BobManager
