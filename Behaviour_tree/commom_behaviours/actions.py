@@ -570,14 +570,13 @@ class Align_for_shoot(pt.behaviour.Behaviour):
     
       attacker_pose = self.attacker.state.position
       goal_pose = _pos_helper.get_goal_center()
-      x_goal = goal_pose.x
       obstacles_pose = _ws.get_all_robot_position()
 
-      max_angle_visibility_field, min_angle_visibility_field = vis_gol.limits_of_visibility(obstacles_pose, attacker_pose, x_goal)
+      max_angle_visibility_field, min_angle_visibility_field = vis_gol.limits_of_visibility(obstacles_pose, attacker_pose, goal_pose)
       # Esse angulo é dado em relacação ao eixo x+ quando x_gol>0 e x- quando x_gol<0
       visArea_center_rad = (max_angle_visibility_field + min_angle_visibility_field) / 2
      
-      if x_goal < 0 :
+      if goal_pose.x < 0 :
           visArea_center_rad = (visArea_center_rad + math.pi)*-1
 
       if hp.PositioningHelper.is_aligned_to_goal(
