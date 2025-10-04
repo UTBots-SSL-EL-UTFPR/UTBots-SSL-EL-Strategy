@@ -1,72 +1,90 @@
+# Behaviour_tree/trees/ofensive_sup/test_off_sup.py
 import logging
 import time
-import py_trees as pt
-import py_trees.display
-from utils.pose2D import Pose2D
-from Behaviour_tree.core.World_State import RobotID
+
 from Behaviour_tree.bob_manager import BobManager
-from Behaviour_tree.core.World_State import World_State
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
+from Behaviour_tree.core.World_State import RobotID, World_State
+from Behaviour_tree.robot.bob import Bob
+from utils.pose2D import Pose2D
 
-from .kick_subtree import KickTree
+from .kick_subtree import get_kick_subtree
 
-if __name__ == "__main__":
-    # Inicializações
-    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s | %(levelname)-8s | %(message)s")
-    logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(name)-12s | %(levelname)-8s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
+# ==============================================================================#
+# BLOCO DE TESTE                                                                #
+# ==============================================================================#
 
-    _bm = BobManager.get_object()
-    _ws = World_State.get_object()
+
+def create_bobs():
+    a = Bob(RobotID.Kamiji)
+    b = Bob(RobotID.Defender)
+    c = Bob(RobotID.Goalkeeper)
+    a.state.reset()
+    b.state.reset()
+    c.state.reset()
+    return a, b, c
+
+
+def create_scenario(all_bobs: list[Bob]):
+    bob_state = BobManager.get_object()
+    wd = World_State.get_object()
     _bb = Blackboard_Manager.get_instance()
+    # --- INICIALIZAR LEITURAS DA WORLD STATE --- #
+    delay = 2
+    t0 = time.time()
+    while time.time() <= delay + t0:
+        wd.update()
+    # --- BLOCO DE CRIACAO DE TESTES --- #
 
-    TICK_INTERVAL = 0.1
+    # teste 1. O robo deve chutar
+    # sub teste 1. O robo deve chutar se gol aberto
 
-    try:
-        attacker = _bm.get_bob(RobotID.Kamiji)
-        if attacker is None:
-            raise ValueError("Robôs de passe ou recebimento não encontrados")
-    except Exception as e:
-        logger.error(f"Erro ao obter robôs: {e}")
-        exit(1)
+    logger.info("Inicio simulacao")
+    print("-" * 100)
+    return
 
-    # Cria a sub árvore de chute
-    logger.info(f"Criando árvore de chute para o robô ID: {attacker.robot_id}")
-    kick_tree_builder = KickTree(robot_id = attacker.robot_id)
-    kick_root_node = kick_tree_builder.create_tree()
-    
-    attacker_tree = pt.trees.BehaviourTree(kick_root_node)
-    attacker_tree.setup(timeout=1.0)
 
-    # Condições iniciais do teste
-    logger.info("Configurando condições iniciais no Blackboard...")
-    _bb.set(BlackboardKeys.Values.Positions.BALL_POSITION, Pose2D(x=-1000, y=500))
-   
+def prints_e_logs(robot: Bob, others: list[Bob]):
 
-    attacker_id_name = attacker.robot_id.name
-    has_ball_key = f"{attacker_id_name}{BlackboardKeys.Flags.BallMotion.HAS_BALL}"
-    _bb.set(has_ball_key, True)
+    team_has_ball = _bb.get(BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL)
+    logger.info(f"time tem a bola? -- {team_has_ball}")
+    print("+++ ----------------------------- +++")
 
-    logger.info("Início do teste de CHUTE no grSim")
+    logger.info(f"ID -- {robot.robot_id.value}")
+    logger.info(f"POSITION -- {robot.state.position}")
 
-    # Loop principal da simulação
-    try:
-        while True:
-            start_time = time.time()
+    logger.info(f"TARGET -- {robot.state.target_position}")
+    logger.info(f"-- {robot.state.current_command}")
 
-            _ws.update()
-            _bm.update_all()
+    print("=" * 50)
 
-            # Executa um tick da árvore de comportamento do CHUTE NO GOL
-            attacker_tree.tick()
 
-            #print(py_trees.display.unicode_snapshot(root=attacker_tree.root))
-            # Aguarda o próximo tick
-            elapsed_time = time.time() - start_time
-            if elapsed_time < TICK_INTERVAL:
-                time.sleep(TICK_INTERVAL - elapsed_time)
+# EXECUTAR: python3 -m Behaviour_tree.commom_behaviours.sub_trees.test_kick
+if __name__ == "__main__":
+    bob_state = BobManager.get_object()
+    wd = World_State.get_object()
+    _bb = Blackboard_Manager.get_instance()
+    kamiji, defender, goalkeeper = create_bobs()
+    all_bobs = [kamiji, defender, goalkeeper]
+    kick_subtree = get_kick_subtree(defender)
 
-    except KeyboardInterrupt:
-        logger.info("Teste de CHUTE encerrado pelo usuário.")
-    
-    
+    create_scenario(all_bobs)
+    update_delay = 0.02
+    print_delay = 0.1
+    tPrint = time.time()
+    tUpdate = time.time()
+    while True:
+        if time.time() >= print_delay + tPrint:
+            # prints_e_logs(argenton, [kamiji, goalkeeper])
+            tPrint = time.time()
+        if time.time() >= update_delay + tUpdate:
+            wd.update()
+            kick_subtree.tick()
+            tUpdate = time.time()
