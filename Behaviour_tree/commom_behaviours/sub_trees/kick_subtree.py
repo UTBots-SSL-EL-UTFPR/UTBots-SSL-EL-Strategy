@@ -28,21 +28,21 @@ class KickTree :
 
     # CONDIÇÕES
         has_ball = condition_nodes.HasBall(robot=self.robot, name="Tem a bola")
-        goal_distance = condition_nodes.Goal_distance(robot=self.robot, name="Distancia Valida")
-        goal_visibility = condition_nodes.Goal_visibility(robot=self.robot, name="Ve o gol")
+        goal_visibility = condition_nodes.Goal_visibility(attacker=self.robot, name="Ve o gol")
+        goal_distance = condition_nodes.Goal_distance(attacker=self.robot, name="Distancia Valida")
         kick_conditions = py_trees.composites.Sequence(
             "Condicoes de chute",
              memory=True,
              children=[
                  has_ball,
-                 goal_distance,
-                 goal_visibility
+                 goal_visibility,
+                 goal_distance
                  ]
         )
 
     # AÇÕES
-        align_for_shoot = action_nodes.Align_for_shoot(robot=self.robot, name="Alinha com o gol")
-        shoot_to_goal = action_nodes.Shoot_to_goal(robot=self.robot, name="Chuta no gol")
+        align_for_shoot = action_nodes.Align_for_shoot(attacker=self.robot, name="Alinha com o gol")
+        shoot_to_goal = action_nodes.Shoot_to_goal(attacker=self.robot, name="Chuta no gol")
         kick_actions = py_trees.composites.Sequence(
             "Acoes de chute",
             memory=True,
@@ -61,7 +61,6 @@ class KickTree :
                 kick_actions
                 ]
         )
-
         return kick_subtree
     
 
