@@ -77,6 +77,7 @@ class BlackboardKeys:
             ZONE = "zone"
             POS_BALL_VISIBLE = "pos_ball_visible"
             POS_PASS_TARGET = "pos_pass_target"
+            BALL_POSITION = "ball_position"
 
 
 # ----------------------------------------------------------------------------#

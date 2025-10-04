@@ -222,25 +222,29 @@ class Goal_visibility(py_trees.behaviour.Behaviour):
       super().__init__(name)
       self.attacker = attacker
 
-def setup(self, **kwargs: Any) -> None:
+    def setup(self, **kwargs: Any) -> None:
       if self.attacker is None:
           raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
       return super().setup(**kwargs)
-def update(self) -> py_trees.common.Status:
+    def update(self) -> py_trees.common.Status:
       obstacles_pose = _ws.get_all_robot_position()
+      print(obstacles_pose)
       attacker_id = self.attacker.robot_id.value   # Transforma de enum para int
       attacker_pose = _ws.get_team_robot_pose(attacker_id)
+      print(attacker_pose)
+      obstacles_pose.remove(attacker_pose)
       goal_center = _pos_helper.get_goal_center()
     
       if(vis_gol.max_range_of_visibility(obstacles_pose, attacker_pose, goal_center)):
+          print("visibilidade = sucess")
           return py_trees.common.Status.SUCCESS
+      print("visibilidade = failure")
       return py_trees.common.Status.FAILURE
 
 
 
-
 class Goal_distance(py_trees.behaviour.Behaviour):
-  def __init__(
+    def __init__(
       self,
       attacker: Bob,
       name: str = "Goal_distance",
@@ -248,15 +252,14 @@ class Goal_distance(py_trees.behaviour.Behaviour):
       super().__init__(name)
       self.attacker = attacker
 
-def setup(self, **kwargs: Any) -> None:
+    def setup(self, **kwargs: Any) -> None:
       if self.attacker is None:
           raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
       return super().setup(**kwargs)
 
-def update(self) -> py_trees.common.Status:
-      attacker_id = self.attacker.robot_id.value   # Transforma de enum para int
+    def update(self) -> py_trees.common.Status:
+      attacker_id = self.attacker.robot_id.value
       attacker_pose = _ws.get_team_robot_pose(attacker_id)
-
       goal_center = _pos_helper.get_goal_center()
       x_goal = goal_center.x
 
