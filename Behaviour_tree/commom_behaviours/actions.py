@@ -70,6 +70,8 @@ class Move_node(pt.behaviour.Behaviour):
             raise RuntimeError(f"[{self.name}] 'robot' não definido no setup()")
         self.target_reached_key = f"{self.robot.robot_id.name}{BlackboardKeys.Flags.Navigation.TARGET_REACHED}"
 
+        self._bb.set(self.target_reached_key, False)
+
     def initialise(self) -> None:
         if self.robot is None or self.robot.state is None:
             return
@@ -93,7 +95,7 @@ class Move_node(pt.behaviour.Behaviour):
             return pt.common.Status.FAILURE
 
         if bool(self._bb.get(self.target_reached_key)):
-            logging.debug(f"{self.robot.robot_id} -> TARGET REACHED")
+            logging.debug(f"{self.name}-{self.robot.robot_id} SUCCESS")
             return pt.common.Status.SUCCESS
 
         if not getattr(self.robot.state, "target_position", None):
@@ -147,9 +149,7 @@ class Receive_pass(pt.behaviour.Behaviour):
         super().__init__(name=name)
         self.robot: Bob = robot
         self._bb = Blackboard_Manager.get_instance()
-
         self.receive_key: str
-        self.pos_pass_key: str = f"{BlackboardKeys.Values.Positions.POS_PASS_TARGET}"
 
     def setup(self, **kwargs) -> None:
         logger.debug(f"setup {self.name}")
@@ -158,6 +158,9 @@ class Receive_pass(pt.behaviour.Behaviour):
         self.receive_key = (
             f"{self.robot.robot_id.name}{BlackboardKeys.Flags.KickActions.TEAM_PASS}"
         )
+        self.pos_pass_key: str = f"{BlackboardKeys.Values.Positions.POS_PASS_TARGET}"
+        self._bb.set(self.receive_key, False)
+        self._bb.set(self.pos_pass_key, False)
 
     def initialise(self) -> None:
         pass
@@ -174,7 +177,7 @@ class Receive_pass(pt.behaviour.Behaviour):
 
         passe = self._bb.get(self.receive_key)
         if not passe:
-            logger.debug(f"{self.robot.robot_id} nao esta recebendo passe")
+            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
             return pt.common.Status.FAILURE
 
         target = self._bb.get(self.pos_pass_key)
@@ -189,7 +192,7 @@ class Receive_pass(pt.behaviour.Behaviour):
         self._bb.set(self.receive_key, False)
         self._bb.set(self.pos_pass_key, None)
 
-        logger.debug(f"indo pegar passe -> {pose_target}")
+        logger.debug(f"{self.name} - {self.robot.robot_id.name} - SUCCESS")
         self.robot.state.current_command = self.name
 
         return pt.common.Status.SUCCESS
@@ -209,6 +212,8 @@ class Rebound_position(pt.behaviour.Behaviour):
         logger.debug(f"setup {self.name}")
         if self.robot is None:
             raise RuntimeError(f"[{self.name}] 'robot' não definido no setup()")
+        self.team_kick_key = f"{BlackboardKeys.Flags.KickActions.TEAM_KICK}"
+        self._bb.set(self.team_kick_key, False)
 
     def initialise(self) -> None:
         pass
@@ -222,15 +227,15 @@ class Rebound_position(pt.behaviour.Behaviour):
         if self.robot is None or self.robot.state is None:
             logger.warning("robo NONE")
             return pt.common.Status.FAILURE
-        if not self._bb.get(f"{BlackboardKeys.Flags.KickActions.TEAM_KICK}"):
-            logger.debug("nao é team kick")
+        if not self._bb.get(self.team_kick_key):
+            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
             return pt.common.Status.FAILURE
 
         target_pose = hp.PositioningHelper.calculate_rebound_position(
             self.robot.state.position
         )
         self.robot.adicionar_ponto_trajetoria(target_pose)
-        logger.debug(f"indo rebotar -> {target_pose}")
+        logger.debug(f"{self.name} - {self.robot.robot_id.name} - SUCCESS")
         self.robot.state.current_command = self.name
 
         return pt.common.Status.SUCCESS
@@ -253,18 +258,20 @@ class RecuperarBola(py_trees.behaviour.Behaviour):
 
     def setup(self, **kwargs) -> None:
         logger.debug(f"setup {self.name}")
+        self._bb.set(self.team_has_ball, False)
+
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
         """vai atras da bola"""
         if not self._bb.get(self.team_has_ball):
-            logger.debug("estamos com a bola")
+            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
             return py_trees.common.Status.FAILURE
         self.robot.state.target_position = (
             hp.StrategyHelper.get_ball_recovery_position()
         )
         self.robot.state.current_command = self.name
-
+        logger.debug(f"{self.name} - {self.robot.robot_id.name} - SUCCESS")
         return py_trees.common.Status.SUCCESS
 
 

@@ -12,7 +12,7 @@ from utils.pose2D import Pose2D
 from .offensive_suport_tree import get_off_sup_tree
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s | %(name)-12s | %(levelname)-8s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
@@ -76,6 +76,9 @@ def prints_e_logs(robot: Bob, others: list[Bob]):
 
     logger.info(f"TARGET -- {robot.state.target_position}")
     logger.info(f"-- {robot.state.current_command}")
+    logger.info(
+        f"{_bb.get(BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL)} team has ball"
+    )
 
     print("=" * 50)
 
@@ -90,13 +93,13 @@ if __name__ == "__main__":
     off_sup_subtree = get_off_sup_tree(argenton)
 
     create_scenario(all_bobs)
-    update_delay = 0.02
-    print_delay = 0.1
+    update_delay = 1
+    print_delay = 0.5
     tPrint = time.time()
     tUpdate = time.time()
     while True:
         if time.time() >= print_delay + tPrint:
-            # prints_e_logs(argenton, [kamiji, goalkeeper])
+            #prints_e_logs(argenton, [kamiji, goalkeeper])
             tPrint = time.time()
         if time.time() >= update_delay + tUpdate:
             wd.update()

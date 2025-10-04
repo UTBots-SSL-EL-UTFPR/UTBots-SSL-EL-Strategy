@@ -46,7 +46,7 @@ class OffSupRepos(py_trees.behaviour.Behaviour):
         current_time = time.time()
 
         if (current_time - self._last_update_time) > self.delta_t:
-            logger.debug(f"Atualizando posição ({self.name})")
+            logger.debug(f"{self.name} - Atualizando posição ({self.name})")
             new_path = StrategyHelper.set_offensive_suport_position(
                 self.robot.state.position
             )
@@ -54,7 +54,9 @@ class OffSupRepos(py_trees.behaviour.Behaviour):
             self.last_target = new_path[-1]
             self._last_update_time = current_time
         else:
-            logger.debug(f"usando pos antiga, Aguardando {self.delta_t:.1f}s...")
+            logger.debug(
+                f"{self.name} usando pos antiga, Aguardando {self.delta_t:.1f}"
+            )
             self.robot.set_new_target(self.last_target)
         self.robot.state.current_command = self.name
         return py_trees.common.Status.SUCCESS
