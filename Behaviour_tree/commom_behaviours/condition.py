@@ -45,9 +45,10 @@ class TeamHasBall(py_trees.behaviour.Behaviour):
     def update(self) -> py_trees.common.Status:
         if _bb.get(f"{BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL}"):
             logger.debug("time nao tem a posse de bola")
-
+            print("tem bola = success")
             return py_trees.common.Status.SUCCESS
         logger.debug("time possui a bola")
+        print("tem bola = failure")
         return py_trees.common.Status.FAILURE
 
 
@@ -198,10 +199,8 @@ class Goal_visibility(py_trees.behaviour.Behaviour):
       return super().setup(**kwargs)
     def update(self) -> py_trees.common.Status:
       obstacles_pose = _ws.get_all_robot_position()
-      print(obstacles_pose)
       attacker_id = self.attacker.robot_id.value   # Transforma de enum para int
       attacker_pose = _ws.get_team_robot_pose(attacker_id)
-      print(attacker_pose)
       obstacles_pose.remove(attacker_pose)
       goal_center = _pos_helper.get_goal_center()
     
@@ -230,11 +229,14 @@ class Goal_distance(py_trees.behaviour.Behaviour):
     def update(self) -> py_trees.common.Status:
       attacker_id = self.attacker.robot_id.value
       attacker_pose = _ws.get_team_robot_pose(attacker_id)
+      print(attacker_pose)
       goal_center = _pos_helper.get_goal_center()
       x_goal = goal_center.x
 
       distance_to_goal = attacker_pose.distance_to(Pose2D(x_goal, goal_center.y))
       if(distance_to_goal <= MAX_SHOOT_DISTANCE):
+          print("distancia = success")
           return py_trees.common.Status.SUCCESS
+      print("distancia = failure")
       return py_trees.common.Status.FAILURE
 
