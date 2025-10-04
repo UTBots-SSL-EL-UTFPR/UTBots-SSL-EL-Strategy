@@ -231,7 +231,6 @@ class Goal_distance(py_trees.behaviour.Behaviour):
     def update(self) -> py_trees.common.Status:
       attacker_id = self.attacker.robot_id.value
       attacker_pose = _ws.get_team_robot_pose(attacker_id)
-      print(attacker_pose)
       goal_center = _pos_helper.get_goal_center()
       x_goal = goal_center.x
 

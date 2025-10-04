@@ -19,7 +19,7 @@ def get_kick_subtree(robot: Bob) -> py_trees.trees.BehaviourTree:
     kick_subtree = py_trees.composites.Sequence(
         "chutar no gol",
         True,
-        children=[posse_aliada, visibilidade_gol, distancia_gol, alinhar_com_gol, chutar_gol],
+        children=[visibilidade_gol, distancia_gol, posse_aliada, alinhar_com_gol, chutar_gol],
     )
 
     kick_root = py_trees.trees.BehaviourTree(kick_subtree)
