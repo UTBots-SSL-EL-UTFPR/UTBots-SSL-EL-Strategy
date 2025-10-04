@@ -447,7 +447,7 @@ class Align_for_pass(pt.behaviour.Behaviour):
 # --------------------------------------------------------------------------------------- #
 
 class Align_for_shoot(pt.behaviour.Behaviour):
-  def __init__(
+    def __init__(
       self,
       attacker: Bob,
       name: str = "Align_for_shoot",
@@ -459,18 +459,18 @@ class Align_for_shoot(pt.behaviour.Behaviour):
       self.tolerance = tolerance
 
 
-  def setup(self, **kwargs):
+    def setup(self, **kwargs):
       if self.attacker is None:
           raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
       return super().setup(**kwargs)
 
 
-  def initialise(self):
+    def initialise(self):
       self.bb.set(f"{self.attacker.robot_id.name}_team_kick", True)
       self.bb.set(f"{self.attacker.robot_id.name}_cmd_rotation", 0.0)
 
 
-  def update(self) -> pt.common.Status:
+    def update(self) -> pt.common.Status:
       if (
           self.attacker is None
           or self.attacker.state is None
@@ -480,6 +480,8 @@ class Align_for_shoot(pt.behaviour.Behaviour):
       attacker_pose = self.attacker.state.position
       goal_pose = _pos_helper.get_goal_center()
       obstacles_pose = _ws.get_all_robot_position()
+      obstacles_pose.remove(obstacles_pose)
+      print(obstacles_pose)
 
       max_angle_visibility_field, min_angle_visibility_field = vis_gol.limits_of_visibility(obstacles_pose, attacker_pose, goal_pose)
       # Esse angulo é dado em relacação ao eixo x+ quando x_gol>0 e x- quando x_gol<0
@@ -503,13 +505,13 @@ class Align_for_shoot(pt.behaviour.Behaviour):
           return pt.common.Status.RUNNING
 
 
-  def terminate(self, new_status: pt.common.Status):
+    def terminate(self, new_status: pt.common.Status):
       self.bb.set(f"{self.attacker.robot_id.name}_cmd_rotation", 0.0)
 
 
 
 class Shoot_to_goal(pt.behaviour.Behaviour):
-  def __init__(
+    def __init__(
       self,
       attacker: Bob,
       name: str = "Shoot_to_goal",
@@ -519,17 +521,13 @@ class Shoot_to_goal(pt.behaviour.Behaviour):
       self.bb = Blackboard_Manager.get_instance()
 
 
-  def setup(self, **kwargs):
+    def setup(self, **kwargs):
       if self.attacker is None:
           raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
       return super().setup(**kwargs)
 
 
-  def initialise(self):
-      self.bb.set(f"{self.attacker.robot_id.name}_cmd_rotation", 0.0)
-
-
-  def update(self) -> pt.common.Status:
+    def update(self) -> pt.common.Status:
       if (
           self.attacker is None
           or self.attacker.state is None
@@ -545,5 +543,5 @@ class Shoot_to_goal(pt.behaviour.Behaviour):
           return pt.common.Status.SUCCESS
      
      
-  def terminate(self, new_status: pt.common.Status):
+    def terminate(self, new_status: pt.common.Status):
       self.bb.set(f"{self.attacker.robot_id.name}_team_kick", False)

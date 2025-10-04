@@ -72,7 +72,7 @@ que partem de (x0, y0) e passam por (xr, yr) cruzam o gol.
 return _type_: list
 """
 def calc_visible_bobs(
-   x0, y0, obstacles_coord, goal_pose, theta_max, theta_min
+   x0, y0, obstacles_coord, gol_center, theta_max, theta_min
 ):
    x_gol = gol_center.x
    y_golMax =  gol_center.y + GOAL_LENGHT / 2
@@ -150,7 +150,7 @@ def limits_of_visibility(obstacles: list[Pose2D], p0: Pose2D, gol_center: Pose2D
 
 
    visible_bobs = calc_visible_bobs(
-       x0, y0, obstacles, x_gol, theta_max, theta_min
+       x0, y0, obstacles, gol_center, theta_max, theta_min
    )
    removePontosCegos(visible_bobs)
    visible_bobs.sort(
@@ -182,7 +182,7 @@ def max_range_of_visibility(obstacles: list[Pose2D], p0: Pose2D, gol_center: Pos
 
 # Teste
 
-
+'''
 if __name__ == "__main__":
     obstacles = [(Pose2D)(600, 0), (Pose2D)(1600, 100), (Pose2D)(-1000, 0), (Pose2D)(1400, -200)]
     obstacles = [(1400, 100)]
@@ -193,3 +193,4 @@ if __name__ == "__main__":
     print(math.degrees(fim))
     angle = (limits_of_visibility(obstacles, p0, gol_center))
     print(angle)
+'''
