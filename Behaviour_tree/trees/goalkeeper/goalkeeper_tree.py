@@ -15,7 +15,7 @@ from Behaviour_tree.bob_manager import BobManager
 from Behaviour_tree.core import event_callbacks as callbacks
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
-from Behaviour_tree.core.World_State import RobotID, World_State
+from Behaviour_tree.core.World_State import TeamID, World_State
 
 navigation_flags = BlackboardKeys.Flags.motion.navigation
 positions = BlackboardKeys.Values.Positions

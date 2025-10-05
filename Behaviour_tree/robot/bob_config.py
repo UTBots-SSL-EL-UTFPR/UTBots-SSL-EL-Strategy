@@ -1,5 +1,7 @@
 # bob_config.py
-from ..core.World_State import RobotID
+from ..core.World_State import TeamID
+
+
 class Bob_Config:
     """
     Classe que representa as configurações fixas de um robô.
@@ -10,22 +12,15 @@ class Bob_Config:
     :param robot_id: Identificador único do robô
     """
 
-    def __init__(self, robot_id: RobotID):
+    def __init__(self, robot_id: TeamID):
         self.robot_id = robot_id
 
-        self.dimensions = {
-            "radius": 0.18,
-            "height": 0.15
-        }
+        self.dimensions = {"radius": 0.18, "height": 0.15}
         self.max_speed = 2.0  #: Velocidade máxima (m/s)
-        self.kick_power = 5.0 #: Potência de chute
-        self.pid_gains = {
-            "kp": 1.0,
-            "ki": 0.0,
-            "kd": 0.1
-        }
-        self.role = "attacker"  
-        
+        self.kick_power = 5.0  #: Potência de chute
+        self.pid_gains = {"kp": 1.0, "ki": 0.0, "kd": 0.1}
+        self.role = "attacker"
+
     def get_dimensions(self):
         return self.dimensions
 

@@ -1,24 +1,30 @@
 from enum import Enum
 from time import time
-from utils.pose2D import Pose2D
-from SSL_configuration.configuration import Configuration
 
-from communication.receiver.vision_receiver import VisionReceiver
-from communication.receiver.referee_receiver import RefereeReceiver
-from communication.parsers.vision_parser import VisionParser
-from communication.parsers.referee_parser import RefereeParser
 from Behaviour_tree.core.field_state import FieldState
-
-from communication.generated import ssl_vision_wrapper_pb2 as vision_pb
 from communication.generated import ssl_gc_referee_message_pb2 as referee_pb
+from communication.generated import ssl_vision_wrapper_pb2 as vision_pb
+from communication.parsers.referee_parser import RefereeParser
+from communication.parsers.vision_parser import VisionParser
+from communication.receiver.referee_receiver import RefereeReceiver
+from communication.receiver.vision_receiver import VisionReceiver
+from SSL_configuration.configuration import Configuration
+from utils.pose2D import Pose2D
+
 
 # =====================================================
 # Enum de IDs de robôs
 # =====================================================
-class RobotID(Enum):
+class TeamID(Enum):
     Kamiji = 0
-    Defender = 1 
-    Goalkeeper = 2
+    Argenton = 1
+    SabKawa = 2
+
+
+class FoesID(Enum):
+    Bia = 0
+    Isadora = 1
+    Giovanna = 2
 
 
 class World_State:
@@ -34,15 +40,15 @@ class World_State:
             self.field = FieldState()
         except KeyError as e:
             print(e)
-            
-        self.referee_data: referee_pb.Referee = None # type: ignore
+
+        self.referee_data: referee_pb.Referee = None  # type: ignore
         self.vision_data: dict = {}
 
         # Dados granulares
         self._robot_positions = {"blue": {}, "yellow": {}}
         self._robot_velocities = {"blue": {}, "yellow": {}}
         self._robot_orientations = {"blue": {}, "yellow": {}}
-        self._ball_position: tuple['float','float'] = (0,0)
+        self._ball_position: tuple["float", "float"] = (0, 0)
         self.last_camera_frames = {}
 
         self._initialized = True
@@ -87,7 +93,7 @@ class World_State:
         self.last_camera_frames[camera_id] = {
             "frame_number": frame_number,
             "t_capture": t_capture,
-            "t_sent": t_sent
+            "t_sent": t_sent,
         }
 
         # Robôs
@@ -102,15 +108,23 @@ class World_State:
         for bot in detection.get("robots_blue", []):
             rid = bot["robot_id"]
             self._robot_positions["blue"][rid] = (bot.get("x", 0.0), bot.get("y", 0.0))
-            self._robot_velocities["blue"][rid] = (bot.get("vx", 0.0), bot.get("vy", 0.0))
+            self._robot_velocities["blue"][rid] = (
+                bot.get("vx", 0.0),
+                bot.get("vy", 0.0),
+            )
             self._robot_orientations["blue"][rid] = bot.get("orientation", 0.0)
 
         for bot in detection.get("robots_yellow", []):
             rid = bot["robot_id"]
-            self._robot_positions["yellow"][rid] = (bot.get("x", 0.0), bot.get("y", 0.0))
-            self._robot_velocities["yellow"][rid] = (bot.get("vx", 0.0), bot.get("vy", 0.0))
+            self._robot_positions["yellow"][rid] = (
+                bot.get("x", 0.0),
+                bot.get("y", 0.0),
+            )
+            self._robot_velocities["yellow"][rid] = (
+                bot.get("vx", 0.0),
+                bot.get("vy", 0.0),
+            )
             self._robot_orientations["yellow"][rid] = bot.get("orientation", 0.0)
-
 
     def get_referee_data(self):
         return self.referee_data
@@ -121,8 +135,8 @@ class World_State:
     def get_ball_position(self):
         position = self._ball_position
         return Pose2D(int(position[0]), int(position[1]))
-    
-    #team
+
+    # team
     def get_team_robot_pose(self, robot_id: int) -> Pose2D | None:
         team_color = self.configuration.team_collor
         if not team_color:
@@ -142,8 +156,8 @@ class World_State:
         vx, vy = self._robot_velocities[team_color][robot_id]
         theta = self._robot_orientations[team_color][robot_id]
         return Pose2D(int(vx), int(vy), theta)
-    
-    #foes
+
+    # foes
     def get_foe_robot_pose(self, robot_id: int) -> Pose2D | None:
         foes_collor = self.configuration.foes_collor
         if not foes_collor:
@@ -164,27 +178,25 @@ class World_State:
         vx, vy = self._robot_velocities[foes_collor][robot_id]
         theta = self._robot_orientations[foes_collor][robot_id]
         return Pose2D(int(vx), int(vy), theta)
-    
 
     def get_all_foes_position(self):
-        robots :list[Pose2D] = []
+        robots: list[Pose2D] = []
         for id in self.configuration.foes_id:
             pos = self.get_foe_robot_pose(int(id))
             if pos:
-                robots.append(pos) 
+                robots.append(pos)
         return robots
-    
+
     def get_all_team_position(self):
-        robots :list[Pose2D] = []
-        for id in RobotID:
+        robots: list[Pose2D] = []
+        for id in TeamID:
             pos = self.get_team_robot_pose(id.value)
             if pos:
-                robots.append(pos)  
+                robots.append(pos)
         return robots
 
     def get_all_robot_position(self):
-        robots :list[Pose2D] = []
+        robots: list[Pose2D] = []
         robots.extend(self.get_all_foes_position())
         robots.extend(self.get_all_team_position())
         return robots
-

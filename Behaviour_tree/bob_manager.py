@@ -12,7 +12,7 @@ from SSL_configuration.configuration import Configuration
 from utils.defines import BALL_RADIUS, FIELD_INVERTED_SIDE, ROBOT_RADIUS
 from utils.pose2D import Pose2D, QuadrantType, RoleType
 
-from .core.World_State import RobotID, World_State
+from .core.World_State import TeamID, World_State
 from .robot.bob import Bob
 
 
@@ -23,16 +23,16 @@ class BobManager:
     """
 
     def __init__(self):
-        self.bobs: Dict[RobotID, Bob] = {}
+        self.bobs: Dict[TeamID, Bob] = {}
 
-        self.trees: Dict[RobotID, Tree] = {}
+        self.trees: Dict[TeamID, Tree] = {}
         self.configuration = Configuration.getObject()
         self.world_state = World_State.get_object()
         self.positioning_helper = PositioningHelper.get_object()
 
-        self._create_bob(RobotID.Kamiji)
-        self._create_bob(RobotID.Defender)
-        self._create_bob(RobotID.Goalkeeper)
+        self._create_bob(TeamID.Kamiji)
+        self._create_bob(TeamID.Argenton)
+        self._create_bob(TeamID.SabKawa)
 
         self.ball_pos = Pose2D()
 
@@ -51,7 +51,7 @@ class BobManager:
             tree (Tree): Classe da árvore associada.
         """
         bob = Bob(robot_id=robot_id)
-        #bob.state.reset()
+        # bob.state.reset()
         self.bobs[robot_id] = bob
         # self.trees[robot_id] = tree(bob)
 
@@ -76,7 +76,7 @@ class BobManager:
     #               Posicionamento          #
     # ---------------------------------------#
 
-    def set_kicker_position(self, id: RobotID):
+    def set_kicker_position(self, id: TeamID):
         robot = self.bobs.get(id)
         if robot is None or robot.state is None:
             return
@@ -101,7 +101,7 @@ class BobManager:
     # ------------------------------------------------------------------------------------------------------------------------------------------------------------------#
     # ------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
-    def set_midlle_suport_position(self, id: RobotID, main_suport_pose: Pose2D):
+    def set_midlle_suport_position(self, id: TeamID, main_suport_pose: Pose2D):
         """
         Posiciona o robô de "suporte do meio".
 
@@ -156,7 +156,7 @@ class BobManager:
 
         return target_pose
 
-    def set_goalkeeper_position(self, id: RobotID):
+    def set_goalkeeper_position(self, id: TeamID):
         robot = self.bobs.get(id)
         if robot is None or robot.state is None:
             return None
@@ -175,7 +175,7 @@ class BobManager:
         robot.set_path(new_path)
         robot.state.role = RoleType.OFFENSIVE_SUPPORT
 
-    def set_goalkeeper_defense_position(self, id: RobotID):
+    def set_goalkeeper_defense_position(self, id: TeamID):
         """Posiciona o goleiro para defender com base na posição atual da bola.
 
         Estratégia:
