@@ -22,9 +22,9 @@ class TeamID(Enum):
 
 
 class FoesID(Enum):
-    Bia = 0
-    Isadora = 1
-    Giovanna = 2
+    TauraBots = 0
+    GralhaBots = 1
+    Cerberus = 2
 
 
 class World_State:
