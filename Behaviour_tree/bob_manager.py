@@ -7,8 +7,13 @@ from Behaviour_tree.trees.tree import Tree
 from .robot.bob import Bob
 
 from typing import Dict
-from utils.pose2D import Pose2D , RoleType , ZoneType , QuadrantType
-from utils.defines import BALL_RADIUS,FIELD_INVERTED_SIDE,ROBOT_RADIUS
+from utils.pose2D import Pose2D, RoleType, ZoneType, QuadrantType
+from utils.defines import (
+    #BOB_RADIUS,
+    BALL_RADIUS,
+    MIN_PASS_DISTANCE,
+    FIELD_INVERTED_SIDE,
+)
 from .core.World_State import World_State
 from .core.World_State import TeamID
 from SSL_configuration.configuration import Configuration
