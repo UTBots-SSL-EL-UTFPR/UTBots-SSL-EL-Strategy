@@ -44,6 +44,8 @@ class TeamHasBall(py_trees.behaviour.Behaviour):
 
     def update(self) -> py_trees.common.Status:
         if _bb.get(f"{BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL}"):
+            logger.debug("time nao tem a posse de bola")
+            print("tem bola = success")
             logger.debug(f"{self.name} - SUCCESS")
             return py_trees.common.Status.SUCCESS
         logger.debug(f"{self.name} - FAILURE")
