@@ -1,7 +1,7 @@
 # tests/test_bob_manager.py
 
-import sys
 import os
+import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -17,7 +17,7 @@ def test_bob_manager_initialization():
     """
     manager = BobManager()
 
-    for robot_id in [RobotID.Kamiji, RobotID.Defender, RobotID.Goalkeeper]:
+    for robot_id in [RobotID.Kamiji, RobotID.Defender, RobotID.SabKawa]:
         assert robot_id in manager.bobs
         assert isinstance(manager.get_bob(robot_id), Bob)
         assert robot_id in manager.trees

@@ -6,7 +6,7 @@ from py_trees.common import Status
 
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
-from Behaviour_tree.core.World_State import RobotID
+from Behaviour_tree.core.World_State import TeamID
 from Behaviour_tree.core.World_State import World_State
 from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from Behaviour_tree.robot.bob import Bob
