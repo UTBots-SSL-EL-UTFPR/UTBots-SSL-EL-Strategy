@@ -7,22 +7,17 @@ from Behaviour_tree.trees.tree import Tree
 from .robot.bob import Bob
 
 from typing import Dict
-from utils.pose2D import Pose2D
+from utils.pose2D import Pose2D, RoleType, ZoneType, QuadrantType
 from utils.defines import (
-    RoleType,
-    ZoneType,
-    QuadrantType,
-    BOB_RADIUS,
+    #BOB_RADIUS,
     BALL_RADIUS,
+    MIN_PASS_DISTANCE,
     FIELD_INVERTED_SIDE,
-    FIELD_X_MIN,
-    FIELD_X_MAX,
 )
 from .core.World_State import World_State
 from .core.World_State import RobotID
 from SSL_configuration.configuration import Configuration
 import math
-from .positioning.positioning_helper import Positioning_helper, MIN_PASS_DISTANCE, HALF_LEGHT
 
 class BobManager:
     _instance = None

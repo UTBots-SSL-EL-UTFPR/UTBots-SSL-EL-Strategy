@@ -1,7 +1,8 @@
 import math
 from dataclasses import dataclass
 from math import sqrt
-from typing import Iterable, List, Optional, Tuple, Optional
+from typing import Iterable, List, Optional, Tuple
+from utils.pose2D import Quadrant, QuadrantType, ZoneType
 
 from SSL_configuration.configuration import Configuration
 from utils import defines
