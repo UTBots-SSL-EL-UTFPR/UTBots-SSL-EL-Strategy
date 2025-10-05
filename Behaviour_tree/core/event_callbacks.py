@@ -108,16 +108,12 @@ def lost_ball_posetion(robot_id: str):
     for i in TeamID:
         if _bb.get(f"{i.name}{BlackboardKeys.Flags.BallMotion.HAS_BALL}"):
             aux = True
-    
+
     if not aux:
         _bb.set(
             f"{BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL}",
             False,
         )
-    _bb.set(
-        f"{BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL}",
-        False,
-    )
 
 
 def foes_got_ball_posetion(robot_id: str):
@@ -131,6 +127,16 @@ def foes_got_ball_posetion(robot_id: str):
     _bb.set(
         f"{BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL}",
         True,
+    )
+
+
+def foes_lost_ball_posetion(robot_id: str):
+    logger.debug("FOES got ball posetion")
+
+    _bb.set(f"{robot_id}{BlackboardKeys.Flags.BallMotion.HAS_BALL}", False)
+    _bb.set(
+        f"{BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL}",
+        False,
     )
 
 
@@ -173,6 +179,7 @@ def on_ball_not_visible(robot_id, best_position):
 
 
 def on_target_reached(robot_id):
+    logger.debug(f"{robot_id} - {BlackboardKeys.Flags.Navigation.TARGET_REACHED}")
     _bb.set(f"{robot_id}{BlackboardKeys.Flags.Navigation.TARGET_REACHED}", True)
 
 

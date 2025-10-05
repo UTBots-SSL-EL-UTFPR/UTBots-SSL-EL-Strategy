@@ -4,6 +4,11 @@ from Behaviour_tree.helpers.field_helper import FIELD_X_MAX, FIELD_X_MIN, HALF_L
 from Behaviour_tree.helpers.motion_helper import MotionHelper
 from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from Behaviour_tree.trees.tree import Tree
+from SSL_configuration.configuration import Configuration
+from utils.defines import BALL_RADIUS, FIELD_INVERTED_SIDE, ROBOT_RADIUS
+from utils.pose2D import Pose2D, QuadrantType, RoleType
+
+from .core.World_State import TeamID, World_State
 from .robot.bob import Bob
 
 from typing import Dict
@@ -28,7 +33,7 @@ class BobManager:
 
     def __init__(self):
         self.bobs: Dict[TeamID, Bob] = {}
-        
+
         self.trees: Dict[TeamID, Tree] = {}
         self.configuration = Configuration.getObject()
         self.world_state = World_State.get_object()
@@ -55,7 +60,7 @@ class BobManager:
             tree (Tree): Classe da árvore associada.
         """
         bob = Bob(robot_id=robot_id)
-        #bob.state.reset()
+        # bob.state.reset()
         self.bobs[robot_id] = bob
         #self.trees[robot_id] = tree(bob)
 

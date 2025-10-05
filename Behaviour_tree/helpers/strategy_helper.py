@@ -24,7 +24,7 @@ class StrategyHelper:
     @classmethod
     def get_press_oponent_position(cls):
         ball_position = cls._ws.get_ball_position()
-        goal_position = FieldHelper.get_goal_center()
+        goal_position = FieldHelper.get_enemy_goal_center()
         return GeometryHelper.calculate_point_on_line(
             ball_position, goal_position, DISTANCE_PRESS_OPPONENT
         )
@@ -32,7 +32,8 @@ class StrategyHelper:
     @classmethod
     def get_ball_recovery_position(cls):
         ball_position = cls._ws.get_ball_position()
-        goal_position = FieldHelper.get_goal_center()
+        
+        goal_position = FieldHelper.get_enemy_goal_center()
         return GeometryHelper.calculate_point_on_line(
             goal_position, ball_position, DISTANCE_PRESS_OPPONENT
         )
@@ -46,7 +47,7 @@ class StrategyHelper:
         robot_pos = robot_position
 
         opponents = cls._ws.get_all_foes_position()
-        goal_center = FieldHelper.get_goal_center()
+        goal_center = FieldHelper.get_out_goal()
         ball_pos = cls._ws.get_ball_position()
         target_pose = robot_pos
         free_quadrants_enums = PositioningHelper.get_atack_quadrant_free(100)
@@ -86,7 +87,6 @@ class StrategyHelper:
             ]
         for priority_quad in priority_order:
             if priority_quad in found_squares:
-
                 chosen_square = found_squares[priority_quad]
 
                 safest_point = PositioningHelper.find_safest_point_in_square(
@@ -102,6 +102,7 @@ class StrategyHelper:
                         Pose2D._clamp(safest_point.y, -1300, 1300),
                     )
                     break
+        print(robot_pos)
 
         return cls.get_Robot_path(target_pose, robot_pos, ball_pos)
 

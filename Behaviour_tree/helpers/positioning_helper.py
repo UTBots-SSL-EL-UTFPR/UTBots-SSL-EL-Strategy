@@ -481,7 +481,6 @@ class PositioningHelper:
             if min_dist_to_opponent > max_safety_distance:
                 max_safety_distance = min_dist_to_opponent
                 safest_point = point
-
         return safest_point
 
     @staticmethod

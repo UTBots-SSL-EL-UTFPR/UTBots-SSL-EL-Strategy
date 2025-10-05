@@ -83,26 +83,29 @@ class Bob_State:
                     event_callbacks.new_zone(self.robot_id.name, new_pos.zone)
             self.position = new_pos
 
-        if self.position_rept >= 15:
+        if self.position_rept >= 500:
             self.position_rept = 0
             event_callbacks.on_robot_stuck(self.robot_id.name)
 
     def target_reached(self):
-        if not self.path or len(self.path) <= 0:
+        """
+        Verifica se o robô alcançou o alvo atual no caminho.
+        Se o alvo for o último do percurso, limpa o caminho e sinaliza o evento.
+        Caso contrário, avança para o próximo alvo do caminho.
+        """
+        if not self.path:
             return
-        self.target_position = self.path[self.path_index]
 
+        self.target_position = self.path[self.path_index]
         if self.target_position.is_in_range(
             self.position, self.configuration.threshould_arrived_target
         ):
-            self.path_index += 1
-
-            if self.path_index >= len(self.path):
-                self.path_index = 0
+            if self.path_index >= len(self.path) - 1:
                 self.path.clear()
+                self.path_index = 0
                 event_callbacks.on_target_reached(self.robot_id.name)
             else:
-                self.target_position = self.path[self.path_index]
+                self.path_index += 1
 
     def is_visible_from_ball(self):
         visible, best_position = PositioningHelper.get_clear_pass_position(

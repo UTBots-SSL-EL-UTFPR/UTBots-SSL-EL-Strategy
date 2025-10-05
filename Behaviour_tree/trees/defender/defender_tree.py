@@ -1,13 +1,15 @@
 import py_trees
+
+from Behaviour_tree.core.blackboard import Blackboard_Manager
+from Behaviour_tree.core.World_State import TeamID
+
+from ..defender.defender_actions import DefenderActions
 from ..defender.defender_conditions import (
     Ball_in_defensive_area,
-    Opponent_in_danger_zone,
-    Opponent_has_ball_in_danger_zone,
     Ball_moving_towards_goal,
+    Opponent_has_ball_in_danger_zone,
+    Opponent_in_danger_zone,
 )
-from ..defender.defender_actions import DefenderActions
-from Behaviour_tree.core.World_State import RobotID
-from Behaviour_tree.core.blackboard import Blackboard_Manager
 
 
 class DefenderTree:
@@ -15,10 +17,12 @@ class DefenderTree:
     Árvore de comportamento para o defensor.
     """
 
-    def __init__(self, robot_id: RobotID):
+    def __init__(self, robot_id: TeamID):
         self.robot_id = robot_id
         self.blackboard = Blackboard_Manager.get_instance()
-        self.defender_actions = DefenderActions(name="DefenderActions", blackboard=self.blackboard)
+        self.defender_actions = DefenderActions(
+            name="DefenderActions", blackboard=self.blackboard
+        )
 
     def create_tree(self) -> py_trees.behaviour.Behaviour:
         """
@@ -30,9 +34,15 @@ class DefenderTree:
         # ---------------------------------------------------------------------#
 
         ball_in_defensive_area = Ball_in_defensive_area(name="Ball in Defensive Area")
-        opponent_in_danger_zone = Opponent_in_danger_zone(name="Opponent in Danger Zone")
-        opponent_has_ball_in_danger_zone = Opponent_has_ball_in_danger_zone(name="Opponent Has Ball in Danger Zone")
-        ball_moving_towards_goal = Ball_moving_towards_goal(name="Ball Moving Towards Goal")
+        opponent_in_danger_zone = Opponent_in_danger_zone(
+            name="Opponent in Danger Zone"
+        )
+        opponent_has_ball_in_danger_zone = Opponent_has_ball_in_danger_zone(
+            name="Opponent Has Ball in Danger Zone"
+        )
+        ball_moving_towards_goal = Ball_moving_towards_goal(
+            name="Ball Moving Towards Goal"
+        )
 
         # ---------------------------------------------------------------------#
         #                          AÇÕES                                       #
@@ -101,7 +111,7 @@ class DefenderTree:
 if __name__ == "__main__":
     import py_trees.display
 
-    robot_id = RobotID.Defender
+    robot_id = TeamID.Argenton
     defender_tree = DefenderTree(robot_id=robot_id)
 
     tree = defender_tree.create_tree()

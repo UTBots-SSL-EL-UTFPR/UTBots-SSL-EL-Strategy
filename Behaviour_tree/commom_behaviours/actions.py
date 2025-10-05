@@ -88,9 +88,12 @@ class Move_node(pt.behaviour.Behaviour):
         self._t0 = time.time()
         self._last_move_ts = self._t0
         self._stall_ticks = 0
-        self._bb.set(f"{self.robot.robot_id.name}{BlackboardKeys.Flags.Navigation.IS_STUCK}", False)  # type: ignore
-
+        self._bb.set(
+            f"{self.robot.robot_id.name}{BlackboardKeys.Flags.Navigation.IS_STUCK}",
+            False,
+        )
         self._bb.set(self.target_reached_key, False)
+        logger.debug("MOVE")
 
     def update(self) -> pt.common.Status:
         """
@@ -100,30 +103,34 @@ class Move_node(pt.behaviour.Behaviour):
         :returns: SUCCESS quando alvo alcançado; RUNNING durante o deslocamento; FAILURE em erro/timeout.
         :rtype: pt.common.Status
         """
-        if self.robot is None or self.robot.state is None:
+        if self.robot is None:
             return pt.common.Status.FAILURE
+        logger.debug(f"{self.robot.state.target_position} - target")
+        logger.debug(f"{self.robot.state.position}")
 
         if bool(self._bb.get(self.target_reached_key)):
-            logging.debug(f"{self.name}-{self.robot.robot_id} SUCCESS")
+            logging.debug(f"{self.name} - {self.robot.robot_id} SUCCESS")
             return pt.common.Status.SUCCESS
 
         if not getattr(self.robot.state, "target_position", None):
-            return pt.common.Status.FAILURE
-
-        try:
-            self.robot.fast_movement()
-        except Exception as exc:
+            logger.debug(
+                f"{self.name} - {self.robot.robot_id.name} - FAILURE  TARGET NONE"
+            )
             return pt.common.Status.FAILURE
 
         if (time.time() - self._t0) > self.timeout_s:
-            logging.warning(f"{self.robot.robot_id} -> MOVE TIMEOUT")
+            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE  TIMEOUT")
             return pt.common.Status.FAILURE
 
         if self._bb.get(
             f"{self.robot.robot_id.name}{BlackboardKeys.Flags.Navigation.IS_STUCK}"
         ):
-            logging.debug(f"{self.robot.robot_id} -> ROBOT STUCK")
+            logger.debug(
+                f"{self.name} - {self.robot.robot_id.name} - FAILURE  ROBOT STUCK"
+            )
             return pt.common.Status.FAILURE
+        logger.debug(f"{self.name} - {self.robot.robot_id.name} - RUNNING")
+        self.robot.fast_movement()
         return pt.common.Status.RUNNING
 
     def terminate(self, new_status: pt.common.Status) -> None:
@@ -273,7 +280,7 @@ class RecuperarBola(py_trees.behaviour.Behaviour):
 
     def update(self) -> py_trees.common.Status:
         """vai atras da bola"""
-        if not self._bb.get(self.team_has_ball):
+        if self._bb.get(self.team_has_ball):
             logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
             return py_trees.common.Status.FAILURE
         self.robot.state.target_position = (
@@ -303,6 +310,7 @@ class MovimentoUnico(py_trees.behaviour.Behaviour):
     def update(self) -> py_trees.common.Status:
         self.robot.fast_movement()
         self.robot.state.current_command = self.name
+        logger.debug(f"{self.name} - SUCCESS")
 
         return py_trees.common.Status.SUCCESS
 

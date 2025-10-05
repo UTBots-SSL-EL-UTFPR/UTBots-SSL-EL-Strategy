@@ -1,14 +1,15 @@
-from communication.receiver.vision_receiver import VisionReceiver
+import os
+from time import sleep, time
+
+from Behaviour_tree.core.field_state import FieldState
+from Behaviour_tree.core.World_State import TeamID, World_State
+from communication.parsers.referee_parser import RefereeParser
 from communication.parsers.vision_parser import VisionParser
 from communication.receiver.referee_receiver import RefereeReceiver
-from communication.parsers.referee_parser import RefereeParser
-from Behaviour_tree.core.field_state import FieldState
-from Behaviour_tree.core.World_State import World_State , TeamID
-
-from time import time, sleep
-import os
+from communication.receiver.vision_receiver import VisionReceiver
 
 # Comando pra rodar python3 -m Behaviour_tree.core.test_World_State
+
 
 def test_World_State(timeout=0.3):
     print(f"Iniciando teste do WorldState com timeout de {timeout:.1f}s por ciclo...")
@@ -20,7 +21,6 @@ def test_World_State(timeout=0.3):
             # Atualiza estado completo do mundo (árbitro + visão múltiplas câmeras)
             ws.update(timeout=timeout)
 
-            
             # Exibe estado do mundo
             print("=== ESTADO GLOBAL DO CAMPO ===\n")
 
@@ -30,8 +30,8 @@ def test_World_State(timeout=0.3):
 
             # Detalhes granulares de robôs
             print("\n[ROBÔS - POSIÇÕES, VELOCIDADES E ORIENTAÇÕES]")
-        
-            for rid in [0,1,2]:
+
+            for rid in [0, 1, 2]:
                 pos = ws.get_team_robot_pose(rid)
                 vel = ws.get_team_robot_velocity(rid)
                 print(f"{rid}: Pos={pos}, Vel={vel}")
@@ -50,12 +50,12 @@ def test_World_State(timeout=0.3):
             else:
                 print("Nenhum dado de visão disponível.")
 
-            print("\n" + "="*50)
+            print("\n" + "=" * 50)
             sleep(0.5)
 
     except KeyboardInterrupt:
         print("\nTeste encerrado pelo usuário.")
 
+
 if __name__ == "__main__":
     test_World_State()
-

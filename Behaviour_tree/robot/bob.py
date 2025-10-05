@@ -13,7 +13,7 @@ from ..core.blackboard import Blackboard_Manager
 from ..core.World_State import TeamID
 from .bob_config import Bob_Config
 from .bob_state import Bob_State
-from .foes import Foes_State
+from .foes import FoesState
 
 positions = BlackboardKeys.Values.Positions
 
@@ -57,7 +57,7 @@ class Bob:
         self.config = Bob_Config(robot_id)
         self.state: Bob_State = Bob_State(robot_id)
         self._has_ball = False
-        self.foes: list[Foes_State]  # TODO
+        self.foes: list[FoesState]  # TODO
         self.cmd_builder = CommandBuilder()
         self.cmd_sender = CommandSenderSim()
         self.cmd: bytes | None = None
@@ -83,8 +83,7 @@ class Bob:
             self.state.update()
 
     def adicionar_ponto_trajetoria(self, target: Pose2D):
-        if self.state:
-            self.state.path.append(target)
+        self.state.path.append(target)
 
     def set_path(self, path: list[Pose2D]):
         self.state.path = path
@@ -93,7 +92,6 @@ class Bob:
     def set_new_target(self, target_position: Pose2D):
         self.state.path.clear()
         self.state.path_index = 0
-
         self.adicionar_ponto_trajetoria(target_position)
 
     def precision_movement(self):  # usa o movimento de precisao
@@ -124,8 +122,6 @@ class Bob:
         self.cmd_sender.send(self.cmd)
 
     def fast_movement(self):
-        if self.state is None:
-            return
         """
         Move o bob de sua pose2d atual ate outra pose2d com velocidade sem se importar com o angulo
         """
