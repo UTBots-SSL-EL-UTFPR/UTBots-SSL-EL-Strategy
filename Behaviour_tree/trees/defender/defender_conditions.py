@@ -10,9 +10,9 @@ from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
 
-ball_flags = BlackboardKeys.Flags.motion.ball
+ball_flags = BlackboardKeys.Flags.BallMotion
 positions_values = BlackboardKeys.Values.Positions
-team_flags = BlackboardKeys.Flags.Team_Flags
+team_flags = BlackboardKeys.Flags.TeamContext
 _bb = Blackboard_Manager.get_instance()
 _pos_helper = PositioningHelper.get_object()
 
