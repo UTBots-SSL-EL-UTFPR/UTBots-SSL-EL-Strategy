@@ -477,11 +477,11 @@ class Align_for_shoot(pt.behaviour.Behaviour):
       ):
           return pt.common.Status.FAILURE
     
-      attacker_pose = self.attacker.state.position
+      attacker_id = self.attacker.robot_id.value   # Transforma de enum para int
+      attacker_pose = _ws.get_team_robot_pose(attacker_id)
       goal_pose = _pos_helper.get_goal_center()
       obstacles_pose = _ws.get_all_robot_position()
-      obstacles_pose.remove(obstacles_pose)
-      print(obstacles_pose)
+      obstacles_pose.remove(attacker_pose)
 
       max_angle_visibility_field, min_angle_visibility_field = vis_gol.limits_of_visibility(obstacles_pose, attacker_pose, goal_pose)
       # Esse angulo é dado em relacação ao eixo x+ quando x_gol>0 e x- quando x_gol<0
@@ -497,7 +497,8 @@ class Align_for_shoot(pt.behaviour.Behaviour):
         ):
             return pt.common.Status.SUCCESS
 
-      rotate_cmd = self.attacker.rotate(visArea_center_rad)
+      self.attacker.state.target_position = (Pose2D)(attacker_pose.x, attacker_pose.y, visArea_center_rad)
+      rotate_cmd = self.attacker.rotate()
 
       if not rotate_cmd:
           return pt.common.Status.FAILURE
@@ -532,14 +533,17 @@ class Shoot_to_goal(pt.behaviour.Behaviour):
           self.attacker is None
           or self.attacker.state is None
       ):
+          print("chute = failure")
           return pt.common.Status.FAILURE
      
       kick_cmd = self.attacker.kick_ball()
 
 
       if not kick_cmd:
+          print("chute = failure2")
           return pt.common.Status.FAILURE
       else:
+          print("chute = success")
           return pt.common.Status.SUCCESS
      
      
