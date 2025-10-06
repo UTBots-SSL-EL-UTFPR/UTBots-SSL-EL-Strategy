@@ -5,7 +5,7 @@ import logging
 from enum import Enum
 
 from .blackboard import Blackboard_Manager
-from .test_World_State import RobotID
+from .test_World_State import TeamID
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +105,7 @@ def lost_ball_posetion(robot_id: str):
     logger.debug("lost ball posetion")
     _bb.set(f"{robot_id}{BlackboardKeys.Flags.BallMotion.HAS_BALL}", False)
     aux = False
-    for i in RobotID:
+    for i in TeamID:
         if _bb.get(f"{i.name}{BlackboardKeys.Flags.BallMotion.HAS_BALL}"):
             aux = True
     

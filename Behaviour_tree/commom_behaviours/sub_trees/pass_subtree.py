@@ -1,17 +1,29 @@
 # pass subtree.py
 import py_trees
-
-import Behaviour_tree.helpers as hp
+from Behaviour_tree.core.World_State import TeamID
+from Behaviour_tree.bob_manager import BobManager
 from Behaviour_tree.robot.bob import Bob
 
-from ..condition import HasBall
 
+from Behaviour_tree.commom_behaviours import condition as condition_nodes
+from Behaviour_tree.commom_behaviours import actions as action_nodes
+from Behaviour_tree import commom_behaviours as cb
 
-def get_pass_subtree(robot: Bob) -> py_trees.composites.Sequence:
-    # TODO
-    has_ball = HasBall(robot)
+def get_pass_subtree(robot: Bob) -> py_trees.trees.BehaviourTree:
+    has_ball = cb.condition.HasBall(robot)
+    valid_line= cb.condition.ValidLine(robot)
+    receiver_unmarked = cb.condition.ReceiverUnmarked(robot)
 
+    alinhar_passe = cb.actions.AlignForPass(robot)
+    escolhe_passe = cb.actions.Choose_who_to_pass(robot, name="Escolhe_Passe")
+    passar = cb.actions.ExecutePass(robot,name="Passar")
     pass_subtree = py_trees.composites.Sequence(
-        "arvore de chute", True, children=[has_ball]
+        "passar",
+        True,
+        children=[has_ball,escolhe_passe,valid_line,receiver_unmarked, alinhar_passe, passar],
     )
-    return pass_subtree
+
+    pass_root = py_trees.trees.BehaviourTree(pass_subtree)
+    pass_root.setup()
+
+    return pass_root

@@ -10,7 +10,7 @@ from utils import utilsp
 from utils.pose2D import Pose2D
 
 from ..core.blackboard import Blackboard_Manager
-from ..core.World_State import RobotID
+from ..core.World_State import TeamID
 from .bob_config import Bob_Config
 from .bob_state import Bob_State
 from .foes import Foes_State
@@ -51,7 +51,7 @@ KD_ANG = 0.3
 
 class Bob:
 
-    def __init__(self, robot_id: RobotID):
+    def __init__(self, robot_id: TeamID):
         self._bb = Blackboard_Manager.get_instance()
         self.robot_id = robot_id
         self.config = Bob_Config(robot_id)

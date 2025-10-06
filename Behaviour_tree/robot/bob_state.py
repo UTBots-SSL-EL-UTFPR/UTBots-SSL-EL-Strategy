@@ -4,13 +4,13 @@ from utils.defines import BALL_POSSESSION_DISTANCE
 from utils.pose2D import Pose2D, RoleType
 
 from ..core import event_callbacks
-from ..core.World_State import RobotID, World_State
+from ..core.World_State import TeamID, World_State
 
 
 class Bob_State:
     """Estado dinâmico do robô (posição, velocidade, posse, quadrante e role)."""
 
-    def __init__(self, robot_id: RobotID):
+    def __init__(self, robot_id: TeamID):
         self.robot_id = robot_id
 
         self.world_state = World_State.get_object()
@@ -119,6 +119,14 @@ class Bob_State:
             self.world_state.get_ball_position()
         )
         event_callbacks.on_ball_reachable(self.robot_id.name, reachable)
+
+    def valid_line(self):
+        
+        end_pos = self.bb.get("pass_target_pos")
+        if end_pos is None:
+            print("ERRO, END_POS NULO NO BOB_STATE")
+        if self.pos_helper.is_path_clear(self.position,end_pos,self.world_state.get_all_foes_position()):
+            event_callbacks.on_valid_line(self.robot_id.name)
 
     # ---------------------------------------------------------------------------------------#
     #                                         Setters                                       #

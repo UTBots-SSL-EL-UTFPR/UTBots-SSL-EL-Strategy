@@ -1,24 +1,30 @@
 from enum import Enum
 from time import time
-from utils.pose2D import Pose2D
-from SSL_configuration.configuration import Configuration
 
-from communication.receiver.vision_receiver import VisionReceiver
-from communication.receiver.referee_receiver import RefereeReceiver
-from communication.parsers.vision_parser import VisionParser
-from communication.parsers.referee_parser import RefereeParser
 from Behaviour_tree.core.field_state import FieldState
-
-from communication.generated import ssl_vision_wrapper_pb2 as vision_pb
 from communication.generated import ssl_gc_referee_message_pb2 as referee_pb
+from communication.generated import ssl_vision_wrapper_pb2 as vision_pb
+from communication.parsers.referee_parser import RefereeParser
+from communication.parsers.vision_parser import VisionParser
+from communication.receiver.referee_receiver import RefereeReceiver
+from communication.receiver.vision_receiver import VisionReceiver
+from SSL_configuration.configuration import Configuration
+from utils.pose2D import Pose2D
+
 
 # =====================================================
 # Enum de IDs de robôs
 # =====================================================
-class RobotID(Enum):
+class TeamID(Enum):
     Kamiji = 0
-    Defender = 1 
-    Goalkeeper = 2
+    Argenton = 1
+    SabKawa = 2
+
+
+class FoesID(Enum):
+    TauraBots = 0
+    GralhaBots = 1
+    Cerberus = 2
 
 
 class World_State:
@@ -176,7 +182,7 @@ class World_State:
     
     def get_all_team_position(self):
         robots :list[Pose2D] = []
-        for id in RobotID:
+        for id in TeamID:
             pos = self.get_team_robot_pose(id.value)
             if pos:
                 robots.append(pos)  

@@ -2,13 +2,13 @@ from utils.defines import BALL_POSSESSION_DISTANCE
 from utils.pose2D import Pose2D
 
 from ..core.blackboard import Blackboard_Manager
-from ..core.World_State import RobotID, World_State
+from ..core.World_State import TeamID, World_State
 
 
 class Foes_State:
     # ESTADO SIMPLIFICADO DOS ROBOS INIMIGOS
 
-    def __init__(self, robot_id: RobotID):
+    def __init__(self, robot_id: TeamID):
         self.blackboard = Blackboard_Manager.get_instance()
         self.robot_id = robot_id
         self.position: Pose2D = Pose2D()

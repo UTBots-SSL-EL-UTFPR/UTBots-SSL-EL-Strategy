@@ -1,5 +1,5 @@
 # bob_config.py
-from ..core.World_State import RobotID
+from ..core.World_State import TeamID
 class Bob_Config:
     """
     Classe que representa as configurações fixas de um robô.
@@ -10,7 +10,7 @@ class Bob_Config:
     :param robot_id: Identificador único do robô
     """
 
-    def __init__(self, robot_id: RobotID):
+    def __init__(self, robot_id: TeamID):
         self.robot_id = robot_id
 
         self.dimensions = {

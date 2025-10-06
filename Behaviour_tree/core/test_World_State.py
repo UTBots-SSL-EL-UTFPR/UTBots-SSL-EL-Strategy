@@ -3,7 +3,7 @@ from communication.parsers.vision_parser import VisionParser
 from communication.receiver.referee_receiver import RefereeReceiver
 from communication.parsers.referee_parser import RefereeParser
 from Behaviour_tree.core.field_state import FieldState
-from Behaviour_tree.core.World_State import World_State, RobotID
+from Behaviour_tree.core.World_State import World_State , TeamID
 
 from time import time, sleep
 import os

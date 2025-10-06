@@ -16,7 +16,7 @@ from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
 
 from ..core.event_callbacks import BlackboardKeys
-from ..core.World_State import RobotID, World_State
+from ..core.World_State import TeamID, World_State
 
 positions = BlackboardKeys.Values.Positions
 import time
@@ -330,8 +330,8 @@ class Choose_who_to_pass(py_trees.behaviour.Behaviour):
         target_id_found = None
 
         if self.robot.robot_id == 2:
-            target0 = RobotID.Kamiji
-            target1 = RobotID.Defender
+            target0 = TeamID.Kamiji
+            target1 = TeamID.Defender
             min_distance = 1000
 
             for robot_id_enum in [target0, target1]:
@@ -347,10 +347,10 @@ class Choose_who_to_pass(py_trees.behaviour.Behaviour):
                         target_id_found = robot_id_enum
 
         elif self.robot.robot_id == 1:
-            target_id_found = RobotID.Kamiji
+            target_id_found = TeamID.Kamiji
             target_pos_found = self.world_state.get_team_robot_pose(target_id_found)
         else:
-            target_id_found = RobotID.Defender
+            target_id_found = TeamID.Defender
             target_pos_found = self.world_state.get_team_robot_pose(target_id_found)
 
         if target_pos_found is not None and target_id_found is not None:
@@ -361,7 +361,7 @@ class Choose_who_to_pass(py_trees.behaviour.Behaviour):
             return py_trees.common.Status.FAILURE
 
 
-class Align_for_pass(pt.behaviour.Behaviour):
+class AlignForPass(pt.behaviour.Behaviour):
     """
     Nó que garante que passador e receptor estejam orientados corretamente.
     Se não estiverem, envia comandos de rotação até alinhar.
@@ -369,37 +369,34 @@ class Align_for_pass(pt.behaviour.Behaviour):
 
     def __init__(
         self,
-        passer: Bob,
-        receiver: Bob,
+        robot: Bob,
         name: str = "Align_for_pass",
         tolerance: float = 0.15,
     ):
         super().__init__(name)
-        self.passer = passer
-        self.receiver = receiver
+        self.robot = robot
         self.tolerance = tolerance
         self.bb = Blackboard_Manager.get_instance()
 
     def setup(self, **kwargs):
-        if self.passer is None or self.receiver is None:
+        if self.robot  is None:
             raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
         return super().setup(**kwargs)
 
     def initialise(self):
-        self.bb.set(f"{self.passer.robot_id.name}_cmd_rotation", 0.0)
-        self.bb.set(f"{self.receiver.robot_id.name}_cmd_rotation", 0.0)
+        self.bb.set(f"{self.robot.robot_id.name}_cmd_rotation", 0.0)
+        #self.bb.set(f"{self.receiver.robot_id.name}_cmd_rotation", 0.0)
 
     def update(self) -> pt.common.Status:
         if (
-            self.passer is None
-            or self.receiver is None
-            or self.passer.state is None
-            or self.receiver.state is None
-        ):
+            self.robot is None
+            or self.robot.state is None
+                
+            ):
             return pt.common.Status.FAILURE
 
-        passer_pose = self.passer.state.position
-        receiver_pose = self.receiver.state.position
+        passer_pose = self.robot.state.position
+        receiver_pose = self.bb.get("pass_target_pos")
         goal_pose = self.bb.get("goal_pose")
         if not isinstance(goal_pose, Pose2D):
             return pt.common.Status.FAILURE
@@ -429,15 +426,65 @@ class Align_for_pass(pt.behaviour.Behaviour):
         )
 
         if cmd_passer is not None:
-            self.bb.set(f"{self.passer.robot_id.name}_cmd_rotation", cmd_passer)
-        if cmd_receiver is not None:
-            self.bb.set(f"{self.receiver.robot_id.name}_cmd_rotation", cmd_receiver)
+            self.bb.set(f"{self.robot.robot_id.name}_cmd_rotation", cmd_passer)
+
+        receiver_id = self.bb.get("pass_target_id")
+        if cmd_receiver is not None and receiver_id is not None:
+            self.bb.set(f"{receiver_id.name}_cmd_rotation", cmd_receiver)
 
         return pt.common.Status.RUNNING
 
     def terminate(self, new_status: pt.common.Status):
-        self.bb.set(f"{self.passer.robot_id.name}_cmd_rotation", 0.0)
-        self.bb.set(f"{self.receiver.robot_id.name}_cmd_rotation", 0.0)
+        self.bb.set(f"{self.robot.robot_id.name}_cmd_rotation", 0.0)
+        #self.bb.set(f"{self.receiver.robot_id.name}_cmd_rotation", 0.0)
+        receiver_id = self.bb.get("pass_target_id")
+        if receiver_id is not None:
+            self.bb.set(f"{receiver_id.name}_cmd_rotation", 0.0)
+
+
+    
+class ExecutePass(py_trees.behaviour.Behaviour):
+        """
+        Nó que executa o passe, lendo a posição do alvo no Blackboard e
+        enviando o comando de chute ao robô passador.
+        """
+
+        def __init__(self, robot: Bob, name):
+            super().__init__(name)
+            self.robot = robot
+            self.bb = Blackboard_Manager.get_instance()
+        
+
+        def setup(self, **kwargs):
+            if self.robot is None:
+                raise RuntimeError(f"[{self.name}] Robô não definido no setup()")
+            return super().setup(**kwargs)
+
+        def initialise(self):
+            pass
+
+        def update(self) -> pt.common.Status:
+            if self.robot is None or self.robot.state is None:
+                return pt.common.Status.FAILURE
+
+            target_pos = self.bb.get("pass_target_pos")
+            if target_pos is None:
+                return pt.common.Status.FAILURE
+
+            # Envia comando de chute
+            try:
+                self.robot.kick_ball(self.robot)
+                logging.info(f"{self.robot.robot_id} executou passe para {target_pos}")
+                # Limpa o alvo de passe no Blackboard
+                self.bb.set("pass_target_pos", None)
+                self.bb.set("pass_target_id", None)
+                return pt.common.Status.SUCCESS
+            except Exception as e:
+                logging.error(f"Erro ao executar passe: {e}")
+                return pt.common.Status.FAILURE
+
+        def terminate(self, new_status: pt.common.Status):
+            pass
 
 
 # =+==============================++++++==================++++++=================+++++=============#

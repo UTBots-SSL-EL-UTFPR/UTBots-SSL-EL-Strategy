@@ -6,7 +6,7 @@ from py_trees.common import Status
 
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
-from Behaviour_tree.core.World_State import RobotID
+from Behaviour_tree.core.World_State import TeamID
 from Behaviour_tree.core.World_State import World_State
 from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from Behaviour_tree.robot.bob import Bob
@@ -101,7 +101,7 @@ class HasBall(py_trees.behaviour.Behaviour):
 
 class ValidLine(py_trees.behaviour.Behaviour):
 
-    def __init__(self, name: str = "Valid_Line"):
+    def __init__(self,bob:Bob, name: str = "Valid_Line"):
         super().__init__(name)
 
     def setup(self, **kwargs):
@@ -109,13 +109,13 @@ class ValidLine(py_trees.behaviour.Behaviour):
 
     def update(self) -> py_trees.common.Status:
         if _bb.get(f"{BlackboardKeys.Flags.TeamContext.VALID_LINE}"):
-            return py_trees.common.Status.RUNNING
+            return py_trees.common.Status.SUCCESS
         return py_trees.common.Status.FAILURE
 
 
 class ReceiverUnmarked(py_trees.behaviour.Behaviour):
 
-    def __init__(self, name: str = "Receiver_Unmarked"):
+    def __init__(self,bob=Bob ,name: str = "Receiver_Unmarked"):
         super().__init__(name)
 
     def setup(self, **kwargs):

@@ -2,7 +2,7 @@
 #                                  IMPORTS                                   #
 # -------------------------------------------------------------------------- #
 
-from Behaviour_tree.core.World_State import RobotID, World_State
+from Behaviour_tree.core.World_State import TeamID, World_State
 from SSL_configuration.configuration import Configuration
 from utils.defines import DISTANCE_PRESS_OPPONENT, MIN_PASS_DISTANCE
 from utils.pose2D import Pose2D, Quadrant, QuadrantType, RoleType
