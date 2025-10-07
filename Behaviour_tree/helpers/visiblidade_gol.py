@@ -194,8 +194,8 @@ def max_range_of_visibility(obstacles: list[Pose2D], p0: Pose2D, gol_center: Pos
 # Teste
 '''
 if __name__ == "__main__":
-    obstacles = [(Pose2D)(-1397, -112), (Pose2D)(-1314, -79), (Pose2D)(-1161, 50)]
-    p0 = (Pose2D)(-1499,0)
+    obstacles = [(Pose2D)(2065, -250)]
+    p0 = (Pose2D)(1525, 670)
     gol_center = (Pose2D)(2250, 0)
     inicio, fim = limits_of_visibility(obstacles, p0, gol_center)
     print(math.degrees(inicio))

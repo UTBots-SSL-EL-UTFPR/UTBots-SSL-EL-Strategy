@@ -11,6 +11,11 @@ from utils.pose2D import Pose2D
 
 from .kick_subtree import get_kick_subtree
 
+'''
+Para o teste eu mudei algumas coisas:
+- 
+'''
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(name)-12s | %(levelname)-8s | %(message)s",

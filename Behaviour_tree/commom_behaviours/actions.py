@@ -34,6 +34,8 @@ from utils.pose2D import Pose2D
 import Behaviour_tree.helpers.visiblidade_gol as vis_gol
 from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 
+from utils.defines import (BALL_DISTANCE_FOR_SHOOT)
+
 _pos_helper = PositioningHelper.get_object()
 _ws = World_State.get_object()
 
@@ -542,12 +544,15 @@ class Align_for_shoot(pt.behaviour.Behaviour):
       self,
       attacker: Bob,
       name: str = "Align_for_shoot",
-      tolerance = 0.15
+      tolerance_rad = 0.15,
+      tolerance_xy = 30
   ):
       super().__init__(name)
       self.attacker = attacker
       self.bb = Blackboard_Manager.get_instance()
-      self.tolerance = tolerance
+      self.tolerance_rad = tolerance_rad
+      self.tolerance_xy = tolerance_xy
+      self.target_calculated = False
 
 
     def setup(self, **kwargs):
@@ -558,10 +563,41 @@ class Align_for_shoot(pt.behaviour.Behaviour):
 
     def initialise(self):
       self.bb.set(f"{self.attacker.robot_id.name}_team_kick", True)
-      self.bb.set(f"{self.attacker.robot_id.name}_cmd_rotation", 0.0)
+      self.bb.set(f"{self.attacker.robot_id.name}_cmd_movement", 0.0)
 
 
     def update(self) -> pt.common.Status:
+      x_target = 1000
+      y_target = 0
+      target_angle = 0
+      attacker_id = self.attacker.robot_id.value   # Transforma de enum para int
+      attacker_pose = _ws.get_team_robot_pose(attacker_id)
+      if self.target_calculated == False:
+        self.attacker.state.target_position = (Pose2D)(x_target, y_target, target_angle)
+        self.target_calculated = True
+        print(f"🎯 ALVO FIXO: ({x_target}, {y_target}, {target_angle})")
+        print(f"🤖 POSIÇÃO INICIAL: {attacker_pose}")
+
+      print("=== DEBUG CONTROLADOR ===")
+      print(f"Posição atual: ({attacker_pose.x:.1f}, {attacker_pose.y:.1f}, {attacker_pose.theta:.3f})")
+      print(f"Alvo: ({x_target}, {y_target}, {target_angle})")
+      self.attacker.precision_movement()
+      print("========================")
+      # Verificação manual do alinhamento (bypass a função)
+      dx = abs(attacker_pose.x - x_target)
+      dy = abs(attacker_pose.y - y_target) 
+      dtheta = abs(attacker_pose.theta - target_angle)
+    
+      print(f"ERROS - dx: {dx:.1f}, dy: {dy:.1f}, dtheta: {dtheta:.3f}")
+      print(f"TOLERÂNCIAS - xy: {self.tolerance_xy}, rad: {self.tolerance_rad}")
+
+      if dx <= self.tolerance_xy and dy <= self.tolerance_xy and dtheta <= self.tolerance_rad:
+        print("✅ SUCESSO - Alinhado!")
+        return pt.common.Status.SUCCESS
+      else:
+        print("🔄 RUNNING")
+        return pt.common.Status.RUNNING
+      '''
       if (
           self.attacker is None
           or self.attacker.state is None
@@ -574,32 +610,42 @@ class Align_for_shoot(pt.behaviour.Behaviour):
       obstacles_pose = _ws.get_all_robot_position()
       obstacles_pose.remove(attacker_pose)
 
+
       max_angle_visibility_field, min_angle_visibility_field = vis_gol.limits_of_visibility(obstacles_pose, attacker_pose, goal_pose)
       # Esse angulo é dado em relacação ao eixo x+ quando x_gol>0 e x- quando x_gol<0
       visArea_center_rad = (max_angle_visibility_field + min_angle_visibility_field) / 2
      
       if goal_pose.x < 0 :
           visArea_center_rad = (visArea_center_rad + math.pi)*-1
+      
+      ball_pose = _ws.get_ball_position()
+      x_ball = ball_pose.x
+      y_ball = ball_pose.y
+      
+      x_target = 50 #x_ball + BALL_DISTANCE_FOR_SHOOT*math.cos(visArea_center_rad)
+      y_target = 50 #y_ball + BALL_DISTANCE_FOR_SHOOT*math.sin(visArea_center_rad)
+      
+      if self.target_calculated == False:
+        self.attacker.state.target_position = (Pose2D)(x_target, y_target, visArea_center_rad)
+        self.target_calculated = True
+      self.attacker.precision_movement()
 
       if hp.PositioningHelper.is_aligned_to_goal(
             attacker_pose,
-            visArea_center_rad,
-            tolerance = self.tolerance,
+            self.attacker.state.target_position,
+            tolerance_rad = self.tolerance_rad,
+            tolerance_xy = self.tolerance_xy
         ):
-            return pt.common.Status.SUCCESS
-
-      self.attacker.state.target_position = (Pose2D)(attacker_pose.x, attacker_pose.y, visArea_center_rad)
-      rotate_cmd = self.attacker.rotate()
-
-      if not rotate_cmd:
-          return pt.common.Status.FAILURE
+          print("sucess")
+          return pt.common.Status.SUCCESS
       else:
+          print("running")
           return pt.common.Status.RUNNING
 
 
     def terminate(self, new_status: pt.common.Status):
-      self.bb.set(f"{self.attacker.robot_id.name}_cmd_rotation", 0.0)
-
+      self.bb.set(f"{self.attacker.robot_id.name}_cmd_movement", 0.0)
+'''
 
 
 class Shoot_to_goal(pt.behaviour.Behaviour):
@@ -624,17 +670,14 @@ class Shoot_to_goal(pt.behaviour.Behaviour):
           self.attacker is None
           or self.attacker.state is None
       ):
-          print("chute = failure")
           return pt.common.Status.FAILURE
      
       kick_cmd = self.attacker.kick_ball()
 
 
       if not kick_cmd:
-          print("chute = failure2")
           return pt.common.Status.FAILURE
       else:
-          print("chute = success")
           return pt.common.Status.SUCCESS
      
      
