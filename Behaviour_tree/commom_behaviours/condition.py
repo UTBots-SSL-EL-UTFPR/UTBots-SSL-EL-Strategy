@@ -49,6 +49,7 @@ class TeamHasBall(py_trees.behaviour.Behaviour):
             logger.debug(f"{self.name} - SUCCESS")
             return py_trees.common.Status.SUCCESS
         logger.debug(f"{self.name} - FAILURE")
+        print("tem bola = failure")
         return py_trees.common.Status.FAILURE
 
 
@@ -207,10 +208,7 @@ class Goal_visibility(py_trees.behaviour.Behaviour):
       goal_center = _pos_helper.get_goal_center()
     
       if(vis_gol.max_range_of_visibility(obstacles_pose, attacker_pose, goal_center)):
-          print(vis_gol.max_range_of_visibility(obstacles_pose, attacker_pose, goal_center))
-          print("visibilidade = sucess")
           return py_trees.common.Status.SUCCESS
-      print("visibilidade = failure")
       return py_trees.common.Status.FAILURE
 
 
@@ -237,24 +235,5 @@ class Goal_distance(py_trees.behaviour.Behaviour):
 
       distance_to_goal = attacker_pose.distance_to(Pose2D(x_goal, goal_center.y))
       if(distance_to_goal <= MAX_SHOOT_DISTANCE):
-          print("distancia = success")
           return py_trees.common.Status.SUCCESS
-      print("distancia = failure")
       return py_trees.common.Status.FAILURE
-    
-
-
-class Foes_have_ball(py_trees.behaviour.Behaviour):
-
-    def __init__(self, name: str = "Foes_have_ball"):
-        super().__init__(name)
-
-    def setup(self, **kwargs: Any) -> None:
-        return super().setup(**kwargs)
-
-    def update(self) -> py_trees.common.Status:
-        if _bb.get(f"{BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL}"):
-            return py_trees.common.Status.SUCCESS
-        return py_trees.common.Status.FAILURE
-    
-

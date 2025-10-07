@@ -105,6 +105,7 @@ class Bob:
         vx_s, vy_s, w = self.compute_world_velocity(
             self.state.position, self.state.target_position, mode="precision_movement"
         )
+        
         q = np.array([[w], [vx_s], [vy_s]], dtype=float)
 
         # velocidade individual de cada roda
@@ -188,8 +189,6 @@ class Bob:
         """
 
         if self.state is None:
-            return False
-        if not self._has_ball:
             return False
         
         self.cmd_builder.command_robots(

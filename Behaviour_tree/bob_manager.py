@@ -4,25 +4,24 @@ from Behaviour_tree.helpers.field_helper import FIELD_X_MAX, FIELD_X_MIN, HALF_L
 from Behaviour_tree.helpers.motion_helper import MotionHelper
 from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from Behaviour_tree.trees.tree import Tree
+from utils.defines import BALL_RADIUS, FIELD_INVERTED_SIDE, ROBOT_RADIUS
+from utils.pose2D import Pose2D, QuadrantType, RoleType
+
+from .core.World_State import World_State
 from .robot.bob import Bob
 
 from typing import Dict
-from utils.pose2D import Pose2D
+from utils.pose2D import Pose2D, RoleType, ZoneType, QuadrantType
 from utils.defines import (
-    RoleType,
-    ZoneType,
-    QuadrantType,
-    BOB_RADIUS,
+    #BOB_RADIUS,
     BALL_RADIUS,
+    MIN_PASS_DISTANCE,
     FIELD_INVERTED_SIDE,
-    FIELD_X_MIN,
-    FIELD_X_MAX,
 )
 from .core.World_State import World_State
 from .core.World_State import RobotID
 from SSL_configuration.configuration import Configuration
 import math
-from .positioning.positioning_helper import Positioning_helper, MIN_PASS_DISTANCE, HALF_LEGHT
 
 class BobManager:
     _instance = None
@@ -96,7 +95,7 @@ class BobManager:
         for obs in obstacles:
             if obs == robot.state.position:
                 obstacles.remove(obs)
-        robot.state.path = robot.find_shortest_path(robot.state.position, target, obstacles, BOB_RADIUS, self.ball_pos, BALL_RADIUS)
+        robot.state.path = robot.find_shortest_path(robot.state.position, target, obstacles, ROBOT_RADIUS, self.ball_pos, BALL_RADIUS)
 
         
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------#
@@ -167,7 +166,7 @@ class BobManager:
         obstacles = [obs for obs in obstacles if obs != robot_pos]
         print(target_pose, robot_pos)
         print(obstacles)
-        robot.state.path = robot.find_shortest_path(robot_pos, target_pose, obstacles, BOB_RADIUS, self.ball_pos, BALL_RADIUS)
+        robot.state.path = robot.find_shortest_path(robot_pos, target_pose, obstacles, ROBOT_RADIUS, self.ball_pos, BALL_RADIUS)
         print("passei_2")
         robot.state.role = RoleType.OFFENSIVE_SUPPORT
         return

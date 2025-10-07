@@ -1,27 +1,17 @@
 import math
 from dataclasses import dataclass
 from math import sqrt
-from typing import Iterable, List, Optional, Tuple, Optional
+from typing import Iterable, List, Optional, Tuple
+from utils.pose2D import Quadrant, QuadrantType, ZoneType
 
 from SSL_configuration.configuration import Configuration
-from utils import defines
-from utils.defines import (
-    INFLUENCE_RADIUS,
-    MAX_SHOOT_DISTANCE,
-    MIN_PASS_DISTANCE,
-    ROBOT_RADIUS,
-)
-from utils.pose2D import Pose2D
+from utils.defines import (INFLUENCE_RADIUS, MAX_SHOOT_DISTANCE,
+                           MIN_PASS_DISTANCE, ROBOT_RADIUS)
+from utils.pose2D import Pose2D, Quadrant, QuadrantType, ZoneType
 
-from ..core.World_State import RobotID, World_State
-from .field_helper import (
-    GOAL_LENGHT,
-    GRID_STEP,
-    HALF_GOALKEEPER_AREA_WIDTH,
-    HALF_LEGHT,
-    KEEPER_MARGIN,
-    WALL_MARGIN,
-)
+from ..core.World_State import World_State
+from .field_helper import (GOAL_LENGHT, GRID_STEP, HALF_GOALKEEPER_AREA_WIDTH,
+                           HALF_LEGHT, KEEPER_MARGIN, WALL_MARGIN)
 from .geometry_helper import GeometryHelper
 
 
@@ -836,10 +826,15 @@ class PositioningHelper:
 
     @staticmethod
     def is_aligned_to_goal(
-        attacker_pose: Pose2D, desired_angle: float, tolerance: float = 0.15
+        attacker_pose: Pose2D,
+        target_position: Pose2D,
+        tolerance_rad: float,
+        tolerance_xy: float
     ) -> bool:
 
-        if abs(attacker_pose.theta - desired_angle) <= tolerance:
+        if (abs(attacker_pose.theta - target_position.theta) <= tolerance_rad
+           and abs(attacker_pose.x - target_position.x) <= tolerance_xy
+           and abs(attacker_pose.y - target_position.y) <= tolerance_xy):
             return True
         else:
             return False
