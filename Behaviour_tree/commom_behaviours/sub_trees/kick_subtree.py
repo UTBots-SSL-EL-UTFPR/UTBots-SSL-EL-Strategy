@@ -14,7 +14,8 @@ def get_kick_subtree(robot: Bob) -> py_trees.trees.BehaviourTree:
     visibilidade_gol = cb.condition.Goal_visibility(attacker=robot, name="Ve o gol")
     distancia_gol = cb.condition.Goal_distance(attacker=robot, name="Ve o gol")
 
-    alinhar_com_gol = cb.actions.Align_for_shoot(robot)
+    calcular_target_position = cb.actions.Calculate_kick_target(robot)
+    alinhar_com_gol = cb.actions.Align(robot)
     chutar_gol = cb.actions.Shoot_to_goal(robot)
     kick_subtree = py_trees.composites.Sequence(
         "chutar no gol",
