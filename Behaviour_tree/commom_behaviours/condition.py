@@ -4,15 +4,14 @@ from typing import Any
 import py_trees
 from py_trees.common import Status
 
+import Behaviour_tree.helpers.visiblidade_gol as vis_gol
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
-from Behaviour_tree.core.World_State import RobotID
-from Behaviour_tree.core.World_State import World_State
+from Behaviour_tree.core.World_State import RobotID, World_State
 from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from Behaviour_tree.robot.bob import Bob
+from utils.defines import MAX_SHOOT_DISTANCE
 from utils.pose2D import Pose2D
-from utils.defines import (MAX_SHOOT_DISTANCE)
-import Behaviour_tree.helpers.visiblidade_gol as vis_gol
 
 positions_values = BlackboardKeys.Values.Positions
 _bb = Blackboard_Manager.get_instance()
@@ -186,54 +185,66 @@ class Teamkick(py_trees.behaviour.Behaviour):
         if _bb.get(f"{BlackboardKeys.Flags.KickActions.TEAM_KICK}"):
             return py_trees.common.Status.SUCCESS
         return py_trees.common.Status.FAILURE
-    
+
+
+### AQUI VOCE ESTA USANDO WS.GET_ROBOT_POSITION ERRADO, ESSA POS JA VEM ATT DA CLASSE
+### VC PODE SÓ CHAMAR ROBOT.STATE.POSITION E TA TDCERTO
+### FAZEMOS ASSIM PQ O ROBOT.sTATE TEM CONTORNOS CONTRA POS NULAS, Q A SUA FUNC NÃO PRECISA REPETIR
+
+
 class Goal_visibility(py_trees.behaviour.Behaviour):
-    def __init__(
-      self,
-      attacker: Bob,
-      name: str = "Goal_visibility"
-  ):
-      super().__init__(name)
-      self.attacker = attacker
+    def __init__(self, attacker: Bob, name: str = "Goal_visibility"):
+        super().__init__(name)
+        self.attacker = attacker
 
     def setup(self, **kwargs: Any) -> None:
-      if self.attacker is None:
-          raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
-      return super().setup(**kwargs)
-    def update(self) -> py_trees.common.Status:
-      obstacles_pose = _ws.get_all_robot_position()
-      attacker_id = self.attacker.robot_id.value   # Transforma de enum para int
-      attacker_pose = _ws.get_team_robot_pose(attacker_id)
-      obstacles_pose.remove(attacker_pose)
-      goal_center = _pos_helper.get_goal_center()
-    
-      if(vis_gol.max_range_of_visibility(obstacles_pose, attacker_pose, goal_center)):
-          return py_trees.common.Status.SUCCESS
-      return py_trees.common.Status.FAILURE
+        if self.attacker is None:
+            raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
+        return super().setup(**kwargs)
 
+    def update(self) -> py_trees.common.Status:
+        obstacles_pose = _ws.get_all_robot_position()
+        attacker_id = self.attacker.robot_id.value  # Transforma de enum para int
+        attacker_pose = _ws.get_team_robot_pose(attacker_id)
+
+        obstacles_pose.remove(attacker_pose)  # type: ignore
+        goal_center = _pos_helper.get_goal_center()
+
+        if vis_gol.max_range_of_visibility(obstacles_pose, attacker_pose, goal_center):  # type: ignore
+            logger.debug(f"{self.name} - SUCCESS")
+            return py_trees.common.Status.SUCCESS
+        logger.debug(f"{self.name} - FAILURE")
+        return py_trees.common.Status.FAILURE
+
+
+### AQUI VOCE ESTA USANDO WS.GET_ROBOT_POSITION ERRADO, ESSA POS JA VEM ATT DA CLASSE
+### VC PODE SÓ CHAMAR ROBOT.STATE.POSITION E TA TDCERTO
+### FAZEMOS ASSIM PQ O ROBOT.sTATE TEM CONTORNOS CONTRA POS NULAS, Q A SUA FUNC NÃO PRECISA REPETIR
 
 
 class Goal_distance(py_trees.behaviour.Behaviour):
     def __init__(
-      self,
-      attacker: Bob,
-      name: str = "Goal_distance",
-  ):
-      super().__init__(name)
-      self.attacker = attacker
+        self,
+        attacker: Bob,
+        name: str = "Goal_distance",
+    ):
+        super().__init__(name)
+        self.attacker = attacker
 
     def setup(self, **kwargs: Any) -> None:
-      if self.attacker is None:
-          raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
-      return super().setup(**kwargs)
+        if self.attacker is None:
+            raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
+        return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
-      attacker_id = self.attacker.robot_id.value
-      attacker_pose = _ws.get_team_robot_pose(attacker_id)
-      goal_center = _pos_helper.get_goal_center()
-      x_goal = goal_center.x
+        attacker_id = self.attacker.robot_id.value
+        attacker_pose = _ws.get_team_robot_pose(attacker_id)
+        goal_center = _pos_helper.get_goal_center()
+        x_goal = goal_center.x
 
-      distance_to_goal = attacker_pose.distance_to(Pose2D(x_goal, goal_center.y))
-      if(distance_to_goal <= MAX_SHOOT_DISTANCE):
-          return py_trees.common.Status.SUCCESS
-      return py_trees.common.Status.FAILURE
+        distance_to_goal = attacker_pose.distance_to(Pose2D(x_goal, goal_center.y))  # type: ignore
+        if distance_to_goal <= MAX_SHOOT_DISTANCE:
+            logger.debug(f"{self.name} - SUCCESS")
+            return py_trees.common.Status.SUCCESS
+        logger.debug(f"{self.name} - FAILURE")
+        return py_trees.common.Status.FAILURE
