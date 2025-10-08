@@ -7,9 +7,8 @@ from ..core import event_callbacks
 from ..core.blackboard import Blackboard_Manager
 from ..core.World_State import FoesID, World_State
 
-from Behaviour_tree.positioning.positioning_helper import Positioning_helper
+from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 
-from bob import Bob, ROBOT_RADIUS, FREE_DISTANCE
 from robot import bob
 
 from SSL_configuration.configuration import Configuration
@@ -24,13 +23,13 @@ class FoesState:
         self.has_ball = False
         self.robot_id = id
         self.configuration = Configuration.getObject()
-        self.pos_helper = Positioning_helper.get_object()
+        self.pos_helper = PositioningHelper.get_object()
 
 # ===== provavelmente desnecessario (usado para testes) =====
         self.target_position: Pose2D | None = Pose2D()
         self.active_function = None
         self.current_command = None
-        self.role: RoleType | None = None
+
 # ============================================================
         self.ball_visible = False
         self.has_ball = False
@@ -133,7 +132,7 @@ class FoesState:
             event_callbacks.on_robot_stuck(self.robot_id.name)
 
     def is_visible_from_ball(self):
-        visible, best_position = Positioning_helper.get_clear_pass_position(
+        visible, best_position = PositioningHelper.get_clear_pass_position(
             self.position
         )
         if visible != self.ball_visible:
@@ -163,24 +162,24 @@ class FoesState:
         ################# Verifica se a existe uma linha de passe #################  
 
         #primeiro a bola  esta no goleiro 
-        if self.robot_id == RobotID(2):
+        if self.robot_id == FoesID(2):
             pos_gol=self.get_position()
             pos_1=World_State.get_team_robot_pose(self,1)
             pos_2=World_State.get_team_robot_pose(self,0)
             
             obstacles = self.world_state.get_all_foes_position()
             
-            if(Positioning_helper.is_path_clear(pos_gol,pos_1,obstacles,bob.ROBOT_RADIUS) or Positioning_helper.is_path_clear(pos_gol,pos_2,obstacles,bob.ROBOT_RADIUS)):
+            if(PositioningHelper.is_path_clear(pos_gol,pos_1,obstacles,bob.ROBOT_RADIUS) or PositioningHelper.is_path_clear(pos_gol,pos_2,obstacles,bob.ROBOT_RADIUS)):
                 event_callbacks.on_valid_line(self.robot_id.name)
         #se a bola esta com outro robo
-        elif self.robot_id == RobotID(1):
+        elif self.robot_id == FoesID(1):
             pos_1=self.get_position()
             pos_2=World_State.get_team_robot_pose(self,0)
         
             
             obstacles =self.world_state.get_all_foes_position()
              
-            if(Positioning_helper.is_path_clear(pos_1,pos_2,obstacles,bob.ROBOT_RADIUS)):
+            if(PositioningHelper.is_path_clear(pos_1,pos_2,obstacles,bob.ROBOT_RADIUS)):
                 event_callbacks.on_valid_line(self.robot_id.name)
 
         else:
@@ -190,7 +189,7 @@ class FoesState:
             
             obstacles = self.world_state.get_all_foes_position()
              
-            if(Positioning_helper.is_path_clear(pos_1,pos_2,obstacles,bob.ROBOT_RADIUS)):
+            if(PositioningHelper.is_path_clear(pos_1,pos_2,obstacles,bob.ROBOT_RADIUS)):
                 event_callbacks.on_valid_line(self.robot_id.name)
 
 
