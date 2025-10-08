@@ -103,46 +103,51 @@ class ValidLine(py_trees.behaviour.Behaviour):
 
     def __init__(self,bob:Bob, name: str = "Valid_Line"):
         super().__init__(name)
+        self.robot = bob
 
     def setup(self, **kwargs):
+        logger.debug(f"--> SETUP EXECUTADO: {self.name}")
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
-        if _bb.get(f"{BlackboardKeys.Flags.TeamContext.VALID_LINE}"):
+    
+        key = f"{self.robot.robot_id.name}{BlackboardKeys.Flags.TeamContext.VALID_LINE}"
+        if _bb.get(key):
+            logger.debug(f"[{self.name}] Sucesso: Flag '{key}' é True na Blackboard.")
             return py_trees.common.Status.SUCCESS
-        return py_trees.common.Status.FAILURE
+        else:
+            logger.debug(f"[{self.name}] Falhou: Flag '{key}' não é True ou não existe.")
+            return py_trees.common.Status.FAILURE
+
 
 
 class ReceiverUnmarked(py_trees.behaviour.Behaviour):
-
-    def __init__(self,bob=Bob ,name: str = "Receiver_Unmarked"):
+    def __init__(self, robot: Bob, name: str = "Receiver_Unmarked"):
         super().__init__(name)
+        self.robot = robot
+        self._bb = Blackboard_Manager.get_instance()
+        self.pos_helper = PositioningHelper.get_object() 
 
     def setup(self, **kwargs):
+        logger.debug(f"--> SETUP EXECUTADO: {self.name}")
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
-        if _bb.get(f"{BlackboardKeys.Flags.TeamContext.UNMARKED_RECEIVER}"):
-            return py_trees.common.Status.RUNNING
+        receiver_pos = self._bb.get("pass_target_pos")
 
-        return py_trees.common.Status.FAILURE
+        
+        if receiver_pos is None:
+            logger.debug(f"[{self.name}] Falhou: Posição do receptor (pass_target_pos) é Nula.")
+            return py_trees.common.Status.FAILURE
 
+       
+        if self.pos_helper.outside_enemies_influence(receiver_pos):
+            logger.debug(f"[{self.name}] Sucesso: Receptor na posição {receiver_pos} está desmarcado.")
+            return py_trees.common.Status.SUCCESS
+        else:
+            logger.debug(f"[{self.name}] Falhou: Receptor na posição {receiver_pos} está marcado.")
+            return py_trees.common.Status.FAILURE
 
-###class rotation_done(py_trees.behaviour.Behaviour):#rotacionar em relaçaom ao alvo para realizar o passe
-# DENTRO DO NO DE AÇAO CHOOSE WHO TO PASS
-## def __init__(self, Robot:Bob, name: str = "Rotation_done"):
-##   super().__init__(name)
-# self.robot = Robot
-# self.bb = Blackboard_Manager.get_instance()
-
-# def update(self) -> py_trees.common.Status:
-# if self.bb.get(
-#   f"{self.robot.robot_id}{positions_values.rotation_done}"
-#  ):
-# return py_trees.common.Status.SUCCESS
-#   return py_trees.common.Status.RUNNING
-
-########PASSE#########################   ACIMAAAAAAAA
 
 
 class BallVisible(py_trees.behaviour.Behaviour):

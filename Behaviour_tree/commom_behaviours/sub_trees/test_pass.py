@@ -41,6 +41,8 @@ def create_scenario(all_bobs: list[Bob]):
     t0 = time.time()
     while time.time() <= delay + t0:
         wd.update()
+        for bob in all_bobs:
+            bob.update()
     # --- BLOCO DE CRIACAO DE TESTES --- #
 
 
@@ -84,5 +86,7 @@ if __name__ == "__main__":
             tPrint = time.time()
         if time.time() >= update_delay + tUpdate:
             wd.update()
+            for b in all_bobs:
+                b.state.update()
             pass_subtree.tick()
             tUpdate = time.time()
