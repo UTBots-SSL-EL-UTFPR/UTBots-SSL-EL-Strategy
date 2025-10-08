@@ -546,7 +546,58 @@ class ExecutePass(py_trees.behaviour.Behaviour):
 ### coesão e desaclopamento!
 
 
-class Align_for_shoot(pt.behaviour.Behaviour):
+class Calculate_target(pt.behaviour.Behaviour):
+    def __init__(
+        self,
+        attacker: Bob,
+        name: str = "Calculate_kick_target"
+    ):
+        super().__init__(name)
+        self.attacker = attacker
+        self.bb = Blackboard_Manager.get_instance()
+
+    def setup(self, **kwargs):
+        if self.attacker is None:
+            raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
+        return super().setup(**kwargs)
+
+    def initialise(self):
+        self.bb.set(f"{self.attacker.robot_id.name}_team_kick", True)
+
+    def update(self) -> pt.common.Status:
+        if (
+          self.attacker is None
+          or self.attacker.state is None
+      ):
+          return pt.common.Status.FAILURE
+    
+        attacker_id = self.attacker.robot_id.value   # Transforma de enum para int
+        attacker_pose = _ws.get_team_robot_pose(attacker_id)
+        goal_pose = _pos_helper.get_goal_center()
+        obstacles_pose = _ws.get_all_robot_position()
+        obstacles_pose.remove(attacker_pose)
+
+
+        max_angle_visibility_field, min_angle_visibility_field = vis_gol.limits_of_visibility(obstacles_pose, attacker_pose, goal_pose)
+        # Esse angulo é dado em relacação ao eixo x+ quando x_gol>0 e x- quando x_gol<0
+        visArea_center_rad = (max_angle_visibility_field + min_angle_visibility_field) / 2
+     
+        if goal_pose.x < 0 :    # Usa da propriedade dos ângulos opostos pelo vértice
+            visArea_center_rad = (visArea_center_rad + math.pi)*-1
+      
+        ball_pose = _ws.get_ball_position()
+        x_ball = ball_pose.x
+        y_ball = ball_pose.y
+      
+        x_target = x_ball + BALL_DISTANCE_FOR_SHOOT*math.cos(visArea_center_rad)
+        y_target = y_ball + BALL_DISTANCE_FOR_SHOOT*math.sin(visArea_center_rad)
+    
+        self.attacker.state.target_position = (Pose2D)(x_target, y_target, visArea_center_rad)
+
+        return pt.common.Status.SUCCESS
+
+
+class Align(pt.behaviour.Behaviour):
     def __init__(
         self,
         attacker: Bob,
@@ -559,7 +610,6 @@ class Align_for_shoot(pt.behaviour.Behaviour):
         self.bb = Blackboard_Manager.get_instance()
         self.tolerance_rad = tolerance_rad
         self.tolerance_xy = tolerance_xy
-        self.target_calculated = False
 
     def setup(self, **kwargs):
         if self.attacker is None:
@@ -567,78 +617,22 @@ class Align_for_shoot(pt.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def initialise(self):
-        self.bb.set(f"{self.attacker.robot_id.name}_team_kick", True)
         self.bb.set(f"{self.attacker.robot_id.name}_cmd_movement", 0.0)
 
     def update(self) -> pt.common.Status:
-        x_target = 1000
-        y_target = 0
-        target_angle = 0
-        attacker_id = self.attacker.robot_id.value  # Transforma de enum para int
-        attacker_pose = _ws.get_team_robot_pose(attacker_id)
-        if self.target_calculated == False:
-            self.attacker.set_new_target(Pose2D(x_target, y_target, target_angle))
-            self.target_calculated = True
-            print(f"🎯 ALVO FIXO: ({x_target}, {y_target}, {target_angle})")
-            print(f"🤖 POSIÇÃO INICIAL: {attacker_pose}")
 
-        print("=== DEBUG CONTROLADOR ===")
-        print(
-            f"Posição atual: ({attacker_pose.x:.1f}, {attacker_pose.y:.1f}, {attacker_pose.theta:.3f})"
-        )
-        print(f"Alvo: ({x_target}, {y_target}, {target_angle})")
-        self.attacker.precision_movement()
-        print("========================")
-        # Verificação manual do alinhamento (bypass a função)
-        dx = abs(attacker_pose.x - x_target)
-        dy = abs(attacker_pose.y - y_target)
-        dtheta = abs(attacker_pose.theta - target_angle)
-
-        print(f"ERROS - dx: {dx:.1f}, dy: {dy:.1f}, dtheta: {dtheta:.3f}")
-        print(f"TOLERÂNCIAS - xy: {self.tolerance_xy}, rad: {self.tolerance_rad}")
-
-        if (
-            dx <= self.tolerance_xy
-            and dy <= self.tolerance_xy
-            and dtheta <= self.tolerance_rad
-        ):
-            print("✅ SUCESSO - Alinhado!")
-            return pt.common.Status.SUCCESS
-        else:
-            print("🔄 RUNNING")
-            return pt.common.Status.RUNNING
-        """
       if (
           self.attacker is None
           or self.attacker.state is None
       ):
           return pt.common.Status.FAILURE
     
+      # Realiza o movimento
+      self.attacker.precision_movement()
+
       attacker_id = self.attacker.robot_id.value   # Transforma de enum para int
       attacker_pose = _ws.get_team_robot_pose(attacker_id)
-      goal_pose = _pos_helper.get_goal_center()
-      obstacles_pose = _ws.get_all_robot_position()
-      obstacles_pose.remove(attacker_pose)
 
-
-      max_angle_visibility_field, min_angle_visibility_field = vis_gol.limits_of_visibility(obstacles_pose, attacker_pose, goal_pose)
-      # Esse angulo é dado em relacação ao eixo x+ quando x_gol>0 e x- quando x_gol<0
-      visArea_center_rad = (max_angle_visibility_field + min_angle_visibility_field) / 2
-     
-      if goal_pose.x < 0 :
-          visArea_center_rad = (visArea_center_rad + math.pi)*-1
-      
-      ball_pose = _ws.get_ball_position()
-      x_ball = ball_pose.x
-      y_ball = ball_pose.y
-      
-      x_target = 50 #x_ball + BALL_DISTANCE_FOR_SHOOT*math.cos(visArea_center_rad)
-      y_target = 50 #y_ball + BALL_DISTANCE_FOR_SHOOT*math.sin(visArea_center_rad)
-      
-      if self.target_calculated == False:
-        self.attacker.state.target_position = (Pose2D)(x_target, y_target, visArea_center_rad)
-        self.target_calculated = True
-      self.attacker.precision_movement()
 
       if hp.PositioningHelper.is_aligned_to_goal(
             attacker_pose,
@@ -655,7 +649,7 @@ class Align_for_shoot(pt.behaviour.Behaviour):
 
     def terminate(self, new_status: pt.common.Status):
       self.bb.set(f"{self.attacker.robot_id.name}_cmd_movement", 0.0)
-"""
+      
 
 
 ### NAO SEI EXATAMENTE EM Q PONTO ISSO É CHAMADO, MAS ELE PRECISA ESTAR COLADO NA BOLA
