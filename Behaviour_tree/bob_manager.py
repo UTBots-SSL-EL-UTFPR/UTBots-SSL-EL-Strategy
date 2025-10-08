@@ -20,7 +20,7 @@ from utils.defines import (
     FIELD_INVERTED_SIDE,
 )
 from .core.World_State import World_State
-from .core.World_State import TeamID
+from .core.World_State import TeamID, FoesID
 from SSL_configuration.configuration import Configuration
 import math
 from .helpers.positioning_helper import PositioningHelper, MIN_PASS_DISTANCE, HALF_LEGHT

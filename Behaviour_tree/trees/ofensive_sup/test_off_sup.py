@@ -103,12 +103,12 @@ if __name__ == "__main__":
     tUpdate = time.time()
     while True:
         if time.time() >= print_delay + tPrint:
-            # prints_e_logs(argenton, [kamiji, goalkeeper])
+            prints_e_logs(argenton, [kamiji, goalkeeper])
             tPrint = time.time()
         if time.time() >= update_delay + tUpdate:
             wd.update()
             foes.update()
-            #off_sup_subtree.tick()
+            off_sup_subtree.tick()
             goalkeeper_subtree.tick()
             for bob in all_bobs:
                 bob.update()
