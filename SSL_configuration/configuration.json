@@ -1,7 +1,7 @@
 {
     "global":
     {
-        "is_left_team": 1,
+        "is_left_team": 0,
         "foes_id": [1,2,0]
     },
     "Positioning":

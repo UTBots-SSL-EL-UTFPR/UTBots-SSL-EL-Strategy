@@ -89,16 +89,12 @@ _bb = Blackboard_Manager.get_instance()
 # ----------------------------------ball posetion----------------------------------#
 def team_got_ball_posetion(robot_id: str):
     logger.debug("TEAM got ball posetion")
-
-    _bb.set(f"{robot_id}{BlackboardKeys.Flags.BallMotion.HAS_BALL}", True)
-    _bb.set(
-        f"{BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL}",
-        True,
-    )
-    _bb.set(
-        f"{BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL}",
-        False,
-    )
+    if not _bb.get(BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL):
+        _bb.set(f"{robot_id}{BlackboardKeys.Flags.BallMotion.HAS_BALL}", True)
+        _bb.set(
+            f"{BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL}",
+            True,
+        )
 
 
 def lost_ball_posetion(robot_id: str):
