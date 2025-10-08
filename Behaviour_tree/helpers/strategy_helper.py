@@ -24,7 +24,7 @@ class StrategyHelper:
     @classmethod
     def get_press_oponent_position(cls):
         ball_position = cls._ws.get_ball_position()
-        goal_position = FieldHelper.get_enemy_goal_center()
+        goal_position = FieldHelper.get_team_goal_center()
         return GeometryHelper.calculate_point_on_line(
             ball_position, goal_position, DISTANCE_PRESS_OPPONENT
         )
@@ -32,10 +32,10 @@ class StrategyHelper:
     @classmethod
     def get_ball_recovery_position(cls):
         ball_position = cls._ws.get_ball_position()
-        
+
         goal_position = FieldHelper.get_enemy_goal_center()
         return GeometryHelper.calculate_point_on_line(
-            goal_position, ball_position, DISTANCE_PRESS_OPPONENT
+            ball_position, goal_position, -DISTANCE_PRESS_OPPONENT
         )
 
     @classmethod
@@ -102,16 +102,79 @@ class StrategyHelper:
                         Pose2D._clamp(safest_point.y, -1300, 1300),
                     )
                     break
-        print(robot_pos)
 
         return cls.get_Robot_path(target_pose, robot_pos, ball_pos)
 
     @classmethod
+    def set_goalkeeper_position(cls, robot_pos: Pose2D):
+
+        obstacles = cls._ws.get_all_robot_position()
+        obstacles = [obs for obs in obstacles if obs != robot_pos]
+
+        target_pose = Pose2D(-100, 0)
+        new_path = MotionHelper.find_shortest_path(
+            robot_pos,
+            target_pose,
+            obstacles,
+            cls._ws.get_ball_position(),
+        )
+        return new_path
+
+    @classmethod
     def get_Robot_path(
-        cls, target_pose: Pose2D, robot_position: Pose2D, ball_position: Pose2D
+        cls, target_pose: Pose2D, robot_position: Pose2D, ball_position: Pose2D | None
     ):
         obstacles = cls._ws.get_all_robot_position()
         obstacles = [obs for obs in obstacles if obs != robot_position]
         return MotionHelper.find_shortest_path(
             robot_position, target_pose, obstacles, ball_position
         )
+
+    @classmethod
+    def _decide_goalkeeper_depth_factor(cls, ball_position: Pose2D) -> float:
+        """
+        Decide o quão agressivo o goleiro deve ser.
+        """
+        goal_center = FieldHelper.get_team_goal_center()
+        dist_ball_to_goal = abs(ball_position.x - goal_center.x)
+
+        if dist_ball_to_goal < 800:
+            return 0.8
+        if dist_ball_to_goal < 1200:
+            return 0.6
+        return 0.1
+
+    @classmethod
+    def get_goalkeeper_defense_position(cls) -> Pose2D:
+        """
+        Executa a estratégia do goleiro para encontrar a melhor posição.
+        """
+        ball = cls._ws.get_ball_position()
+        our_goal = FieldHelper.get_team_goal_center()
+
+        if ball is None:
+            return our_goal
+
+        is_behind_goal = (our_goal.x < 0 and ball.x < our_goal.x) or (
+            our_goal.x > 0 and ball.x > our_goal.x
+        )
+        if is_behind_goal:
+            return FieldHelper.clamp_into_goalkeeper_area(our_goal)
+
+        depth_factor = cls._decide_goalkeeper_depth_factor(ball)
+
+        defense_x = FieldHelper.calculate_defense_line_x(depth_factor)
+
+        post_top, post_bottom = FieldHelper.get_team_goal_posts()
+
+        bisector_dir = GeometryHelper.calculate_bisector_direction(
+            ball, post_top, post_bottom
+        )
+
+        ideal_target = GeometryHelper.find_line_intersection_with_vertical(
+            start_point=ball, direction_vec=bisector_dir, vertical_line_x=defense_x
+        )
+
+        final_target = FieldHelper.clamp_into_goalkeeper_area(ideal_target)
+
+        return final_target

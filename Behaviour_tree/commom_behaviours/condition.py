@@ -6,14 +6,13 @@ from py_trees.common import Status
 
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
-from Behaviour_tree.core.World_State import TeamID
+from Behaviour_tree.core.World_State import TeamID, World_State
 from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
 
 positions_values = BlackboardKeys.Values.Positions
 _bb = Blackboard_Manager.get_instance()
-_pos_helper = PositioningHelper.get_object()
 
 # =======================================================================================#
 #                                     IMPLEMENTADOS                                     #
@@ -107,6 +106,31 @@ class ValidLine(py_trees.behaviour.Behaviour):
         if _bb.get(f"{BlackboardKeys.Flags.TeamContext.VALID_LINE}"):
             return py_trees.common.Status.RUNNING
         return py_trees.common.Status.FAILURE
+
+
+class BolaSegura(py_trees.behaviour.Behaviour):
+    def __init__(self, robot: Bob, name: str = "BolaSegura"):
+        self._ws = World_State.get_object()
+        self.robot = robot
+        super().__init__(name)
+
+    def setup(self, **kwargs):
+        return super().setup(**kwargs)
+
+    def update(self) -> py_trees.common.Status:
+        if _bb.get(BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL):
+            logger.debug(f"{self.name} - FAILURE FOES com bola")
+            return py_trees.common.Status.FAILURE
+
+        ball = self._ws.get_ball_position()
+        robots = self._ws.get_all_robot_position()
+        robot_pos = self.robot.state.position
+        for robot in robots:
+            if ball.distance_to(robot) < ball.distance_to(robot_pos):
+                logger.debug(f"{self.name} - FAILURE OUTRO ROBO MAIS PROX")
+                return py_trees.common.Status.FAILURE
+        logger.debug(f"{self.name} - SUCCESS")
+        return py_trees.common.Status.SUCCESS
 
 
 class ReceiverUnmarked(py_trees.behaviour.Behaviour):

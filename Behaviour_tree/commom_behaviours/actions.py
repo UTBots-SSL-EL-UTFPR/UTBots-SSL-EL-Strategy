@@ -50,7 +50,7 @@ class Move_node(pt.behaviour.Behaviour):
         self,
         robot: Bob,
         name: str = "MOVE",
-        timeout_s: float = 15,
+        timeout_s: float = 5,
     ):
         super().__init__(name=name)
         self.robot: Bob | None = robot
@@ -253,7 +253,6 @@ class RecuperarBola(py_trees.behaviour.Behaviour):
     decide se ira tentar recuperar a bola, faz isso se a bola nao estiver com ninguem do time
     se der falha, entao a bola é confirmada como em nossa posse
     ja da um followball inteligente, mirando ficar atras da bola
-    TODO testar com mov willian
     por enquanto assume estar em boa pos para tal, mas deve ser verificado
     """
 
@@ -262,21 +261,23 @@ class RecuperarBola(py_trees.behaviour.Behaviour):
         self._bb = py_trees.blackboard.Blackboard()
         self.robot = robot
         self.team_has_ball = f"{BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL}"
+        self.foes_have_ball = f"{BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL}"
 
     def setup(self, **kwargs) -> None:
         logger.debug(f"setup {self.name}")
         self._bb.set(self.team_has_ball, False)
-
+        self._bb.set(self.foes_have_ball, False)
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
         """vai atras da bola"""
         if self._bb.get(self.team_has_ball):
-            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
+            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE TEAM")
             return py_trees.common.Status.FAILURE
-        self.robot.state.target_position = (
-            hp.StrategyHelper.get_ball_recovery_position()
-        )
+        if self._bb.get(self.foes_have_ball):
+            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE FOES")
+            return py_trees.common.Status.FAILURE
+        self.robot.set_new_target(hp.StrategyHelper.get_ball_recovery_position())
         self.robot.state.current_command = self.name
         logger.debug(f"{self.name} - {self.robot.robot_id.name} - SUCCESS")
         return py_trees.common.Status.SUCCESS
