@@ -91,5 +91,7 @@ if __name__ == "__main__":
             tPrint = time.time()
         if time.time() >= update_delay + tUpdate:
             wd.update()
+            for b in all_bobs:
+                b.state.update()
             kick_subtree.tick()
             tUpdate = time.time()
