@@ -28,13 +28,11 @@ from typing import Optional, Tuple
 import py_trees as pt
 
 import Behaviour_tree.helpers as hp
-from Behaviour_tree.robot.bob import Bob
-from utils.pose2D import Pose2D
-
 import Behaviour_tree.helpers.visiblidade_gol as vis_gol
 from Behaviour_tree.helpers.positioning_helper import PositioningHelper
-
-from utils.defines import (BALL_DISTANCE_FOR_SHOOT)
+from Behaviour_tree.robot.bob import Bob
+from utils.defines import BALL_DISTANCE_FOR_SHOOT
+from utils.pose2D import Pose2D
 
 _pos_helper = PositioningHelper.get_object()
 _ws = World_State.get_object()
@@ -538,66 +536,78 @@ class ExecutePass(py_trees.behaviour.Behaviour):
 # --------------------------------------------------------------------------------------- #
 #                                      CHUTE                                              #
 # --------------------------------------------------------------------------------------- #
+### TENTE SEMPRE USAR OS NOMES DEF EM CALLBACKS, PARA NÃO CORRER RISCO DE TROCAR LETRAS E QUEBRAR O COD
+### SEMPRE QUE FOR ATT A TARGET DO BOB, CHAME A FUNÇÃO DELE QUE FAZ ISSO, O JEITO Q ELE SE MOVE FUNCIONA COMO
+### UMA LISTA, ENTÃO PRECISAMOS RESETAR ELA SEMPRE
+### msm coisa de como vc pega a pos do bob, usa bob.state.position
+###  self.attacker.state.target_position -->  self.attacker.set_new_target()
+### se não esta funcionado, eu diria q é devido a ele recalcular diversas vezes o movimento, tente fazer o seguinte:
+### separe esse nó em 2, um para o mov e um para calc o angulo/pos
+### coesão e desaclopamento!
+
 
 class Align_for_shoot(pt.behaviour.Behaviour):
     def __init__(
-      self,
-      attacker: Bob,
-      name: str = "Align_for_shoot",
-      tolerance_rad = 0.15,
-      tolerance_xy = 30
-  ):
-      super().__init__(name)
-      self.attacker = attacker
-      self.bb = Blackboard_Manager.get_instance()
-      self.tolerance_rad = tolerance_rad
-      self.tolerance_xy = tolerance_xy
-      self.target_calculated = False
-
+        self,
+        attacker: Bob,
+        name: str = "Align_for_shoot",
+        tolerance_rad=0.15,
+        tolerance_xy=30,
+    ):
+        super().__init__(name)
+        self.attacker = attacker
+        self.bb = Blackboard_Manager.get_instance()
+        self.tolerance_rad = tolerance_rad
+        self.tolerance_xy = tolerance_xy
+        self.target_calculated = False
 
     def setup(self, **kwargs):
-      if self.attacker is None:
-          raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
-      return super().setup(**kwargs)
-
+        if self.attacker is None:
+            raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
+        return super().setup(**kwargs)
 
     def initialise(self):
-      self.bb.set(f"{self.attacker.robot_id.name}_team_kick", True)
-      self.bb.set(f"{self.attacker.robot_id.name}_cmd_movement", 0.0)
-
+        self.bb.set(f"{self.attacker.robot_id.name}_team_kick", True)
+        self.bb.set(f"{self.attacker.robot_id.name}_cmd_movement", 0.0)
 
     def update(self) -> pt.common.Status:
-      x_target = 1000
-      y_target = 0
-      target_angle = 0
-      attacker_id = self.attacker.robot_id.value   # Transforma de enum para int
-      attacker_pose = _ws.get_team_robot_pose(attacker_id)
-      if self.target_calculated == False:
-        self.attacker.state.target_position = (Pose2D)(x_target, y_target, target_angle)
-        self.target_calculated = True
-        print(f"🎯 ALVO FIXO: ({x_target}, {y_target}, {target_angle})")
-        print(f"🤖 POSIÇÃO INICIAL: {attacker_pose}")
+        x_target = 1000
+        y_target = 0
+        target_angle = 0
+        attacker_id = self.attacker.robot_id.value  # Transforma de enum para int
+        attacker_pose = _ws.get_team_robot_pose(attacker_id)
+        if self.target_calculated == False:
+            self.attacker.set_new_target(Pose2D(x_target, y_target, target_angle))
+            self.target_calculated = True
+            print(f"🎯 ALVO FIXO: ({x_target}, {y_target}, {target_angle})")
+            print(f"🤖 POSIÇÃO INICIAL: {attacker_pose}")
 
-      print("=== DEBUG CONTROLADOR ===")
-      print(f"Posição atual: ({attacker_pose.x:.1f}, {attacker_pose.y:.1f}, {attacker_pose.theta:.3f})")
-      print(f"Alvo: ({x_target}, {y_target}, {target_angle})")
-      self.attacker.precision_movement()
-      print("========================")
-      # Verificação manual do alinhamento (bypass a função)
-      dx = abs(attacker_pose.x - x_target)
-      dy = abs(attacker_pose.y - y_target) 
-      dtheta = abs(attacker_pose.theta - target_angle)
-    
-      print(f"ERROS - dx: {dx:.1f}, dy: {dy:.1f}, dtheta: {dtheta:.3f}")
-      print(f"TOLERÂNCIAS - xy: {self.tolerance_xy}, rad: {self.tolerance_rad}")
+        print("=== DEBUG CONTROLADOR ===")
+        print(
+            f"Posição atual: ({attacker_pose.x:.1f}, {attacker_pose.y:.1f}, {attacker_pose.theta:.3f})"
+        )
+        print(f"Alvo: ({x_target}, {y_target}, {target_angle})")
+        self.attacker.precision_movement()
+        print("========================")
+        # Verificação manual do alinhamento (bypass a função)
+        dx = abs(attacker_pose.x - x_target)
+        dy = abs(attacker_pose.y - y_target)
+        dtheta = abs(attacker_pose.theta - target_angle)
 
-      if dx <= self.tolerance_xy and dy <= self.tolerance_xy and dtheta <= self.tolerance_rad:
-        print("✅ SUCESSO - Alinhado!")
-        return pt.common.Status.SUCCESS
-      else:
-        print("🔄 RUNNING")
-        return pt.common.Status.RUNNING
-      '''
+        print(f"ERROS - dx: {dx:.1f}, dy: {dy:.1f}, dtheta: {dtheta:.3f}")
+        print(f"TOLERÂNCIAS - xy: {self.tolerance_xy}, rad: {self.tolerance_rad}")
+
+        if (
+            dx <= self.tolerance_xy
+            and dy <= self.tolerance_xy
+            and dtheta <= self.tolerance_rad
+        ):
+            print("✅ SUCESSO - Alinhado!")
+            return pt.common.Status.SUCCESS
+        else:
+            print("🔄 RUNNING")
+            return pt.common.Status.RUNNING
+        """
       if (
           self.attacker is None
           or self.attacker.state is None
@@ -645,41 +655,37 @@ class Align_for_shoot(pt.behaviour.Behaviour):
 
     def terminate(self, new_status: pt.common.Status):
       self.bb.set(f"{self.attacker.robot_id.name}_cmd_movement", 0.0)
-'''
+"""
 
 
+### NAO SEI EXATAMENTE EM Q PONTO ISSO É CHAMADO, MAS ELE PRECISA ESTAR COLADO NA BOLA
+### EU SEI Q NÃO TEM COMO GARANTIR ISSO, MAS O COMANDO PARA ISSO SER FEITO DEVE TER SIDO
+### EXECUTADO ANTES DE CHEGAR AQUI
 class Shoot_to_goal(pt.behaviour.Behaviour):
     def __init__(
-      self,
-      attacker: Bob,
-      name: str = "Shoot_to_goal",
-  ):
-      super().__init__(name)
-      self.attacker = attacker
-      self.bb = Blackboard_Manager.get_instance()
-
+        self,
+        attacker: Bob,
+        name: str = "Shoot_to_goal",
+    ):
+        super().__init__(name)
+        self.attacker = attacker
+        self.bb = Blackboard_Manager.get_instance()
 
     def setup(self, **kwargs):
-      if self.attacker is None:
-          raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
-      return super().setup(**kwargs)
-
+        if self.attacker is None:
+            raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
+        return super().setup(**kwargs)
 
     def update(self) -> pt.common.Status:
-      if (
-          self.attacker is None
-          or self.attacker.state is None
-      ):
-          return pt.common.Status.FAILURE
-     
-      kick_cmd = self.attacker.kick_ball()
+        if self.attacker is None or self.attacker.state is None:
+            return pt.common.Status.FAILURE
 
+        kick_cmd = self.attacker.kick_ball()
 
-      if not kick_cmd:
-          return pt.common.Status.FAILURE
-      else:
-          return pt.common.Status.SUCCESS
-     
-     
+        if not kick_cmd:
+            return pt.common.Status.FAILURE
+        else:
+            return pt.common.Status.SUCCESS
+
     def terminate(self, new_status: pt.common.Status):
-      self.bb.set(f"{self.attacker.robot_id.name}_team_kick", False)
+        self.bb.set(f"{self.attacker.robot_id.name}_team_kick", False)
