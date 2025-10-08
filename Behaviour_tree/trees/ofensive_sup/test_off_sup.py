@@ -10,6 +10,7 @@ from Behaviour_tree.robot.bob import Bob
 from Behaviour_tree.robot.FoesManager import FoesManager
 from utils.pose2D import Pose2D
 
+from ..goalkeeper.goalkeeper_tree import get_goalkeeper_tree
 from .offensive_suport_tree import get_off_sup_tree
 
 logging.basicConfig(
@@ -93,6 +94,7 @@ if __name__ == "__main__":
     kamiji, argenton, goalkeeper = create_bobs()
     all_bobs = [kamiji, argenton, goalkeeper]
     off_sup_subtree = get_off_sup_tree(argenton)
+    goalkeeper_subtree = get_goalkeeper_tree(goalkeeper)
 
     create_scenario(all_bobs)
     update_delay = 0.001
@@ -106,8 +108,8 @@ if __name__ == "__main__":
         if time.time() >= update_delay + tUpdate:
             wd.update()
             foes.update()
-            off_sup_subtree.tick()
-
+            #off_sup_subtree.tick()
+            goalkeeper_subtree.tick()
             for bob in all_bobs:
                 bob.update()
             tUpdate = time.time()

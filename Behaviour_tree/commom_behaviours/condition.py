@@ -120,6 +120,30 @@ class ValidLine(py_trees.behaviour.Behaviour):
             return py_trees.common.Status.FAILURE
 
 
+class BolaSegura(py_trees.behaviour.Behaviour):
+    def __init__(self, robot: Bob, name: str = "BolaSegura"):
+        self._ws = World_State.get_object()
+        self.robot = robot
+        super().__init__(name)
+
+    def setup(self, **kwargs):
+        return super().setup(**kwargs)
+
+    def update(self) -> py_trees.common.Status:
+        if _bb.get(BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL):
+            logger.debug(f"{self.name} - FAILURE FOES com bola")
+            return py_trees.common.Status.FAILURE
+
+        ball = self._ws.get_ball_position()
+        robots = self._ws.get_all_robot_position()
+        robot_pos = self.robot.state.position
+        for robot in robots:
+            if ball.distance_to(robot) < ball.distance_to(robot_pos):
+                logger.debug(f"{self.name} - FAILURE OUTRO ROBO MAIS PROX")
+                return py_trees.common.Status.FAILURE
+        logger.debug(f"{self.name} - SUCCESS")
+        return py_trees.common.Status.SUCCESS
+
 
 class ReceiverUnmarked(py_trees.behaviour.Behaviour):
     def __init__(self, robot: Bob, name: str = "Receiver_Unmarked"):

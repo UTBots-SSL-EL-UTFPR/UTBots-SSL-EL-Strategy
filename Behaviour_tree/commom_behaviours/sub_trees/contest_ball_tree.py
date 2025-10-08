@@ -38,7 +38,7 @@ class PressureOpponent(py_trees.behaviour.Behaviour):
     def update(self) -> py_trees.common.Status:
         """se prepara para press oponente"""
         if not _bb.get(self.foes_with_ball):
-            logger.debug(f"{self.name} - FAILURE")
+            logger.debug(f"{self.name} - FAILURE FOES SEM BOLA")
             return py_trees.common.Status.FAILURE
         self.robot.state.target_position = StrategyHelper.get_press_oponent_position()
         logger.debug(f"{self.name} - SUCCESS")
