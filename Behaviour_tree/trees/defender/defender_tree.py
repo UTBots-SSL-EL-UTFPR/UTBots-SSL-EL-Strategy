@@ -1,128 +1,133 @@
+import logging
 import py_trees
 
-from Behaviour_tree.core.blackboard import Blackboard_Manager
-from Behaviour_tree.core.World_State import TeamID
+# ===================================================================================== #
+# IMPORTAÇÕES DO SEU PROJETO
+# ===================================================================================== #
 
-from ..defender.defender_actions import DefenderActions
-from ..defender.defender_conditions import (
+from .defender_actions import DefenderActions
+from .defender_conditions import (
     Ball_in_defensive_area,
     Ball_moving_towards_goal,
     Opponent_has_ball_in_danger_zone,
-    Opponent_in_danger_zone,
 )
+from Behaviour_tree.robot.bob import Bob
+from Behaviour_tree import commom_behaviours as cb
+from Behaviour_tree.core.blackboard import Blackboard_Manager
+from utils.pose2D import Pose2D
 
+logger = logging.getLogger(__name__)
 
-class DefenderTree:
+# ===================================================================================== #
+# ADAPTADORES DE AÇÃO (Wrappers)
+# ===================================================================================== #
+
+class CalculateDefensivePosition(py_trees.behaviour.Behaviour):
+    def __init__(self, robot: Bob, name: str = "Calcular Posição de Defesa"):
+        super().__init__(name)
+        self.robot = robot
+        self.actions_logic = DefenderActions(name="DefenderActionsLogic", blackboard=Blackboard_Manager.get_instance())
+
+    def update(self) -> py_trees.common.Status:
+        target_pose = self.actions_logic.set_defensive_position(self.robot.robot_id)
+        if target_pose:
+            self.robot.set_new_target(target_pose)
+            self.robot.state.current_command = "Posicionar para bloquear"
+            logger.debug(f"{self.name}: Novo alvo defensivo definido em {target_pose}")
+            return py_trees.common.Status.SUCCESS
+        logger.warning(f"{self.name}: Não foi possível calcular a posição defensiva.")
+        return py_trees.common.Status.FAILURE
+
+class CalculateInterceptPosition(py_trees.behaviour.Behaviour):
+    def __init__(self, robot: Bob, name: str = "Calcular Ponto de Interceptação"):
+        super().__init__(name)
+        self.robot = robot
+        self.actions_logic = DefenderActions(name="DefenderActionsLogic", blackboard=Blackboard_Manager.get_instance())
+
+    def update(self) -> py_trees.common.Status:
+        target_pose = self.actions_logic.intercept_ball(self.robot.robot_id)
+        if target_pose:
+            self.robot.set_new_target(target_pose)
+            self.robot.state.current_command = "Mover para interceptar"
+            logger.debug(f"{self.name}: Novo alvo de interceptação definido em {target_pose}")
+            return py_trees.common.Status.SUCCESS
+        logger.warning(f"{self.name}: Não foi possível calcular o ponto de interceptação.")
+        return py_trees.common.Status.FAILURE
+
+class CalculateBasePosition(py_trees.behaviour.Behaviour):
+    """Calcula a posição defensiva padrão (base) e define como alvo."""
+    def __init__(self, robot: Bob, name: str = "Calcular Posição Base"):
+        super().__init__(name)
+        self.robot = robot
+        self.base_position = Pose2D(-1800.0, 0.0)
+
+    def update(self) -> py_trees.common.Status:
+        self.robot.set_new_target(self.base_position)
+        self.robot.state.current_command = "Retornando para a base"
+        return py_trees.common.Status.SUCCESS
+    
+# ===================================================================================== #
+# FUNÇÃO PRINCIPAL PARA CONSTRUIR A ÁRVORE
+# ===================================================================================== #
+
+def get_defender_tree(robot: Bob) -> py_trees.trees.BehaviourTree:
     """
-    Árvore de comportamento para o defensor.
+    Monta e retorna a árvore de comportamento completa para o papel de Defensor.
     """
+    # --- 1. Ramo de Interceptação (Máxima Prioridade) ---
+    intercept_branch = py_trees.composites.Sequence(
+        name="Ramo: Interceptar Ameaça de Gol",
+        memory=True,
+        children=[
+            Ball_moving_towards_goal(name="Bola Indo Para o Gol?"),
+            CalculateInterceptPosition(robot),
+            cb.actions.Move_node(robot, name="Executar Movimento"),
+        ],
+    )
 
-    def __init__(self, robot_id: TeamID):
-        self.robot_id = robot_id
-        self.blackboard = Blackboard_Manager.get_instance()
-        self.defender_actions = DefenderActions(
-            name="DefenderActions", blackboard=self.blackboard
-        )
+    # --- 2. Ramo de Bloqueio de Ameaça ---
+    is_there_a_threat = py_trees.composites.Selector(
+        name="Há Ameaça na Área?",
+        memory=False,
+        children=[
+            Opponent_has_ball_in_danger_zone(name="Oponente com Bola na Zona Perigosa?"),
+            Ball_in_defensive_area(name="Bola na Nossa Área de Defesa?"),
+        ],
+    )
 
-    def create_tree(self) -> py_trees.behaviour.Behaviour:
-        """
-        Cria a árvore de comportamento do defensor.
-        """
+    block_threat_branch = py_trees.composites.Sequence(
+        name="Ramo: Bloquear Ameaça na Área",
+        memory=True,
+        children=[
+            is_there_a_threat,
+            CalculateDefensivePosition(robot),
+            # CORREÇÃO: Outra nova instância do Move_node aqui
+            cb.actions.Move_node(robot, name="Executar Movimento"),
+        ],
+    )
+    
+    # --- 3. Ramo Padrão (Fallback) ---
+    go_to_base_position_branch = py_trees.composites.Sequence(
+        name="Ramo: Voltar para Base",
+        memory=True,
+        children=[
+            CalculateBasePosition(robot),
+            cb.actions.Move_node(robot, name="Executar Movimento"),
+        ],
+    )
 
-        # ---------------------------------------------------------------------#
-        #                          CONDIÇÕES                                   #
-        # ---------------------------------------------------------------------#
-
-        ball_in_defensive_area = Ball_in_defensive_area(name="Ball in Defensive Area")
-        opponent_in_danger_zone = Opponent_in_danger_zone(
-            name="Opponent in Danger Zone"
-        )
-        opponent_has_ball_in_danger_zone = Opponent_has_ball_in_danger_zone(
-            name="Opponent Has Ball in Danger Zone"
-        )
-        ball_moving_towards_goal = Ball_moving_towards_goal(
-            name="Ball Moving Towards Goal"
-        )
-
-        # ---------------------------------------------------------------------#
-        #                          AÇÕES                                       #
-        # ---------------------------------------------------------------------#
-
-        set_defensive_position = py_trees.behaviours.Success(
-            name="Set Defensive Position",
-            action=lambda: self.defender_actions.set_defensive_position(self.robot_id),
-        )
-        intercept_ball = py_trees.behaviours.Success(
-            name="Intercept Ball",
-            action=lambda: self.defender_actions.intercept_ball(self.robot_id),
-        )
-
-        # ---------------------------------------------------------------------#
-        #                          RAMOS                                       #
-        # ---------------------------------------------------------------------#
-
-        # Ramo: Interceptar a bola se ela estiver se movendo em direção ao gol
-        intercept_ball_branch = py_trees.composites.Sequence(
-            name="Intercept Ball Branch",
-            memory=False,
-            children=[ball_moving_towards_goal, intercept_ball],
-        )
-
-        # Ramo: Bloquear o oponente se ele estiver na zona perigosa com a bola
-        block_opponent_branch = py_trees.composites.Sequence(
-            name="Block Opponent Branch",
-            memory=False,
-            children=[opponent_has_ball_in_danger_zone, set_defensive_position],
-        )
-
-        # Ramo: Proteger a área defensiva se a bola estiver na área defensiva
-        protect_area_branch = py_trees.composites.Sequence(
-            name="Protect Area Branch",
-            memory=False,
-            children=[ball_in_defensive_area, set_defensive_position],
-        )
-
-        # Ramo: Monitorar oponente na zona perigosa
-        monitor_opponent_branch = py_trees.composites.Sequence(
-            name="Monitor Opponent Branch",
-            memory=False,
-            children=[opponent_in_danger_zone, set_defensive_position],
-        )
-
-        # ---------------------------------------------------------------------#
-        #                          NÓ RAIZ                                     #
-        # ---------------------------------------------------------------------#
-
-        # O nó raiz escolhe entre os ramos de interceptação, bloqueio ou proteção
-        root = py_trees.composites.Selector(
-            name="Defender Root",
-            memory=False,
-            children=[
-                intercept_ball_branch,
-                block_opponent_branch,
-                protect_area_branch,
-                monitor_opponent_branch,
-            ],
-        )
-
-        return root
-
-
-if __name__ == "__main__":
-    import py_trees.display
-
-    robot_id = TeamID.Argenton
-    defender_tree = DefenderTree(robot_id=robot_id)
-
-    tree = defender_tree.create_tree()
-
-    print("\n=== ESTRUTURA EM ASCII ===")
-    print(py_trees.display.unicode_tree(tree))
-
-    try:
-        py_trees.display.render_dot_tree(tree, name="defender_tree")
-        print(
-            "\nArquivo DOT gerado como 'defender_tree.dot' e imagem PNG correspondente."
-        )
-    except Exception as e:
-        print(f"Não foi possível gerar DOT/PNG: {e}")
+    # --- Nó Raiz (Selector de Prioridades) ---
+    root = py_trees.composites.Selector(
+        name="Comportamento do Defensor",
+        memory=True,
+        children=[
+            intercept_branch,
+            block_threat_branch,
+            go_to_base_position_branch,
+        ],
+    )
+    
+    # --- Monta a árvore final ---
+    behaviour_tree = py_trees.trees.BehaviourTree(root)
+    behaviour_tree.setup(robot=robot)
+    return behaviour_tree
