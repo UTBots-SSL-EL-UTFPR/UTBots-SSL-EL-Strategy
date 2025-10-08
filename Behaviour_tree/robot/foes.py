@@ -23,9 +23,6 @@ class Foes_State:
         self.configuration = Configuration.getObject()
         self.pos_helper = Positioning_helper.get_object()
 
-        self.position: Pose2D = Pose2D(3333, 3333)
-        self.velocity: Pose2D = Pose2D()
-
 # ===== provavelmente desnecessario (usado para testes) =====
         self.target_position: Pose2D | None = Pose2D()
         self.active_function = None
