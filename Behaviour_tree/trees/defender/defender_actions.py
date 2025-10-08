@@ -73,8 +73,8 @@ class DefenderActions(pt.behaviour.Behaviour):
         if robot is None or robot.state is None:
             return None
 
-        ball = self.world_state.get_ball_position()
-        if ball is None:
+        ball_position = self.world_state.get_ball_position()
+        if ball_position is None:
             return None
 
         # Define a área defensiva
@@ -82,8 +82,8 @@ class DefenderActions(pt.behaviour.Behaviour):
         area_y_min, area_y_max = -1300, 1300
 
         # Calcula a posição alvo do defensor
-        target_x = max(area_x_min, min(ball.x - 300, area_x_max))
-        target_y = max(area_y_min, min(ball.y, area_y_max))
+        target_x = max(area_x_min, min(ball_position.x - 300, area_x_max))
+        target_y = max(area_y_min, min(ball_position.y, area_y_max))
 
         target_pose = Pose2D(target_x, target_y)
 
@@ -95,7 +95,7 @@ class DefenderActions(pt.behaviour.Behaviour):
             target_pose,
             obstacles,
             ROBOT_RADIUS,
-            ball,
+            ball_position,
             BALL_RADIUS,
         )
         robot.state.role = RoleType.DEFENDER

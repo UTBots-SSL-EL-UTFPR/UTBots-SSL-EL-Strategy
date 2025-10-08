@@ -27,6 +27,7 @@ import py_trees as pt
 import Behaviour_tree.helpers as hp
 import Behaviour_tree.helpers.visiblidade_gol as vis_gol
 from Behaviour_tree.helpers.positioning_helper import PositioningHelper
+from Behaviour_tree.helpers.motion_helper import MotionHelper
 from Behaviour_tree.robot.bob import Bob
 from utils.defines import BALL_DISTANCE_FOR_SHOOT
 from utils.pose2D import Pose2D
@@ -455,7 +456,7 @@ class Align_for_pass(pt.behaviour.Behaviour):
 ### coesão e desaclopamento!
 
 
-class Calculate_target(pt.behaviour.Behaviour):
+class Calculate_kick_target(pt.behaviour.Behaviour):
     def __init__(
         self,
         attacker: Bob,
@@ -486,7 +487,6 @@ class Calculate_target(pt.behaviour.Behaviour):
         obstacles_pose = _ws.get_all_robot_position()
         obstacles_pose.remove(attacker_pose)
 
-
         max_angle_visibility_field, min_angle_visibility_field = vis_gol.limits_of_visibility(obstacles_pose, attacker_pose, goal_pose)
         # Esse angulo é dado em relacação ao eixo x+ quando x_gol>0 e x- quando x_gol<0
         visArea_center_rad = (max_angle_visibility_field + min_angle_visibility_field) / 2
@@ -503,6 +503,10 @@ class Calculate_target(pt.behaviour.Behaviour):
     
         self.attacker.state.target_position = (Pose2D)(x_target, y_target, visArea_center_rad)
 
+
+        MotionHelper.find_shortest_path()
+        # Usar motion_helper.find_shortest_path() para calcular a trajetória
+
         return pt.common.Status.SUCCESS
 
 
@@ -511,14 +515,10 @@ class Align(pt.behaviour.Behaviour):
         self,
         attacker: Bob,
         name: str = "Align_for_shoot",
-        tolerance_rad=0.15,
-        tolerance_xy=30,
     ):
         super().__init__(name)
         self.attacker = attacker
         self.bb = Blackboard_Manager.get_instance()
-        self.tolerance_rad = tolerance_rad
-        self.tolerance_xy = tolerance_xy
 
     def setup(self, **kwargs):
         if self.attacker is None:
@@ -539,20 +539,10 @@ class Align(pt.behaviour.Behaviour):
       # Realiza o movimento
       self.attacker.precision_movement()
 
-      attacker_id = self.attacker.robot_id.value   # Transforma de enum para int
-      attacker_pose = _ws.get_team_robot_pose(attacker_id)
 
-
-      if hp.PositioningHelper.is_aligned_to_goal(
-            attacker_pose,
-            self.attacker.state.target_position,
-            tolerance_rad = self.tolerance_rad,
-            tolerance_xy = self.tolerance_xy
-        ):
-          print("sucess")
+      if self.attacker.state.target_reached():
           return pt.common.Status.SUCCESS
       else:
-          print("running")
           return pt.common.Status.RUNNING
 
 
@@ -561,9 +551,6 @@ class Align(pt.behaviour.Behaviour):
       
 
 
-### NAO SEI EXATAMENTE EM Q PONTO ISSO É CHAMADO, MAS ELE PRECISA ESTAR COLADO NA BOLA
-### EU SEI Q NÃO TEM COMO GARANTIR ISSO, MAS O COMANDO PARA ISSO SER FEITO DEVE TER SIDO
-### EXECUTADO ANTES DE CHEGAR AQUI
 class Shoot_to_goal(pt.behaviour.Behaviour):
     def __init__(
         self,
