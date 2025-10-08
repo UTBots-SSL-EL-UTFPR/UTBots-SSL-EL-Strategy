@@ -572,40 +572,40 @@ class Calculate_kick_target(pt.behaviour.Behaviour):
       ):
           return pt.common.Status.FAILURE
     
-        attacker_id = self.attacker.robot_id.value   # Transforma de enum para int
-        attacker_pose = _ws.get_team_robot_pose(attacker_id)
+        # Só inicializações que eu vou precisar
+        attacker_pose = self.attacker.state.position
         goal_pose = _pos_helper.get_goal_center()
         obstacles_pose = _ws.get_all_robot_position()
         obstacles_pose.remove(attacker_pose)
 
+        # Cálculo do ângulo
         max_angle_visibility_field, min_angle_visibility_field = vis_gol.limits_of_visibility(obstacles_pose, attacker_pose, goal_pose)
         # Esse angulo é dado em relacação ao eixo x+ quando x_gol>0 e x- quando x_gol<0
-        visArea_center_rad = (max_angle_visibility_field + min_angle_visibility_field) / 2
+        desired_angle = (max_angle_visibility_field + min_angle_visibility_field) / 2
      
-        if goal_pose.x < 0 :    # Usa da propriedade dos ângulos opostos pelo vértice
-            visArea_center_rad = (visArea_center_rad + math.pi)*-1
+        if goal_pose.x < 0 :    # Vai para o quadrante oposto
+            desired_angle = desired_angle*(-1) + math.pi
       
         ball_pose = _ws.get_ball_position()
-        x_ball = ball_pose.x
-        y_ball = ball_pose.y
       
-        x_target = x_ball + BALL_DISTANCE_FOR_SHOOT*math.cos(visArea_center_rad)
-        y_target = y_ball + BALL_DISTANCE_FOR_SHOOT*math.sin(visArea_center_rad)
+        BALL_PASS_OFFSET = 150
+
+        # Cálculo o ponto alvo de alinhamento
+        x_target = ball_pose.x - BALL_PASS_OFFSET * math.cos(desired_angle)
+        y_target = ball_pose.y - BALL_PASS_OFFSET * math.sin(desired_angle)
     
-        self.attacker.state.target_position = (Pose2D)(x_target, y_target, visArea_center_rad)
+        self.attacker.state.target_position = (Pose2D)(x_target, y_target, desired_angle)
 
-
-        MotionHelper.find_shortest_path()
-        # Usar motion_helper.find_shortest_path() para calcular a trajetória
 
         return pt.common.Status.SUCCESS
+
 
 
 class Align(pt.behaviour.Behaviour):
     def __init__(
         self,
         attacker: Bob,
-        name: str = "Align_for_shoot",
+        name: str = "Align",
     ):
         super().__init__(name)
         self.attacker = attacker
@@ -617,7 +617,8 @@ class Align(pt.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def initialise(self):
-        self.bb.set(f"{self.attacker.robot_id.name}_cmd_movement", 0.0)
+        #self.bb.set(f"{self.attacker.robot_id.name}_cmd_movement", 0.0)
+        pass
 
     def update(self) -> pt.common.Status:
 
@@ -630,7 +631,7 @@ class Align(pt.behaviour.Behaviour):
       # Realiza o movimento
       self.attacker.precision_movement()
 
-
+      # Verifica se chegou ao alvo
       if self.attacker.state.target_reached():
           return pt.common.Status.SUCCESS
       else:
@@ -638,7 +639,8 @@ class Align(pt.behaviour.Behaviour):
 
 
     def terminate(self, new_status: pt.common.Status):
-      self.bb.set(f"{self.attacker.robot_id.name}_cmd_movement", 0.0)
+      #self.bb.set(f"{self.attacker.robot_id.name}_cmd_movement", 0.0)
+      pass
       
 
 
