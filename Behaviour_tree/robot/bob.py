@@ -125,6 +125,8 @@ class Bob:
         """
         Move o bob de sua pose2d atual ate outra pose2d com velocidade sem se importar com o angulo
         """
+        if self.state.target_position is None:
+            return
         vx_s, vy_s, w = self.compute_world_velocity(
             self.state.position, self.state.target_position, mode="maintain_orientation"
         )
