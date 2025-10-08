@@ -33,8 +33,22 @@ HALF_WID = int(FIELD_HEIGHT / 2)
 class FieldHelper:
 
     @classmethod
-    def get_goal_center(cls) -> Pose2D:
+    def get_enemy_goal_center(cls) -> Pose2D:
         config = Configuration.getObject()
         goal_pose = Pose2D(2250, 0)
         goal_pose.x *= config.get_side_sign()
+        return goal_pose
+
+    @classmethod
+    def get_team_goal_center(cls) -> Pose2D:
+        config = Configuration.getObject()
+        goal_pose = Pose2D(2250, 0)
+        goal_pose.x *= config.get_side_sign()
+        return goal_pose
+
+    @classmethod
+    def get_out_goal(cls) -> Pose2D:
+        config = Configuration.getObject()
+        goal_pose = Pose2D(2500, 0)
+        goal_pose.x *= -config.get_side_sign()
         return goal_pose

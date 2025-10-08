@@ -16,7 +16,7 @@ from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
 
 from ..core.event_callbacks import BlackboardKeys
-from ..core.World_State import RobotID, World_State
+from ..core.World_State import TeamID, World_State
 
 positions = BlackboardKeys.Values.Positions
 import time
@@ -76,6 +76,8 @@ class Move_node(pt.behaviour.Behaviour):
             raise RuntimeError(f"[{self.name}] 'robot' não definido no setup()")
         self.target_reached_key = f"{self.robot.robot_id.name}{BlackboardKeys.Flags.Navigation.TARGET_REACHED}"
 
+        self._bb.set(self.target_reached_key, False)
+
     def initialise(self) -> None:
         if self.robot is None or self.robot.state is None:
             return
@@ -83,9 +85,12 @@ class Move_node(pt.behaviour.Behaviour):
         self._t0 = time.time()
         self._last_move_ts = self._t0
         self._stall_ticks = 0
-        self._bb.set(f"{self.robot.robot_id.name}{BlackboardKeys.Flags.Navigation.IS_STUCK}", False)  # type: ignore
-
+        self._bb.set(
+            f"{self.robot.robot_id.name}{BlackboardKeys.Flags.Navigation.IS_STUCK}",
+            False,
+        )
         self._bb.set(self.target_reached_key, False)
+        logger.debug("MOVE")
 
     def update(self) -> pt.common.Status:
         """
@@ -95,30 +100,34 @@ class Move_node(pt.behaviour.Behaviour):
         :returns: SUCCESS quando alvo alcançado; RUNNING durante o deslocamento; FAILURE em erro/timeout.
         :rtype: pt.common.Status
         """
-        if self.robot is None or self.robot.state is None:
+        if self.robot is None:
             return pt.common.Status.FAILURE
+        logger.debug(f"{self.robot.state.target_position} - target")
+        logger.debug(f"{self.robot.state.position}")
 
         if bool(self._bb.get(self.target_reached_key)):
-            logging.debug(f"{self.robot.robot_id} -> TARGET REACHED")
+            logging.debug(f"{self.name} - {self.robot.robot_id} SUCCESS")
             return pt.common.Status.SUCCESS
 
         if not getattr(self.robot.state, "target_position", None):
-            return pt.common.Status.FAILURE
-
-        try:
-            self.robot.fast_movement()
-        except Exception as exc:
+            logger.debug(
+                f"{self.name} - {self.robot.robot_id.name} - FAILURE  TARGET NONE"
+            )
             return pt.common.Status.FAILURE
 
         if (time.time() - self._t0) > self.timeout_s:
-            logging.warning(f"{self.robot.robot_id} -> MOVE TIMEOUT")
+            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE  TIMEOUT")
             return pt.common.Status.FAILURE
 
         if self._bb.get(
             f"{self.robot.robot_id.name}{BlackboardKeys.Flags.Navigation.IS_STUCK}"
         ):
-            logging.debug(f"{self.robot.robot_id} -> ROBOT STUCK")
+            logger.debug(
+                f"{self.name} - {self.robot.robot_id.name} - FAILURE  ROBOT STUCK"
+            )
             return pt.common.Status.FAILURE
+        logger.debug(f"{self.name} - {self.robot.robot_id.name} - RUNNING")
+        self.robot.fast_movement()
         return pt.common.Status.RUNNING
 
     def terminate(self, new_status: pt.common.Status) -> None:
@@ -153,9 +162,7 @@ class Receive_pass(pt.behaviour.Behaviour):
         super().__init__(name=name)
         self.robot: Bob = robot
         self._bb = Blackboard_Manager.get_instance()
-
         self.receive_key: str
-        self.pos_pass_key: str = f"{BlackboardKeys.Values.Positions.POS_PASS_TARGET}"
 
     def setup(self, **kwargs) -> None:
         logger.debug(f"setup {self.name}")
@@ -164,6 +171,9 @@ class Receive_pass(pt.behaviour.Behaviour):
         self.receive_key = (
             f"{self.robot.robot_id.name}{BlackboardKeys.Flags.KickActions.TEAM_PASS}"
         )
+        self.pos_pass_key: str = f"{BlackboardKeys.Values.Positions.POS_PASS_TARGET}"
+        self._bb.set(self.receive_key, False)
+        self._bb.set(self.pos_pass_key, False)
 
     def initialise(self) -> None:
         pass
@@ -180,7 +190,7 @@ class Receive_pass(pt.behaviour.Behaviour):
 
         passe = self._bb.get(self.receive_key)
         if not passe:
-            logger.debug(f"{self.robot.robot_id} nao esta recebendo passe")
+            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
             return pt.common.Status.FAILURE
 
         target = self._bb.get(self.pos_pass_key)
@@ -195,7 +205,7 @@ class Receive_pass(pt.behaviour.Behaviour):
         self._bb.set(self.receive_key, False)
         self._bb.set(self.pos_pass_key, None)
 
-        logger.debug(f"indo pegar passe -> {pose_target}")
+        logger.debug(f"{self.name} - {self.robot.robot_id.name} - SUCCESS")
         self.robot.state.current_command = self.name
 
         return pt.common.Status.SUCCESS
@@ -215,6 +225,8 @@ class Rebound_position(pt.behaviour.Behaviour):
         logger.debug(f"setup {self.name}")
         if self.robot is None:
             raise RuntimeError(f"[{self.name}] 'robot' não definido no setup()")
+        self.team_kick_key = f"{BlackboardKeys.Flags.KickActions.TEAM_KICK}"
+        self._bb.set(self.team_kick_key, False)
 
     def initialise(self) -> None:
         pass
@@ -228,15 +240,15 @@ class Rebound_position(pt.behaviour.Behaviour):
         if self.robot is None or self.robot.state is None:
             logger.warning("robo NONE")
             return pt.common.Status.FAILURE
-        if not self._bb.get(f"{BlackboardKeys.Flags.KickActions.TEAM_KICK}"):
-            logger.debug("nao é team kick")
+        if not self._bb.get(self.team_kick_key):
+            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
             return pt.common.Status.FAILURE
 
         target_pose = hp.PositioningHelper.calculate_rebound_position(
             self.robot.state.position
         )
         self.robot.adicionar_ponto_trajetoria(target_pose)
-        logger.debug(f"indo rebotar -> {target_pose}")
+        logger.debug(f"{self.name} - {self.robot.robot_id.name} - SUCCESS")
         self.robot.state.current_command = self.name
 
         return pt.common.Status.SUCCESS
@@ -259,18 +271,20 @@ class RecuperarBola(py_trees.behaviour.Behaviour):
 
     def setup(self, **kwargs) -> None:
         logger.debug(f"setup {self.name}")
+        self._bb.set(self.team_has_ball, False)
+
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
         """vai atras da bola"""
-        if not self._bb.get(self.team_has_ball):
-            logger.debug("estamos com a bola")
+        if self._bb.get(self.team_has_ball):
+            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
             return py_trees.common.Status.FAILURE
         self.robot.state.target_position = (
             hp.StrategyHelper.get_ball_recovery_position()
         )
         self.robot.state.current_command = self.name
-
+        logger.debug(f"{self.name} - {self.robot.robot_id.name} - SUCCESS")
         return py_trees.common.Status.SUCCESS
 
 
@@ -293,6 +307,7 @@ class MovimentoUnico(py_trees.behaviour.Behaviour):
     def update(self) -> py_trees.common.Status:
         self.robot.fast_movement()
         self.robot.state.current_command = self.name
+        logger.debug(f"{self.name} - SUCCESS")
 
         return py_trees.common.Status.SUCCESS
 
@@ -323,8 +338,8 @@ class Choose_who_to_pass(py_trees.behaviour.Behaviour):
         target_id_found = None
 
         if self.robot.robot_id == 2:
-            target0 = RobotID.Kamiji
-            target1 = RobotID.Defender
+            target0 = TeamID.Kamiji
+            target1 = TeamID.Argenton
             min_distance = 1000
 
             for robot_id_enum in [target0, target1]:
@@ -340,10 +355,10 @@ class Choose_who_to_pass(py_trees.behaviour.Behaviour):
                         target_id_found = robot_id_enum
 
         elif self.robot.robot_id == 1:
-            target_id_found = RobotID.Kamiji
+            target_id_found = TeamID.Kamiji
             target_pos_found = self.world_state.get_team_robot_pose(target_id_found)
         else:
-            target_id_found = RobotID.Defender
+            target_id_found = TeamID.Argenton
             target_pos_found = self.world_state.get_team_robot_pose(target_id_found)
 
         if target_pos_found is not None and target_id_found is not None:

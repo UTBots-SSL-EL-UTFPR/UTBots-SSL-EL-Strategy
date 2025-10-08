@@ -1,9 +1,5 @@
 # core/bob_manager.py
 from __future__ import annotations
-
-import math
-from typing import Dict
-
 from Behaviour_tree.helpers.field_helper import FIELD_X_MAX, FIELD_X_MIN, HALF_LEGHT
 from Behaviour_tree.helpers.motion_helper import MotionHelper
 from Behaviour_tree.helpers.positioning_helper import PositioningHelper
@@ -12,9 +8,21 @@ from SSL_configuration.configuration import Configuration
 from utils.defines import BALL_RADIUS, FIELD_INVERTED_SIDE, ROBOT_RADIUS
 from utils.pose2D import Pose2D, QuadrantType, RoleType
 
-from .core.World_State import RobotID, World_State
+from .core.World_State import TeamID, World_State
 from .robot.bob import Bob
 
+from typing import Dict
+from utils.pose2D import Pose2D, RoleType, ZoneType, QuadrantType
+from utils.defines import (
+    #BOB_RADIUS,
+    BALL_RADIUS,
+    MIN_PASS_DISTANCE,
+    FIELD_INVERTED_SIDE,
+)
+from .core.World_State import World_State
+from .core.World_State import RobotID
+from SSL_configuration.configuration import Configuration
+import math
 
 class BobManager:
     _instance = None
@@ -23,16 +31,16 @@ class BobManager:
     """
 
     def __init__(self):
-        self.bobs: Dict[RobotID, Bob] = {}
-        
-        self.trees: Dict[RobotID, Tree] = {}
+        self.bobs: Dict[TeamID, Bob] = {}
+
+        self.trees: Dict[TeamID, Tree] = {}
         self.configuration = Configuration.getObject()
         self.world_state = World_State.get_object()
         self.positioning_helper = PositioningHelper.get_object()
 
-        self._create_bob(RobotID.Kamiji)
-        self._create_bob(RobotID.Defender)
-        self._create_bob(RobotID.Goalkeeper)
+        self._create_bob(TeamID.Kamiji)
+        self._create_bob(TeamID.Argenton)
+        self._create_bob(TeamID.SabKawa)
 
         self.ball_pos = Pose2D()
 
@@ -51,7 +59,7 @@ class BobManager:
             tree (Tree): Classe da árvore associada.
         """
         bob = Bob(robot_id=robot_id)
-        #bob.state.reset()
+        # bob.state.reset()
         self.bobs[robot_id] = bob
         #self.trees[robot_id] = tree(bob)
 
@@ -77,7 +85,7 @@ class BobManager:
     #               Posicionamento          #
     #---------------------------------------#
 
-    def set_kicker_position(self, id: RobotID):
+    def set_kicker_position(self, id: TeamID):
         robot = self.bobs.get(id)
         if robot is None or robot.state is None:
             return
@@ -88,6 +96,82 @@ class BobManager:
         for obs in obstacles:
             if obs == robot.state.position:
                 obstacles.remove(obs)
+        robot.state.path = robot.find_shortest_path(robot.state.position, target, obstacles, BOB_RADIUS, self.ball_pos, BALL_RADIUS)
+
+        
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------#
+
+    def set_offensive_suport_position(self, id: RobotID):
+        """
+        Calcula a posição do SUPORTE OFENSIVO de forma determinística, buscando
+        o maior espaço com visibilidade tanto do cobrador quanto do gol.
+        """
+        robot = self.bobs.get(id)
+        if robot is None or robot.state is None:
+            return None
+
+        robot_pos = robot.state.position
+        
+        opponents = self.world_state.get_all_foes_position()
+        goal_center = Pose2D(1500, 0)
+
+        target_pose = robot_pos
+        free_quadrants_enums = self.positioning_helper.get_atack_quadrant_free(100)
+
+        found_squares = {}
+        for quad_enum in free_quadrants_enums:
+            quad_obj = quad_enum.value
+            visible_square = self.positioning_helper.find_largest_dual_visibility_square(
+                quadrant=quad_obj,
+                origin_kicker=self.ball_pos,
+                origin_goal=goal_center,
+                opponents=opponents,
+                grid_step=150
+            )
+
+            if visible_square:
+                found_squares[quad_enum] = visible_square
+
+        priority_order = []
+        if self.ball_pos.y <= 0:
+            priority_order = [
+                QuadrantType.Q4, QuadrantType.Q3,  
+                QuadrantType.Q12, QuadrantType.Q11, 
+                QuadrantType.Q8, QuadrantType.Q7   
+            ]
+        else:
+            priority_order = [
+                QuadrantType.Q12, QuadrantType.Q11, 
+                QuadrantType.Q4, QuadrantType.Q3,   
+                QuadrantType.Q8, QuadrantType.Q7   
+            ]
+        for priority_quad in priority_order:
+            if priority_quad in found_squares:
+                
+                chosen_square = found_squares[priority_quad]
+                
+                safest_point = self.positioning_helper.find_safest_point_in_square(
+                    square=chosen_square,
+                    kicker_pos=self.ball_pos,
+                    ball_pos=self.ball_pos,
+                    opponents=opponents,
+                    min_pass_dist=MIN_PASS_DISTANCE
+                )
+                if safest_point:
+                    target_pose = Pose2D(Pose2D._clamp(safest_point.x,-2050,2050),Pose2D._clamp(safest_point.y, -1300, 1300))
+                    
+                    break 
+        obstacles = self.world_state.get_all_robot_position()
+        obstacles = [obs for obs in obstacles if obs != robot_pos]
+        print(target_pose, robot_pos)
+        print(obstacles)
+        robot.state.path = robot.find_shortest_path(robot_pos, target_pose, obstacles, BOB_RADIUS, self.ball_pos, BALL_RADIUS)
+        print("passei_2")
+        robot.state.role = RoleType.OFFENSIVE_SUPPORT
+        return
+
         new_path = MotionHelper.find_shortest_path(
             robot.state.position,
             target,
@@ -100,7 +184,7 @@ class BobManager:
     # ------------------------------------------------------------------------------------------------------------------------------------------------------------------#
     # ------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
-    def set_midlle_suport_position(self, id: RobotID, main_suport_pose: Pose2D):
+    def set_midlle_suport_position(self, id: TeamID, main_suport_pose: Pose2D):
         """
         Posiciona o robô de "suporte do meio".
 
@@ -154,8 +238,7 @@ class BobManager:
         
         return target_pose
 
-
-    def set_goalkeeper_position(self, id: RobotID):
+    def set_goalkeeper_position(self, id: TeamID):
         robot = self.bobs.get(id)
         if robot is None or robot.state is None:
             return None
@@ -173,8 +256,8 @@ class BobManager:
         )
         robot.set_path(new_path)
         robot.state.role = RoleType.OFFENSIVE_SUPPORT
-    
-    def set_goalkeeper_defense_position(self, id: RobotID):
+
+    def set_goalkeeper_defense_position(self, id: TeamID):
         """Posiciona o goleiro para defender com base na posição atual da bola.
 
         Estratégia:

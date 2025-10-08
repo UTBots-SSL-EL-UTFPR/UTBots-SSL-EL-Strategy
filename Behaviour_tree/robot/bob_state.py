@@ -4,13 +4,13 @@ from utils.defines import BALL_POSSESSION_DISTANCE
 from utils.pose2D import Pose2D, RoleType
 
 from ..core import event_callbacks
-from ..core.World_State import RobotID, World_State
+from ..core.World_State import TeamID, World_State
 
 
 class Bob_State:
     """Estado dinâmico do robô (posição, velocidade, posse, quadrante e role)."""
 
-    def __init__(self, robot_id: RobotID):
+    def __init__(self, robot_id: TeamID):
         self.robot_id = robot_id
 
         self.world_state = World_State.get_object()
@@ -54,7 +54,6 @@ class Bob_State:
         self.target_reached()
         self.is_visible_from_ball()
         self.is_ball_reachable()
-        self.is_ball_with_robot()
 
     def is_ball_with_robot(self):
         if self.has_ball != self.check_ball_possession():
@@ -81,26 +80,29 @@ class Bob_State:
                     event_callbacks.new_zone(self.robot_id.name, new_pos.zone)
             self.position = new_pos
 
-        if self.position_rept >= 15:
+        if self.position_rept >= 500:
             self.position_rept = 0
             event_callbacks.on_robot_stuck(self.robot_id.name)
 
     def target_reached(self):
-        if not self.path or len(self.path) <= 0:
+        """
+        Verifica se o robô alcançou o alvo atual no caminho.
+        Se o alvo for o último do percurso, limpa o caminho e sinaliza o evento.
+        Caso contrário, avança para o próximo alvo do caminho.
+        """
+        if not self.path:
             return
-        self.target_position = self.path[self.path_index]
 
+        self.target_position = self.path[self.path_index]
         if self.target_position.is_in_range(
             self.position, self.configuration.threshould_arrived_target
         ):
-            self.path_index += 1
-
-            if self.path_index >= len(self.path):
-                self.path_index = 0
+            if self.path_index >= len(self.path) - 1:
                 self.path.clear()
+                self.path_index = 0
                 event_callbacks.on_target_reached(self.robot_id.name)
             else:
-                self.target_position = self.path[self.path_index]
+                self.path_index += 1
 
     def is_visible_from_ball(self):
         visible, best_position = PositioningHelper.get_clear_pass_position(

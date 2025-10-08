@@ -10,7 +10,7 @@ from Behaviour_tree.commom_behaviours import condition as c_condition_nodes
 from Behaviour_tree.core import event_callbacks as callbacks
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
-from Behaviour_tree.core.World_State import RobotID, World_State
+from Behaviour_tree.core.World_State import TeamID, World_State
 from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
@@ -23,9 +23,9 @@ def main() -> None:
     wd = World_State.get_object()
     _bb = Blackboard_Manager.get_instance()
 
-    passer = bob_state.get_bob(RobotID.Kamiji)
-    receiver = bob_state.get_bob(RobotID.Defender)
-    goalkeeper = bob_state.get_bob(RobotID.Goalkeeper)
+    passer = bob_state.get_bob(TeamID.Kamiji)
+    receiver = bob_state.get_bob(TeamID.Argenton)
+    goalkeeper = bob_state.get_bob(TeamID.SabKawa)
 
     if passer is None or receiver is None or goalkeeper is None:
         print("Erro: Robôs não encontrados.")

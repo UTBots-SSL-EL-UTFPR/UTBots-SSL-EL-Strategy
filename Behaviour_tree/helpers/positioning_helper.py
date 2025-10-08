@@ -2,25 +2,16 @@ import math
 from dataclasses import dataclass
 from math import sqrt
 from typing import Iterable, List, Optional, Tuple
+from utils.pose2D import Quadrant, QuadrantType, ZoneType
 
 from SSL_configuration.configuration import Configuration
-from utils.defines import (
-    INFLUENCE_RADIUS,
-    MAX_SHOOT_DISTANCE,
-    MIN_PASS_DISTANCE,
-    ROBOT_RADIUS,
-)
+from utils.defines import (INFLUENCE_RADIUS, MAX_SHOOT_DISTANCE,
+                           MIN_PASS_DISTANCE, ROBOT_RADIUS)
 from utils.pose2D import Pose2D, Quadrant, QuadrantType, ZoneType
 
-from ..core.World_State import RobotID, World_State
-from .field_helper import (
-    GOAL_LENGHT,
-    GRID_STEP,
-    HALF_GOALKEEPER_AREA_WIDTH,
-    HALF_LEGHT,
-    KEEPER_MARGIN,
-    WALL_MARGIN,
-)
+from ..core.World_State import TeamID, World_State
+from .field_helper import (GOAL_LENGHT, GRID_STEP, HALF_GOALKEEPER_AREA_WIDTH,
+                           HALF_LEGHT, KEEPER_MARGIN, WALL_MARGIN)
 from .geometry_helper import GeometryHelper
 
 
@@ -489,7 +480,6 @@ class PositioningHelper:
             if min_dist_to_opponent > max_safety_distance:
                 max_safety_distance = min_dist_to_opponent
                 safest_point = point
-
         return safest_point
 
     @staticmethod

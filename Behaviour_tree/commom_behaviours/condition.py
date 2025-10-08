@@ -6,7 +6,7 @@ from py_trees.common import Status
 
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
-from Behaviour_tree.core.World_State import RobotID
+from Behaviour_tree.core.World_State import TeamID
 from Behaviour_tree.core.World_State import World_State
 from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from Behaviour_tree.robot.bob import Bob
@@ -31,7 +31,7 @@ class TeamHasBall(py_trees.behaviour.Behaviour):
     Verifica se a bola está com adversário (TODO)
     """
 
-    def __init__(self, name: str = "IsBallFree"):
+    def __init__(self, name: str = "TeamHasBall"):
         super().__init__(name)
 
     def initialise(self) -> None:
@@ -44,10 +44,9 @@ class TeamHasBall(py_trees.behaviour.Behaviour):
 
     def update(self) -> py_trees.common.Status:
         if _bb.get(f"{BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL}"):
-            logger.debug("time nao tem a posse de bola")
-
+            logger.debug(f"{self.name} - SUCCESS")
             return py_trees.common.Status.SUCCESS
-        logger.debug("time possui a bola")
+        logger.debug(f"{self.name} - FAILURE")
         return py_trees.common.Status.FAILURE
 
 
@@ -56,7 +55,7 @@ class FoesHaveBall(py_trees.behaviour.Behaviour):
     Verifica se a bola está com adversário (TODO)
     """
 
-    def __init__(self, name: str = "IsBallFree"):
+    def __init__(self, name: str = "FoesHaveBall"):
         super().__init__(name)
 
     def initialise(self) -> None:
@@ -69,13 +68,15 @@ class FoesHaveBall(py_trees.behaviour.Behaviour):
 
     def update(self) -> py_trees.common.Status:
         if _bb.get(f"{BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL}"):
+            logger.debug(f"{self.name} - SUCCESS")
             return py_trees.common.Status.SUCCESS
+        logger.debug(f"{self.name} - FAILURE")
         return py_trees.common.Status.FAILURE
 
 
 class HasBall(py_trees.behaviour.Behaviour):
 
-    def __init__(self, robot: Bob, name: str = "Has_ball"):
+    def __init__(self, robot: Bob, name: str = "HasBall"):
         super().__init__(name)
         self.robot = robot
 
@@ -87,9 +88,9 @@ class HasBall(py_trees.behaviour.Behaviour):
         if _bb.get(
             f"{self.robot.state.robot_id.name}{BlackboardKeys.Flags.BallMotion.HAS_BALL}"
         ):
-            logger.debug(f" robo {self.robot.robot_id.name} tem posse de bola")
+            logger.debug(f"{self.name}-{self.robot.robot_id.name} - SUCCESS")
             return py_trees.common.Status.SUCCESS
-        logger.debug(f" robo {self.robot.robot_id.name} não esta com a bola")
+        logger.debug(f"{self.name}-{self.robot.robot_id.name} - FAILURE")
         return py_trees.common.Status.FAILURE
 
 

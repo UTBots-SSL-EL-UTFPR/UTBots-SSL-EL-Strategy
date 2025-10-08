@@ -5,7 +5,7 @@ import py_trees
 
 from Behaviour_tree import commom_behaviours as cb
 from Behaviour_tree.core.blackboard import Blackboard_Manager
-from Behaviour_tree.core.World_State import RobotID
+from Behaviour_tree.core.World_State import TeamID
 from Behaviour_tree.helpers.strategy_helper import StrategyHelper
 from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
@@ -24,7 +24,7 @@ class OffSupRepos(py_trees.behaviour.Behaviour):
         self,
         robot: Bob,
         name: str = "reposicionar-se como sup_off",
-        delta_t: float = 2.0,
+        delta_t: float = 1.0,
     ):
         super().__init__(name)
         self.robot = robot
@@ -37,7 +37,19 @@ class OffSupRepos(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def initialise(self) -> None:
-        self._last_update_time = 0.1
+        current_time = time.time()
+        new_path = StrategyHelper.set_offensive_suport_position(
+            self.robot.state.position
+        )
+        self.robot.set_path(new_path)
+        # print("-" * 100)
+        # print(len(new_path))
+        # for point in new_path:
+        #     print(point)
+        # print(new_path[-1])
+        # print("-" * 100)
+        self.last_target = new_path[-1]
+        self._last_update_time = current_time
 
     def update(self) -> py_trees.common.Status:
         """
@@ -46,17 +58,20 @@ class OffSupRepos(py_trees.behaviour.Behaviour):
         current_time = time.time()
 
         if (current_time - self._last_update_time) > self.delta_t:
-            logger.debug(f"Atualizando posição ({self.name})")
             new_path = StrategyHelper.set_offensive_suport_position(
                 self.robot.state.position
             )
             self.robot.set_path(new_path)
             self.last_target = new_path[-1]
             self._last_update_time = current_time
+            logger.debug(new_path)
+
         else:
-            logger.debug(f"usando pos antiga, Aguardando {self.delta_t:.1f}s...")
             self.robot.set_new_target(self.last_target)
+            logger.debug(self.last_target)
+
         self.robot.state.current_command = self.name
+        logger.debug(f"{self.name} - {self.robot.robot_id.name} - SUCCESS")
         return py_trees.common.Status.SUCCESS
 
 

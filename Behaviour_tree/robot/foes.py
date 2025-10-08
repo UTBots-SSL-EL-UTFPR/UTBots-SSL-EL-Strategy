@@ -1,8 +1,11 @@
+from enum import Enum
+
 from utils.defines import BALL_POSSESSION_DISTANCE
 from utils.pose2D import Pose2D
 
+from ..core import event_callbacks
 from ..core.blackboard import Blackboard_Manager
-from ..core.World_State import RobotID, World_State
+from ..core.World_State import FoesID, World_State
 
 from Behaviour_tree.positioning.positioning_helper import Positioning_helper
 
@@ -11,15 +14,15 @@ from robot import bob
 
 from SSL_configuration.configuration import Configuration
 
-class Foes_State:
+class FoesState:
     # ESTADO SIMPLIFICADO DOS ROBOS INIMIGOS
 
-    def __init__(self, robot_id: RobotID):
-        self.robot_id = robot_id
+    def __init__(self, id: FoesID):
+        self._bb = Blackboard_Manager.get_instance()
+        self._ws = World_State.get_object()
         self.position: Pose2D = Pose2D()
-        self.velocity: Pose2D = Pose2D()
         self.has_ball = False
-        self.world_state = World_State.get_object()
+        self.robot_id = id
         self.configuration = Configuration.getObject()
         self.pos_helper = Positioning_helper.get_object()
 
@@ -101,9 +104,10 @@ class Foes_State:
 
     # =================== Métricas / consultas ===================
     def check_ball_possession(self) -> bool:
-        ball_position = self.world_state.get_ball_position()
+        ball_position = self._ws.get_ball_position()
         if self.position and ball_position:
             return self.position.distance_to(ball_position) <= BALL_POSSESSION_DISTANCE
+
         print("ERRO, POS da BOLA OU do ROBO NULOS")
         return False
     
