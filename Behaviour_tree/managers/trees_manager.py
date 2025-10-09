@@ -4,6 +4,35 @@ from typing import Optional
 from Behaviour_tree.managers.base_manager import BaseManager
 from Behaviour_tree.core.game_state import GameState, RefereeAdapter
 
+from Behaviour_tree.behaviors.game_states import (
+    Behaviour,
+    HaltBehaviour,
+    StopBehaviour,
+    RunningBehaviour,
+    ReadyKickoffUsBehaviour,
+    ReadyKickoffThemBehaviour,
+    ReadyFreekickUsBehaviour,
+    ReadyFreekickThemBehaviour,
+    ReadyPenaltyUsBehaviour,
+    ReadyPenaltyThemBehaviour,
+    BallPlacementUsBehaviour,
+    BallPlacementThemBehaviour,
+)
+
+# mapa central de estados -> classe
+_BEHAVIOUR_MAP: dict[GameState, type[Behaviour]] = {
+    GameState.HALT: HaltBehaviour,
+    GameState.STOP: StopBehaviour,
+    GameState.RUNNING: RunningBehaviour,
+    GameState.READY_KICKOFF_US: ReadyKickoffUsBehaviour,
+    GameState.READY_KICKOFF_THEM: ReadyKickoffThemBehaviour,
+    GameState.READY_FREEKICK_US: ReadyFreekickUsBehaviour,
+    GameState.READY_FREEKICK_THEM: ReadyFreekickThemBehaviour,
+    GameState.READY_PENALTY_US: ReadyPenaltyUsBehaviour,
+    GameState.READY_PENALTY_THEM: ReadyPenaltyThemBehaviour,
+    GameState.BALL_PLACEMENT_US: BallPlacementUsBehaviour,
+    GameState.BALL_PLACEMENT_THEM: BallPlacementThemBehaviour,
+}
 
 class TreesManager(BaseManager):
     """
@@ -21,6 +50,9 @@ class TreesManager(BaseManager):
     def create(self) -> None:
         # inicializa estado como STOP ate receber algo do referee
         self.current_state = GameState.STOP
+        self.behaviour: Behaviour | None = self._make_behaviour(self.current_state)
+        if self.behaviour:
+            self.behaviour.on_enter(prev_state=None)
         self._last_logged_state = None
         self._log_state_change(prev=None, nxt=self.current_state)
 
@@ -62,16 +94,26 @@ class TreesManager(BaseManager):
         # 2) resolve o GameState
         next_state = self._adapter.to_game_state(ref)
         if next_state == GameState.UNKNOWN:
-            # fallback seguro na Fase 1
+            # fallback seguro 
+            print("GAME STATE UNKNOWN (trees_manager.py na update)")
             next_state = GameState.STOP
 
-        # 3) Transição de estado (apenas log)
+        # 3) transicao de estado 
         if next_state != self.current_state:
             prev = self.current_state
+            # sair do behaviour anterior
+            if self.behaviour:
+                self.behaviour.on_exit(next_state.name.lower())
+            # trocar estado e behaviour
             self.current_state = next_state
-            self._log_state_change(prev=prev, nxt=next_state)
+            self.behaviour = self._make_behaviour(next_state)
+        if self.behaviour:
+            self.behaviour.on_enter(prev_state=prev.name.lower())
+        self._log_state_change(prev=prev, nxt=next_state)
 
-        # Fase 1 pára aqui: nenhuma ação sobre BTs/robôs ainda.
+        # aplicar politica do estado
+        if self.behaviour:
+            self.behaviour.update(dt)
 
     # -------- Internals -------- #
     def _log_state_change(self, prev: Optional[GameState], nxt: GameState) -> None:
@@ -82,6 +124,10 @@ class TreesManager(BaseManager):
                 print(f"[TreesManager] STATE CHANGE: {prev.name} -> {nxt.name}")
             self._last_logged_state = nxt
 
-    # (Opcional) Getter, útil pra depurar em outros componentes
     def get_state(self) -> GameState:
         return self.current_state
+    
+    def _make_behaviour(self, st: GameState) -> Behaviour:
+        #cria a instancia de Behaviour correspondente ao estado
+        cls = _BEHAVIOUR_MAP.get(st, StopBehaviour)
+        return cls()

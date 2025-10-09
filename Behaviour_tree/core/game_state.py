@@ -8,10 +8,11 @@ except Exception:
     Configuration = None  # fallback seguro
 
 
+#os estados aqui vem tudo do livro de regras
 class GameState(Enum):
     HALT = auto()
     STOP = auto()
-    READY_KICKOFF_US = auto()
+    READY_KICKOFF_US = auto()       #no livro é PREPARE_KICKOFF_YELLOW / _BLUE
     READY_KICKOFF_THEM = auto()
     READY_FREEKICK_US = auto()
     READY_FREEKICK_THEM = auto()
