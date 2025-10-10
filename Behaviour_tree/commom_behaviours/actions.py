@@ -14,6 +14,7 @@ import py_trees
 from Behaviour_tree.core import event_callbacks as callbacks
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
+from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 
 from ..core.event_callbacks import BlackboardKeys
 from ..core.World_State import TeamID, World_State
@@ -318,6 +319,7 @@ class Choose_who_to_pass(py_trees.behaviour.Behaviour):
         self.robot = Robot
         self.bb = Blackboard_Manager.get_instance()
         self.world_state = World_State.get_object()
+        self.ph = PositioningHelper.get_object()
 
     def setup(self, **kwargs):
         logger.debug(f"setup {self.name}")
@@ -330,6 +332,7 @@ class Choose_who_to_pass(py_trees.behaviour.Behaviour):
 
         target_pos_found = None
         target_id_found = None
+        opp_pos = self.world_state.get_all_foes_position()
 
         if self.robot.robot_id == 2:
             target0 = TeamID.Kamiji
@@ -344,9 +347,10 @@ class Choose_who_to_pass(py_trees.behaviour.Behaviour):
                         + (self.robot.state.position.y - pos.y) ** 2
                     ) ** 0.5
                     if distance < min_distance:
-                        min_distance = distance
-                        target_pos_found = pos
-                        target_id_found = robot_id_enum
+                        if(self.ph.is_path_clear(self.robot.state.position,pos,opp_pos)):
+                            min_distance = distance
+                            target_pos_found = pos
+                            target_id_found = robot_id_enum
 
         elif self.robot.robot_id == 1:
             target_id_found = TeamID.Kamiji
