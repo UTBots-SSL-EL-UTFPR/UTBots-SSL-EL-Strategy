@@ -5,7 +5,7 @@ import time
 from Behaviour_tree.bob_manager import BobManager
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
-from Behaviour_tree.core.World_State import RobotID, World_State
+from Behaviour_tree.core.World_State import TeamID, World_State
 from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
 
@@ -28,9 +28,9 @@ logger = logging.getLogger(__name__)
 
 
 def create_bobs():
-    a = Bob(RobotID.Kamiji)
-    b = Bob(RobotID.Defender)
-    c = Bob(RobotID.Goalkeeper)
+    a = Bob(TeamID.Kamiji)
+    b = Bob(TeamID.Argenton)
+    c = Bob(TeamID.SabKawa)
     a.state.reset()
     b.state.reset()
     c.state.reset()
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     _bb = Blackboard_Manager.get_instance()
     kamiji, defender, goalkeeper = create_bobs()
     all_bobs = [kamiji, defender, goalkeeper]
-    kick_subtree = get_kick_subtree(defender)
+    kick_subtree = get_kick_subtree(kamiji)
 
     create_scenario(all_bobs)
     update_delay = 0.02

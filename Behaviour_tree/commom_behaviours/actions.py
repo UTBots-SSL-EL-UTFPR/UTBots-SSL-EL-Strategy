@@ -336,48 +336,67 @@ class Choose_who_to_pass(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def update(self) -> pt.common.Status:
-
         if self.robot is None or self.robot.state is None:
             return py_trees.common.Status.FAILURE
 
-        target_pos_found = None
-        target_id_found = None
+        
+        passer_pos = self.robot.state.position
+        passer_id = self.robot.robot_id
         opp_pos = self.world_state.get_all_foes_position()
 
-        if self.robot.robot_id == 2:
-            target0 = TeamID.Kamiji
-            target1 = TeamID.Argenton
-            min_distance = 1000
-
-            for robot_id_enum in [target0, target1]:
-                pos = self.world_state.get_team_robot_pose(robot_id_enum)
-                if pos is not None:
-                    distance = (
-                        (self.robot.state.position.x - pos.x) ** 2
-                        + (self.robot.state.position.y - pos.y) ** 2
-                    ) ** 0.5
-                    if distance < min_distance:
-                        if(self.ph.is_path_clear(self.robot.state.position,pos,opp_pos)):
-                            min_distance = distance
-                            target_pos_found = pos
-                            target_id_found = robot_id_enum
-
-        elif self.robot.robot_id == 1:
-            target_id_found = TeamID.Kamiji
-            target_pos_found = self.world_state.get_team_robot_pose(target_id_found)
-        else:
-            target_id_found = TeamID.Argenton
-            target_pos_found = self.world_state.get_team_robot_pose(target_id_found.value)
-
-            
-        if target_pos_found is not None and target_id_found is not None:
+        allied_robots = []
         
-            self.bb.set("pass_target_id", target_id_found)
-            self.bb.set("pass_target_pos", target_pos_found)
-            logger.debug(f"{self.name}-{self.robot.robot_id.name} - SUCCESS")
+        for team_id in TeamID: 
+            if team_id.value == passer_id.value:
+                print(f"Ignorando o próprio passador: {team_id.name}")
+                continue
+
+            print(f"Buscando pose para o aliado: {team_id.name}...")
+           
+            robot_pose = self.world_state.get_team_robot_pose(team_id.value)
+            print(f"  -> Resultado para {team_id.name}: {robot_pose}")
+            if robot_pose is not None:
+                print(f"  => {team_id.name} ADICIONADO À LISTA.")
+                allied_robots.append({'id': team_id, 'pose': robot_pose})
+
+        
+        print(f"--- FIM DO DEBUG: A lista final de aliados tem {len(allied_robots)} robôs. ---\n")
+
+        forward_teammates = []
+        for teammate in allied_robots:
+            if teammate['id'].value != passer_id.value:
+                if teammate['pose'].x > passer_pos.x:
+                    forward_teammates.append(teammate)
+
+      
+        if not forward_teammates:
+            logger.error(f"[{self.name}] Nenhum companheiro à frente para passar. Retornando FAILURE.")
+            return py_trees.common.Status.FAILURE
+
+        best_target = None
+        min_distance = float('inf')  
+
+        for candidate in forward_teammates:
+            candidate_pos = candidate['pose']
+          
+            if self.ph.is_path_clear(passer_pos, candidate_pos, opp_pos):
+                distance = (
+                    (passer_pos.x - candidate_pos.x) ** 2
+                    + (passer_pos.y - candidate_pos.y) ** 2
+                ) ** 0.5
+                
+                if distance < min_distance:
+                    min_distance = distance
+                    best_target = candidate
+
+       
+        if best_target is not None:
+            self.bb.set("pass_target_id", best_target['id'])
+            self.bb.set("pass_target_pos", best_target['pose'])
+            logger.debug(f" Alvo:  - SUCCESS")
             return py_trees.common.Status.SUCCESS
         else:
-            logger.error(f"[{self.name}] Não foi possível encontrar um alvo para o passe. Retornando FAILURE.")
+            logger.error(f"[{self.name}] Companheiros à frente, mas sem caminho livre. Retornando FAILURE.")
             return py_trees.common.Status.FAILURE
 
 class Calculate_target(pt.behaviour.Behaviour):
@@ -473,9 +492,7 @@ class Align(pt.behaviour.Behaviour):
           print("sucess")
           return pt.common.Status.SUCCESS
 
-      else:
-          print("running")
-          return pt.common.Status.RUNNING
+     
 
 
     def terminate(self, new_status: pt.common.Status):
@@ -522,7 +539,7 @@ class ExecutePass(py_trees.behaviour.Behaviour):
                 # Limpa o alvo de passe no Blackboard
                 self.bb.set("pass_target_pos", None)
                 self.bb.set("pass_target_id", None)
-                print ("AAAAAAAAAAAAAAAAA")
+               
                 return pt.common.Status.SUCCESS
             except Exception as e:
                 logging.error(f"Erro ao executar passe: {e}")

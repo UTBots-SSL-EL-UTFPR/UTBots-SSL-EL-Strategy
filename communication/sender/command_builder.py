@@ -10,7 +10,7 @@ class CommandBuilder:
 
     def command_robots(
                 self, id: int, vx: float = 0.0, vy: float = 0.0, w: float = 0.0,
-                kick_x: float = 1.8, kick_z: float = 1.8,
+                kick_x: float = 1.8, kick_z: float = 0.0,
                 spinner: bool = False, wheelsspeed: bool = False,
                 wheel1: float = 0.0, wheel2: float = 0.0,
                 wheel3: float = 0.0, wheel4: float = 0.0):

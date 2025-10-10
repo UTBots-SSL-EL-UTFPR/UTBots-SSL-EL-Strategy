@@ -5,7 +5,7 @@ from Behaviour_tree import commom_behaviours as cb
 from Behaviour_tree.bob_manager import BobManager
 from Behaviour_tree.commom_behaviours import actions as action_nodes
 from Behaviour_tree.commom_behaviours import condition as condition_nodes
-from Behaviour_tree.core.World_State import RobotID
+from Behaviour_tree.core.World_State import TeamID
 from Behaviour_tree.robot.bob import Bob
 
 

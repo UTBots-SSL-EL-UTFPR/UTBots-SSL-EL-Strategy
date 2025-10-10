@@ -71,9 +71,9 @@ if __name__ == "__main__":
     bob_state = BobManager.get_object()
     wd = World_State.get_object()
     _bb = Blackboard_Manager.get_instance()
-    kamiji, defender, goalkeeper = create_bobs()
-    all_bobs = [kamiji, defender, goalkeeper]
-    pass_subtree = get_pass_subtree(kamiji)
+    kamiji, argenton, SabKawa = create_bobs()
+    all_bobs = [kamiji, argenton, SabKawa]
+    pass_subtree = get_pass_subtree(SabKawa)
 
     create_scenario(all_bobs)
     update_delay = 0.02
