@@ -825,16 +825,25 @@ class PositioningHelper:
         return None
 
     @staticmethod
-    def is_aligned_to_goal(
-        attacker_pose: Pose2D,
+    def is_aligned_angular (
+            attacker_pose: Pose2D, 
+            desired_angle: float,
+            tolerance: float = 5
+    ) -> bool : 
+        
+        if abs(attacker_pose.theta - desired_angle) <= tolerance:
+            return True  
+        else :
+            return False
+        
+    def is_aligned_linear (
+        attacker_pose: Pose2D, 
         target_position: Pose2D,
-        tolerance_rad: float,
-        tolerance_xy: float
-    ) -> bool:
-
-        if (abs(attacker_pose.theta - target_position.theta) <= tolerance_rad
-           and abs(attacker_pose.x - target_position.x) <= tolerance_xy
-           and abs(attacker_pose.y - target_position.y) <= tolerance_xy):
-            return True
-        else:
+        tolerance: float = 30
+    ) -> bool : 
+        
+        if (abs(attacker_pose.x - target_position.x) <= tolerance and
+           abs(attacker_pose.y - target_position.y) <= tolerance) :
+            return True  
+        else :
             return False
