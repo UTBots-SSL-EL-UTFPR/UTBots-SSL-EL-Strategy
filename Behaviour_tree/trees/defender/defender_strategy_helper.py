@@ -1,82 +1,61 @@
 # Behaviour_tree/trees/defender/defender_strategy_helper.py
-from Behaviour_tree.core.World_State import World_State
+from Behaviour_tree.core.World_State import World_State, TeamID
 from Behaviour_tree.helpers.field_helper import FieldHelper
 from Behaviour_tree.helpers.geometry_helper import GeometryHelper
-from Behaviour_tree.helpers.motion_helper import MotionHelper
 from utils.pose2D import Pose2D
+import math
 
-BLOCKING_DISTANCE = 400.0
-POSSESSION_THRESHOLD = 350.0
-# ADIÇÃO: Distância mínima segura de qualquer oponente
-MIN_SAFE_DISTANCE_FROM_OPPONENT = 300.0
+APPROACH_OFFSET = 150.0
 
 class DefenderStrategyHelper:
     _ws = World_State.get_object()
 
     @classmethod
-    def get_smart_defensive_position(cls) -> Pose2D | None:
+    def get_base_position_by_id(cls, robot_id: TeamID) -> Pose2D:
+        # (Esta função não muda)
+        goal_center = FieldHelper.get_team_goal_center()
+        sign = -1 if goal_center.x < 0 else 1
+        base_positions = {
+            TeamID.Argenton: Pose2D(goal_center.x + (sign * 600), 0),
+            TeamID.Kamiji:   Pose2D(goal_center.x + (sign * 1000), 1000),
+            TeamID.SabKawa:  Pose2D(goal_center.x + (sign * 1000), -1000)
+        }
+        return base_positions.get(robot_id, Pose2D(goal_center.x + (sign * 600), 0))
+
+    @classmethod
+    def get_aggressive_marking_pose(cls) -> Pose2D | None:
         """
-        Calcula o alvo defensivo e garante que ele seja seguro antes de retornar.
+        Calcula uma POSE para se posicionar ENTRE a bola e nosso gol,
+        e pré-compensa o ângulo para o controlador do Bob.
         """
         ball_pos = cls._ws.get_ball_position()
-        opponents = cls._ws.get_all_foes_position()
+        our_goal = FieldHelper.get_team_goal_center()
+        opponent_goal = FieldHelper.get_enemy_goal_center()
 
         if not ball_pos:
-            return cls.get_base_position()
+            return None
 
-        # 1. Calcula o alvo estratégico "ideal"
-        raw_target = None
-        closest_foe = min(opponents, key=lambda foe: foe.distance_to(ball_pos), default=None) if opponents else None
+        # 1. Calcula a posição do alvo (x, y) - esta parte está correta
+        target_pos = GeometryHelper.calculate_point_on_line(
+            origin=ball_pos,
+            target=our_goal,
+            radius=APPROACH_OFFSET
+        )
 
-        if closest_foe and closest_foe.distance_to(ball_pos) < POSSESSION_THRESHOLD:
-            raw_target = cls.get_blocking_position(opponent_pos=closest_foe)
-        else:
-            raw_target = cls.get_zonal_marking_position(ball_pos=ball_pos)
-
-        # ============================================================================== #
-        # 2. VALIDAÇÃO DE SEGURANÇA: Garante que o alvo não está dentro de um oponente.
-        # ============================================================================== #
-        if raw_target and opponents:
-            for foe in opponents:
-                if raw_target.distance_to(foe) < MIN_SAFE_DISTANCE_FROM_OPPONENT:
-                    # Se o alvo está muito perto, afasta ele na linha a partir do oponente.
-                    # Isso cria um novo alvo seguro na mesma direção.
-                    raw_target = GeometryHelper.calculate_point_on_line(
-                        origin=foe,
-                        target=raw_target,
-                        radius=MIN_SAFE_DISTANCE_FROM_OPPONENT
-                    )
+        # 2. Calcula o ângulo real desejado (virado para o gol adversário)
+        real_angle = math.atan2(
+            opponent_goal.y - ball_pos.y,
+            opponent_goal.x - ball_pos.x
+        )
         
-        return raw_target
+        # ============================================================================== #
+        # CORREÇÃO DEFINITIVA: A Pré-Compensação
+        # Adicionamos 180 graus (math.pi) ao ângulo real para "traduzir" o alvo
+        # para o "idioma" que o controlador do Bob entende.
+        # ============================================================================== #
+        compensated_angle = real_angle + math.pi
+        
+        # Normalizamos o ângulo para garantir que ele fique no intervalo [-pi, +pi]
+        final_target_angle = compensated_angle#Pose2D.normalize_angle_to_pi(compensated_angle)
 
-    @classmethod
-    def get_blocking_position(cls, opponent_pos: Pose2D) -> Pose2D:
-        goal_center = FieldHelper.get_team_goal_center()
-        return GeometryHelper.calculate_point_on_line(origin=opponent_pos, target=goal_center, radius=BLOCKING_DISTANCE)
-
-    @classmethod
-    def get_zonal_marking_position(cls, ball_pos: Pose2D) -> Pose2D:
-        goal_center = FieldHelper.get_team_goal_center()
-        target = GeometryHelper.calculate_point_on_line(ball_pos, goal_center, 500)
-        target.y = Pose2D._clamp(target.y, -1000, 1000)
-        target.x = max(target.x, goal_center.x + 200)
-        return target
-
-    # --- Funções que não mudam ---
-    @classmethod
-    def get_intercept_position(cls, robot_pos: Pose2D) -> Pose2D | None:
-        ball_pos = cls._ws.get_ball_position()
-        ball_vel = cls._ws.get_ball_velocity()
-        if not ball_pos or not ball_vel or ball_vel.magnitude_sq() < 10.0: return None
-        return GeometryHelper.project_point_on_line(point=robot_pos, line_origin=ball_pos, line_direction=ball_vel)
-
-    @classmethod
-    def get_base_position(cls) -> Pose2D:
-        goal_center = FieldHelper.get_team_goal_center()
-        return Pose2D(goal_center.x + 400, 0)
-    
-    @classmethod
-    def get_path_to_target(cls, robot_pos: Pose2D, target_pos: Pose2D) -> list[Pose2D]:
-        ball_pos = cls._ws.get_ball_position()
-        obstacles = [obs for obs in cls._ws.get_all_robot_position() if obs != robot_pos]
-        return MotionHelper.find_shortest_path(robot_pos, target_pos, obstacles, ball_pos)
+        return Pose2D(target_pos.x, target_pos.y, final_target_angle)

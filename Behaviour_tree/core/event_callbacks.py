@@ -72,9 +72,7 @@ class BlackboardKeys:
             navigation = "navigation_flag"
 
         class Defense(StringEnum):
-            OPPONENT_WITH_BALL_IN_DANGER_ZONE = "opponent_with_ball_in_danger_zone"
             BALL_IN_DEFENSIVE_HALF = "ball_in_defensive_half"
-            BALL_IS_A_THREAT = "ball_is_a_threat"
 
     class Values:
         class Positions(StringEnum):
@@ -195,14 +193,6 @@ def new_quadrant(robot_id, new_quadrant):
 def new_zone(robot_id, new_zone):
     _bb.set(f"{robot_id}{BlackboardKeys.Values.Positions.ZONE}", new_zone)
 
-def set_opponent_in_danger_zone(value: bool):
-    """Callback para definir se há um oponente perigoso."""
-    _bb.set(BlackboardKeys.Flags.Defense.OPPONENT_WITH_BALL_IN_DANGER_ZONE, value)
-
 def set_ball_in_defensive_half(value: bool):
     """Callback para definir se a bola está no campo de defesa."""
     _bb.set(BlackboardKeys.Flags.Defense.BALL_IN_DEFENSIVE_HALF, value)
-
-def set_ball_is_a_threat(value: bool):
-    """Callback para definir se a bola é uma ameaça de gol iminente."""
-    _bb.set(BlackboardKeys.Flags.Defense.BALL_IS_A_THREAT, value)

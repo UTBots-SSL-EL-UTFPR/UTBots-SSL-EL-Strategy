@@ -6,12 +6,9 @@ from Behaviour_tree.bob_manager import BobManager
 from Behaviour_tree.core.World_State import TeamID, World_State
 from Behaviour_tree.robot.bob import Bob
 from Behaviour_tree.robot.FoesManager import FoesManager
-from utils.pose2D import Pose2D
 
-# Importa o analisador de estado do jogo
+# Importa os componentes necessários para a nova lógica
 from Behaviour_tree.core.game_state_analyzer import GameStateAnalyzer 
-
-# Importa apenas a árvore que vamos testar
 from .defender_tree import get_defender_tree
 
 logging.basicConfig(
@@ -21,29 +18,17 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ==============================================================================#
-# FUNÇÕES AUXILIARES DE TESTE                                                   #
-# ==============================================================================#
-
 def create_bobs():
     """Cria e reseta os robôs da equipe."""
     kamiji = Bob(TeamID.Kamiji)
     argenton = Bob(TeamID.Argenton)
     sabkawa = Bob(TeamID.SabKawa)
-    
-    kamiji.state.reset()
-    argenton.state.reset()
-    sabkawa.state.reset()
-    
+    kamiji.state.reset(), argenton.state.reset(), sabkawa.state.reset()
     return kamiji, argenton, sabkawa
 
-
 def create_scenario(all_bobs: list[Bob]):
-    """
-    Prepara o ambiente, aguardando que o WorldState receba dados.
-    """
+    """Prepara o ambiente, aguardando que o WorldState receba dados."""
     wd = World_State.get_object()
-    
     logger.info("Aguardando inicialização do World State (2 segundos)...")
     delay = 2
     t0 = time.time()
@@ -51,11 +36,8 @@ def create_scenario(all_bobs: list[Bob]):
         wd.update()
         for bob in all_bobs:
             bob.update()
-            
     logger.info("World State inicializado. Iniciando simulação do defensor.")
     print("-" * 100)
-    return
-
 
 def prints_e_logs(robot_to_watch: Bob):
     """Exibe informações úteis sobre o estado do robô no console."""
@@ -66,14 +48,8 @@ def prints_e_logs(robot_to_watch: Bob):
     logger.info(f"COMANDO ATUAL: '{robot_to_watch.state.current_command}'")
     print("=" * 50)
 
-
-# ==============================================================================#
-# BLOCO PRINCIPAL DE EXECUÇÃO                                                   #
-# ==============================================================================#
-
 if __name__ == "__main__":
     # --- Inicialização dos Gerenciadores ---
-    bob_manager = BobManager.get_object()
     world_state = World_State.get_object()
     foes_manager = FoesManager()
     game_analyzer = GameStateAnalyzer()
@@ -87,14 +63,12 @@ if __name__ == "__main__":
     logger.info(f"Atribuindo árvore de comportamento de defensor ao robô {defender_robot.robot_id.name}")
     defender_tree = get_defender_tree(defender_robot)
 
-    # As árvores dos outros robôs não são criadas neste teste focado.
-
     # --- Preparação do Cenário de Simulação ---
     create_scenario(all_bobs)
     
     # --- Loop de Simulação ---
-    update_delay = 0.001
-    print_delay = 0.5
+    update_delay = 0.02  # Frequência alta (50Hz) para movimento fluido
+    print_delay = 1.0
     
     tPrint = time.time()
     tUpdate = time.time()
@@ -103,25 +77,23 @@ if __name__ == "__main__":
         while True:
             current_time = time.time()
             
-            # Bloco de atualização (lógica principal)
             if current_time >= update_delay + tUpdate:
-                # 1. Percepção
+                # 1. PERCEPÇÃO: Ler dados do simulador
                 world_state.update()
                 foes_manager.update()
                 
-                # 2. Análise
+                # 2. ANÁLISE: Interpretar dados e definir flags
                 game_analyzer.update()
                 
-                # 3. Decisão (Apenas o defensor "pensa")
+                # 3. DECISÃO E AÇÃO: A árvore "pensa" e as ações comandam o robô
                 defender_tree.tick()
                 
-                # 4. Ação (Todos os robôs são atualizados para refletir o estado)
+                # Atualiza o estado interno dos robôs (como a posição)
                 for bob in all_bobs:
                     bob.update()
                 
                 tUpdate = current_time
                 
-            # Bloco para imprimir logs periodicamente
             if current_time >= print_delay + tPrint:
                 prints_e_logs(defender_robot)
                 tPrint = current_time
