@@ -25,12 +25,13 @@ from typing import Optional, Tuple
 import py_trees as pt
 
 import Behaviour_tree.helpers as hp
-import Behaviour_tree.helpers.visiblidade_gol as vis_gol
+from Behaviour_tree.robot.bob import Bob
+from utils.pose2D import Pose2D
+
 from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from Behaviour_tree.helpers.motion_helper import MotionHelper
-from Behaviour_tree.robot.bob import Bob
-from utils.defines import BALL_DISTANCE_FOR_SHOOT
-from utils.pose2D import Pose2D
+
+from utils.defines import (BALL_DISTANCE_FOR_SHOOT)
 
 _pos_helper = PositioningHelper.get_object()
 _ws = World_State.get_object()
@@ -57,7 +58,7 @@ class Move_node(pt.behaviour.Behaviour):
         self,
         robot: Bob,
         name: str = "MOVE",
-        timeout_s: float = 15,
+        timeout_s: float = 5,
     ):
         super().__init__(name=name)
         self.robot: Bob | None = robot
@@ -86,9 +87,12 @@ class Move_node(pt.behaviour.Behaviour):
         self._t0 = time.time()
         self._last_move_ts = self._t0
         self._stall_ticks = 0
-        self._bb.set(f"{self.robot.robot_id.name}{BlackboardKeys.Flags.Navigation.IS_STUCK}", False)  # type: ignore
-
+        self._bb.set(
+            f"{self.robot.robot_id.name}{BlackboardKeys.Flags.Navigation.IS_STUCK}",
+            False,
+        )
         self._bb.set(self.target_reached_key, False)
+        logger.debug("MOVE")
 
     def update(self) -> pt.common.Status:
         """
@@ -98,31 +102,46 @@ class Move_node(pt.behaviour.Behaviour):
         :returns: SUCCESS quando alvo alcançado; RUNNING durante o deslocamento; FAILURE em erro/timeout.
         :rtype: pt.common.Status
         """
-        if self.robot is None or self.robot.state is None:
+        if self.robot is None:
             return pt.common.Status.FAILURE
+        logger.debug(f"{self.robot.state.target_position} - target")
+        logger.debug(f"{self.robot.state.position}")
 
         if bool(self._bb.get(self.target_reached_key)):
-            logging.debug(f"{self.name}-{self.robot.robot_id} SUCCESS")
+            logging.debug(f"{self.name} - {self.robot.robot_id} SUCCESS")
             return pt.common.Status.SUCCESS
 
         if not getattr(self.robot.state, "target_position", None):
-            return pt.common.Status.FAILURE
-
-        try:
-            self.robot.fast_movement()
-        except Exception as exc:
+            logger.debug(
+                f"{self.name} - {self.robot.robot_id.name} - FAILURE  TARGET NONE"
+            )
             return pt.common.Status.FAILURE
 
         if (time.time() - self._t0) > self.timeout_s:
-            logging.warning(f"{self.robot.robot_id} -> MOVE TIMEOUT")
+            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE  TIMEOUT")
             return pt.common.Status.FAILURE
 
         if self._bb.get(
             f"{self.robot.robot_id.name}{BlackboardKeys.Flags.Navigation.IS_STUCK}"
         ):
-            logging.debug(f"{self.robot.robot_id} -> ROBOT STUCK")
+            logger.debug(
+                f"{self.name} - {self.robot.robot_id.name} - FAILURE  ROBOT STUCK"
+            )
             return pt.common.Status.FAILURE
+        logger.debug(f"{self.name} - {self.robot.robot_id.name} - RUNNING")
+        self.robot.fast_movement()
         return pt.common.Status.RUNNING
+
+    def terminate(self, new_status: pt.common.Status) -> None:
+        if self.robot is None or self.robot.state is None:
+            return
+
+        self.robot.state.target_position = None
+
+        try:
+            callbacks.target_reset(self.robot.robot_id.name)
+        except Exception:
+            pass
 
     def terminate(self, new_status: pt.common.Status) -> None:
         if self.robot is None or self.robot.state is None:
@@ -447,6 +466,7 @@ class Align_for_pass(pt.behaviour.Behaviour):
 #                                      CHUTE                                              #
 # --------------------------------------------------------------------------------------- #
 
+# Calcula o angulo que o robo deve estar para chutar o gol
 class Calculate_angular_target(pt.behaviour.Behaviour):
     def __init__(
         self,
@@ -472,26 +492,24 @@ class Calculate_angular_target(pt.behaviour.Behaviour):
       ):
           return pt.common.Status.FAILURE
     
-        # Só inicializações que eu vou precisar
+        # Inicializações que eu vou precisar
         attacker_pose = self.attacker.state.position
         goal_pose = _pos_helper.get_goal_center()
         obstacles_pose = _ws.get_all_robot_position()
         obstacles_pose.remove(attacker_pose)
 
         # Cálculo do ângulo
-        max_angle_visibility_field, min_angle_visibility_field = vis_gol.limits_of_visibility(obstacles_pose, attacker_pose, goal_pose)
-        # Esse angulo é dado em relacação ao eixo x+ quando x_gol>0 e x- quando x_gol<0
-        desired_angle = (max_angle_visibility_field + min_angle_visibility_field) / 2
-     
-        if goal_pose.x < 0 :    # Vai para o quadrante oposto
-            desired_angle = desired_angle*(-1) + math.pi
+        desired_angle = _pos_helper.middle_goal_visibility_range(attacker_pose, goal_pose, obstacles_pose)
     
+        # Settando o target
         self.attacker.state.target_position = (Pose2D)(attacker_pose.x, attacker_pose.y, desired_angle)
-
 
         return pt.common.Status.SUCCESS
 
-class angular_align(pt.behaviour.Behaviour):
+
+
+# Faz o alinhamento angular com o gol
+class Angular_align(pt.behaviour.Behaviour):
     def __init__(
         self,
         attacker: Bob,
@@ -522,31 +540,25 @@ class angular_align(pt.behaviour.Behaviour):
         ):
             return pt.common.Status.FAILURE
 
+        # Inicializações que eu vou precisar
         attacker_id = self.attacker.robot_id.value   # Transforma de enum para int
         attacker_pose = _ws.get_team_robot_pose(attacker_id)
         goal_pose = _pos_helper.get_goal_center()
         obstacles_pose = _ws.get_all_robot_position()
         obstacles_pose.remove(attacker_pose)
 
-        # Aqui é o cálculo do ângulo, MUDE PARA QUAL PREFERIR
-        max_angle_visibility_field, min_angle_visibility_field = vis_gol.limits_of_visibility(obstacles_pose, attacker_pose, goal_pose)
-        # Esse angulo é dado em relacação ao eixo x+ quando x_gol>0 e x- quando x_gol<0
-        visArea_center_rad = (max_angle_visibility_field + min_angle_visibility_field) / 2
-        
-        if goal_pose.x < 0 :
-            visArea_center_rad = (visArea_center_rad + math.pi)*-1
+        # Cálculo do ângulo
+        desired_angle = _pos_helper.middle_goal_visibility_range(attacker_pose, goal_pose, obstacles_pose)
 
         # Verifica se o movimento foi feito
-        if hp.PositioningHelper.is_aligned_to_goal(
+        if hp.PositioningHelper.is_aligned(
             attacker_pose,
-            visArea_center_rad,
+            desired_angle,
             tolerance = self.tolerance,
         ):
-            print("alinhamento angular = sucess")
             return pt.common.Status.SUCCESS
 
         # Realiza o movimento
-        self.attacker.state.target_position = (Pose2D)(attacker_pose.x, attacker_pose.y, visArea_center_rad)
         rotate_cmd = self.attacker.rotate()
 
         if not rotate_cmd:
@@ -560,8 +572,8 @@ class angular_align(pt.behaviour.Behaviour):
 
 
 
-# Por hora está meio redundante, mas essa função calcula a posição em (x,y), isto é, não envolve a posição angular
-class Calculate_kick_target(pt.behaviour.Behaviour):
+# Calcula o ponto aonde o robô deve ir para poder chutar no gol
+class Calculate_linear_target(pt.behaviour.Behaviour):
     def __init__(
         self,
         attacker: Bob,
@@ -570,6 +582,7 @@ class Calculate_kick_target(pt.behaviour.Behaviour):
         super().__init__(name)
         self.attacker = attacker
         self.bb = Blackboard_Manager.get_instance()
+        self.desired_angle = 0.0
 
     def setup(self, **kwargs):
         if self.attacker is None:
@@ -586,83 +599,26 @@ class Calculate_kick_target(pt.behaviour.Behaviour):
       ):
           return pt.common.Status.FAILURE
     
-        # Só inicializações que eu vou precisar
+        # Inicializações que eu vou precisar
         attacker_pose = self.attacker.state.position
         goal_pose = _pos_helper.get_goal_center()
         obstacles_pose = _ws.get_all_robot_position()
         obstacles_pose.remove(attacker_pose)
+        ball_pose = _ws.get_ball_position()
 
         # Cálculo do ângulo
-        max_angle_visibility_field, min_angle_visibility_field = vis_gol.limits_of_visibility(obstacles_pose, attacker_pose, goal_pose)
-        # Esse angulo é dado em relacação ao eixo x+ quando x_gol>0 e x- quando x_gol<0
-        desired_angle = (max_angle_visibility_field + min_angle_visibility_field) / 2
-     
-        if goal_pose.x < 0 :    # Vai para o quadrante oposto
-            desired_angle = desired_angle*(-1) + math.pi
-      
-        ball_pose = _ws.get_ball_position()
-      
-        BALL_PASS_OFFSET = 150
+        desired_angle = _pos_helper.middle_goal_visibility_range(attacker_pose, goal_pose, obstacles_pose)
 
-        # Cálculo o ponto alvo de alinhamento
+        # Cálculo o ponto alvo de alinhamento      
+        BALL_PASS_OFFSET = 80   # Distância que o robô deve estar da bola
         x_target = ball_pose.x - BALL_PASS_OFFSET * math.cos(desired_angle)
         y_target = ball_pose.y - BALL_PASS_OFFSET * math.sin(desired_angle)
     
-        self.attacker.state.target_position = (Pose2D)(x_target, y_target, attacker_pose.theta)
+        # Settando o target e a trajetória
+        self.attacker.state.target_position = (Pose2D)(x_target, y_target, self.attacker.state.position.theta)
+        self.attacker.state.path = MotionHelper.find_shortest_path(attacker_pose, self.attacker.state.target_position, obstacles_pose, ball_pose)
 
-        print("calculo linear = sucess")
         return pt.common.Status.SUCCESS
-
-
-
-# Outra função bagunçada. Ela faz o movimento linear, isto é, em (x,y). O robô pode dar uma emocionada 
-# e ir mais longe do que deveria, mas ele é esperto e volta
-class Align(pt.behaviour.Behaviour):
-    def __init__(
-        self,
-        attacker: Bob,
-        name: str = "Align",
-        tolerance = 15
-    ):
-        super().__init__(name)
-        self.attacker = attacker
-        self.bb = Blackboard_Manager.get_instance()
-        self.tolerance = tolerance
-
-    def setup(self, **kwargs):
-        if self.attacker is None:
-            raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
-        return super().setup(**kwargs)
-
-    def initialise(self):
-        #self.bb.set(f"{self.attacker.robot_id.name}_cmd_movement", 0.0)
-        pass
-
-    def update(self) -> pt.common.Status:
-
-      if (
-          self.attacker is None
-          or self.attacker.state is None
-      ):
-          return pt.common.Status.FAILURE
-    
-      attacker_pose = self.attacker.state.position
-
-      # Realiza o movimento
-      self.attacker.fast_movement()
-
-      # Verifica se chegou ao alvo
-      if hp.PositioningHelper.is_aligned_linear(
-            attacker_pose,
-            tolerance = 5,
-        ):
-            print("alinhamento angular = sucess")
-            return pt.common.Status.SUCCESS
-
-
-    def terminate(self, new_status: pt.common.Status):
-      #self.bb.set(f"{self.attacker.robot_id.name}_cmd_movement", 0.0)
-      pass
 
 
 
