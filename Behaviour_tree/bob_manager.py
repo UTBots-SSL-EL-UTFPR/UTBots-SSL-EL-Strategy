@@ -20,7 +20,7 @@ from utils.defines import (
     FIELD_INVERTED_SIDE,
 )
 from .core.World_State import World_State
-from .core.World_State import RobotID
+from .core.World_State import TeamID, FoesID
 from SSL_configuration.configuration import Configuration
 import math
 
@@ -96,14 +96,14 @@ class BobManager:
         for obs in obstacles:
             if obs == robot.state.position:
                 obstacles.remove(obs)
-        robot.state.path = robot.find_shortest_path(robot.state.position, target, obstacles, BOB_RADIUS, self.ball_pos, BALL_RADIUS)
+        robot.state.path = robot.find_shortest_path(robot.state.position, target, obstacles, ROBOT_RADIUS, self.ball_pos, BALL_RADIUS)
 
         
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
-    def set_offensive_suport_position(self, id: RobotID):
+    def set_offensive_suport_position(self, id: TeamID):
         """
         Calcula a posição do SUPORTE OFENSIVO de forma determinística, buscando
         o maior espaço com visibilidade tanto do cobrador quanto do gol.
@@ -167,7 +167,7 @@ class BobManager:
         obstacles = [obs for obs in obstacles if obs != robot_pos]
         print(target_pose, robot_pos)
         print(obstacles)
-        robot.state.path = robot.find_shortest_path(robot_pos, target_pose, obstacles, BOB_RADIUS, self.ball_pos, BALL_RADIUS)
+        robot.state.path = robot.find_shortest_path(robot_pos, target_pose, obstacles, ROBOT_RADIUS, self.ball_pos, BALL_RADIUS)
         print("passei_2")
         robot.state.role = RoleType.OFFENSIVE_SUPPORT
         return
@@ -291,7 +291,7 @@ class BobManager:
 
         return best_item
 
-    def get_last_man_id(self) -> RobotID | None:
+    def get_last_man_id(self) -> TeamID | None:
         """
         Retorna o RobotID do "último homem" se ele for do nosso time; caso o último seja oponente,
         retorna None. Use get_last_man() para detalhes quando for oponente.
@@ -308,20 +308,20 @@ class BobManager:
         Para bola parada defenciva, podemos ter goleiro cobrador e  2 apoio
         """
         if self.ball_pos.x < self.configuration.max_ball_y_to_goalkeeper_kick: # type: ignore
-            self.set_offensive_suport_position(RobotID.Kamiji)
-            aux = self.bobs.get(RobotID.Kamiji)
+            self.set_offensive_suport_position(TeamID.Kamiji)
+            aux = self.bobs.get(TeamID.Kamiji)
             if not aux or not aux.state:
                 return
             pos = aux.state.path[len(aux.state.path) - 1]
-            self.set_midlle_suport_position(RobotID.Defender, pos) # type: ignore
-            self.set_kicker_position(RobotID.Goalkeeper)
+            self.set_midlle_suport_position(TeamID.Defender, pos) # type: ignore
+            self.set_kicker_position(TeamID.Goalkeeper)
         else:
-            self.set_kicker_position(RobotID.Kamiji)
+            self.set_kicker_position(TeamID.Kamiji)
 
-            self.set_offensive_suport_position(RobotID.Defender)
+            self.set_offensive_suport_position(TeamID.Defender)
             print("tres")
 
-            self.set_goalkeeper_position(RobotID.Goalkeeper)
+            self.set_goalkeeper_position(TeamID.Goalkeeper)
             print("quatro")
 
         return 
