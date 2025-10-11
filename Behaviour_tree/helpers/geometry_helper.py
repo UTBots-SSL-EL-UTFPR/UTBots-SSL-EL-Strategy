@@ -112,29 +112,32 @@ class GeometryHelper:
         """
         Projeta um ponto em uma linha definida por uma origem e um vetor de direção.
         """
-        # Vetor da origem da linha até o ponto a ser projetado
         vec_to_point_x = point.x - line_origin.x
         vec_to_point_y = point.y - line_origin.y
 
-        # Vetor de direção da linha (não precisa ser unitário)
         dir_x = line_direction.x
         dir_y = line_direction.y
-        
+
         dir_mag_sq = dir_x**2 + dir_y**2
-        if dir_mag_sq < 1e-6: # Evita divisão por zero se a direção for nula
+        if dir_mag_sq < 1e-6:
             return line_origin
 
-        # O produto escalar nos dá o "quanto" do vec_to_point está na direção da linha
         dot_product = vec_to_point_x * dir_x + vec_to_point_y * dir_y
-        
-        # t é o fator de escala ao longo do vetor de direção
+
         t = dot_product / dir_mag_sq
-        
-        # Garante que a projeção seja para frente na trajetória da bola
+
         t = max(0, t)
 
-        # Calcula as coordenadas do ponto projetado
-        projected_x = line_origin.x + t * dir_x
-        projected_y = line_origin.y + t * dir_y
+        projected_x = int(line_origin.x + t * dir_x)
+        projected_y = int(line_origin.y + t * dir_y)
 
         return Pose2D(projected_x, projected_y)
+
+    @classmethod
+    def calculate_angle_between_points(
+        cls, start_point: Pose2D, end_point: Pose2D
+    ) -> float:
+        """
+        Calcula o ângulo em radianos para que o start_point "olhe" para o end_point.
+        """
+        return (math.atan2(end_point.y - start_point.y, end_point.x - start_point.x))

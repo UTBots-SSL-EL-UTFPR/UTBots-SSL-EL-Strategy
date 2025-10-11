@@ -2,12 +2,14 @@
 #                                  IMPORTS                                   #
 # -------------------------------------------------------------------------- #
 
+from typing import List
+
 from Behaviour_tree.core.World_State import TeamID, World_State
 from SSL_configuration.configuration import Configuration
 from utils.defines import DISTANCE_PRESS_OPPONENT, MIN_PASS_DISTANCE
 from utils.pose2D import Pose2D, Quadrant, QuadrantType, RoleType
 
-from .field_helper import GRID_STEP, FieldHelper
+from .field_helper import GRID_STEP, HALF_LEGHT, HALF_WID, FieldHelper
 from .geometry_helper import GeometryHelper
 from .motion_helper import MotionHelper
 from .positioning_helper import PositioningHelper
@@ -178,3 +180,68 @@ class StrategyHelper:
         final_target = FieldHelper.clamp_into_goalkeeper_area(ideal_target)
 
         return final_target
+
+    @classmethod
+    def calculate_attack_support_pos(
+        cls, ball_carrier_pose: Pose2D, opponents: List[Pose2D]
+    ) -> Pose2D:
+        """Calcula a melhor posição para se oferecer como opção de passe no ataque."""
+        FORWARD_PASS_DISTANCE = 800
+        SAFE_PASS_RECEPTION_DISTANCE = 400
+
+        target_y_magnitude = FieldHelper.get_attack_y_magnitude()
+        opponent_goal = FieldHelper.get_enemy_goal_center()
+
+        target_y_side = int(
+            -target_y_magnitude if ball_carrier_pose.y >= 0 else target_y_magnitude
+        )
+
+        ideal_x = ball_carrier_pose.x + FORWARD_PASS_DISTANCE
+        if ideal_x > opponent_goal.x - 500:
+            ideal_x = opponent_goal.x - 500
+
+        ideal_target_pose = Pose2D(ideal_x, target_y_side)
+
+        is_safe = all(
+            opp.distance_to(ideal_target_pose) > SAFE_PASS_RECEPTION_DISTANCE
+            for opp in opponents
+        )
+
+        if is_safe:
+            return ideal_target_pose
+        else:
+            for dx in [-300, 0, 300]:
+                for dy in [-400, 0, 400]:
+                    candidate_pos = Pose2D(
+                        ideal_target_pose.x + dx, ideal_target_pose.y + dy
+                    )
+                    if all(
+                        opp.distance_to(candidate_pos) > SAFE_PASS_RECEPTION_DISTANCE
+                        for opp in opponents
+                    ):
+                        return candidate_pos
+
+        return ideal_target_pose
+
+    @classmethod
+    def calculate_defense_support_pos(cls, opponents: List[Pose2D]) -> Pose2D:
+        """Calcula a melhor posição para interceptar um contra-ataque."""
+        INTERCEPT_DISTANCE_FROM_OPPONENT = 600
+
+        if not opponents:
+            return Pose2D(-500, 0) 
+
+        our_goal = FieldHelper.get_team_goal_center()
+        most_advanced_opponent = max(opponents, key=lambda opp: opp.x)
+
+        target_pose = GeometryHelper.calculate_point_on_line(
+            origin=our_goal,
+            target=most_advanced_opponent,
+            radius=INTERCEPT_DISTANCE_FROM_OPPONENT,
+        )
+
+        target_pose.theta = GeometryHelper.calculate_angle_between_points(
+            start_point=target_pose, end_point=most_advanced_opponent
+        )
+
+        return target_pose

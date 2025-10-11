@@ -184,7 +184,7 @@ class Pose2D:
     def __init__(self, x=0, y=0, theta=0):
         self.x = x if x is not None else 0
         self.y = y if y is not None else 0
-        self.theta = theta if theta is not None else 0
+        self.theta : int | float = theta if theta is not None else 0
 
     # ---------------------------------------------------------------------------------------#
     #                                       SOBRECARGAS                                     #
