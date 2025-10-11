@@ -1,13 +1,14 @@
 # Behaviour_tree/trees/defender/defender_tree.py
 import py_trees
 import time
+import math
 from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
 
 from .defender_conditions import IsBallInDefensiveHalf
 from .defender_strategy_helper import DefenderStrategyHelper
 
-POSITIONAL_TOLERANCE = 150.0 # Aumentado um pouco para dar mais estabilidade
+POSITIONAL_TOLERANCE = 150.0
 
 class SmartMarking(py_trees.behaviour.Behaviour):
     """
@@ -20,36 +21,36 @@ class SmartMarking(py_trees.behaviour.Behaviour):
         self._locked_target: Pose2D | None = None
 
     def update(self) -> py_trees.common.Status:
-        # 1. Calcula o alvo estratégico ideal a cada ciclo
+        # 1. Calcula o alvo estratégico ideal A CADA CICLO para saber onde deveríamos estar.
         strategic_target = DefenderStrategyHelper.get_aggressive_marking_pose()
         if not strategic_target:
             self.robot.state.current_command = "Falha ao Calcular Posição"
             self._locked_target = None # Limpa o alvo fixo se a estratégia falhar
             return py_trees.common.Status.FAILURE
         
-        # 2. Calcula a distância do robô até o alvo estratégico
+        # 2. Calcula a distância do robô até o alvo estratégico ATUAL.
         distance_to_strategic_target = self.robot.state.position.distance_to(strategic_target)
 
         # ============================================================================== #
         # LÓGICA DO "ALVO FIXO"
         # ============================================================================== #
         if distance_to_strategic_target > POSITIONAL_TOLERANCE:
-            # FASE 1: APROXIMAÇÃO RÁPIDA (Longe do Alvo)
-            # Estamos fora da zona de precisão, então não há alvo fixo.
+            # FASE 1: PERSEGUIÇÃO REATIVA (Longe do Alvo)
+            # Não há alvo fixo, o robô está em modo de perseguição.
             self._locked_target = None
-            # O alvo do robô é o alvo estratégico mais recente.
+            # O alvo do robô é sempre o alvo estratégico mais recente.
             self.robot.state.target_position = strategic_target
             self.robot.state.current_command = "Aproximando da Posição"
             self.robot.fast_movement()
         else:
             # FASE 2: ALINHAMENTO PRECISO (Perto do Alvo)
-            # Se acabamos de entrar na zona, "congelamos" o alvo.
+            # Se acabamos de entrar na zona, "congelamos" o alvo daquele instante.
             if self._locked_target is None:
                 self._locked_target = strategic_target
             
             # O robô agora trabalha EXCLUSIVAMENTE com o alvo fixo.
             self.robot.state.target_position = self._locked_target
-            self.robot.state.current_command = "Ajustando Ângulo Final"
+            self.robot.state.current_command = "Ajustando Posição e Ângulo"
             self.robot.precision_movement()
 
         return py_trees.common.Status.RUNNING
