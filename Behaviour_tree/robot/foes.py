@@ -87,7 +87,7 @@ class FoesState:
 
     # =================== Updates ===================
     def update_velocity(self):       
-        new_vel = self.world_state.get_team_robot_velocity(self.robot_id.value)
+        new_vel = self._ws.get_foe_robot_velocity(self.robot_id.value)
         if new_vel is not None:
             self.velocity = new_vel
             return 0
@@ -95,7 +95,7 @@ class FoesState:
             
 
     def update_position(self):
-        new_pos = self.world_state.get_team_robot_pose(self.robot_id.value)
+        new_pos = self._ws.get_foe_robot_pose(self.robot_id.value)
         if new_pos is not None:
             self.position = new_pos
             return 0
@@ -112,7 +112,7 @@ class FoesState:
     
     def is_robot_stuck(self):
                 #################   Verifica se preso na mesma pos e verifica quadrante   #################
-        new_pos = self.world_state.get_team_robot_pose(self.robot_id.value)
+        new_pos = self._ws.get_foe_robot_pose(self.robot_id.value)
         if new_pos is None:
             return
 
@@ -145,7 +145,7 @@ class FoesState:
 
     def is_ball_reachable(self):
         reachable = 500 > self.position.distance_to(
-            self.world_state.get_ball_position()
+            self._ws.get_ball_position()
         )
         event_callbacks.on_ball_reachable(self.robot_id.name, reachable)
 
@@ -164,20 +164,20 @@ class FoesState:
         #primeiro a bola  esta no goleiro 
         if self.robot_id == FoesID(2):
             pos_gol=self.get_position()
-            pos_1=World_State.get_team_robot_pose(self,1)
-            pos_2=World_State.get_team_robot_pose(self,0)
+            pos_1=World_State.get_foe_robot_pose(self,1)
+            pos_2=World_State.get_foe_robot_pose(self,0)
             
-            obstacles = self.world_state.get_all_foes_position()
+            obstacles = self._ws.get_all_team_position()
             
             if(PositioningHelper.is_path_clear(pos_gol,pos_1,obstacles,bob.ROBOT_RADIUS) or PositioningHelper.is_path_clear(pos_gol,pos_2,obstacles,bob.ROBOT_RADIUS)):
                 event_callbacks.on_valid_line(self.robot_id.name)
         #se a bola esta com outro robo
         elif self.robot_id == FoesID(1):
             pos_1=self.get_position()
-            pos_2=World_State.get_team_robot_pose(self,0)
+            pos_2=World_State.get_foe_robot_pose(self,0)
         
             
-            obstacles =self.world_state.get_all_foes_position()
+            obstacles =self._ws.get_all_team_position()
              
             if(PositioningHelper.is_path_clear(pos_1,pos_2,obstacles,bob.ROBOT_RADIUS)):
                 event_callbacks.on_valid_line(self.robot_id.name)
@@ -187,14 +187,14 @@ class FoesState:
             pos_2=World_State.get_team_robot_pose(self,1)
         
             
-            obstacles = self.world_state.get_all_foes_position()
+            obstacles = self._ws.get_all_team_position()
              
             if(PositioningHelper.is_path_clear(pos_1,pos_2,obstacles,bob.ROBOT_RADIUS)):
                 event_callbacks.on_valid_line(self.robot_id.name)
 
 
         #################   Verifica se preso na mesma pos e verifica quadrante   #################
-        new_pos = self.world_state.get_team_robot_pose(self.robot_id.value)
+        new_pos = self._ws.get_foe_robot_pose(self.robot_id.value)
         if new_pos is None:
             return
 
