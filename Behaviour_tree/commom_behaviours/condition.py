@@ -10,8 +10,9 @@ from Behaviour_tree.core.World_State import TeamID, World_State
 from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
-from utils.defines import (MAX_SHOOT_DISTANCE)
+from utils.defines import (MAX_SHOOT_DISTANCE, ROBOT_RADIUS)
 import Behaviour_tree.helpers.visiblidade_gol as vis_gol
+from utils.pose2D import RoleType
 
 positions_values = BlackboardKeys.Values.Positions
 _bb = Blackboard_Manager.get_instance()
@@ -207,55 +208,79 @@ class Teamkick(py_trees.behaviour.Behaviour):
             return py_trees.common.Status.SUCCESS
         return py_trees.common.Status.FAILURE
     
+class Is_in_prohibited_area(py_trees.behaviour.Behaviour):
+    def __init__(
+      self,
+      kicker: Bob,
+      name: str = "Is_in_goalkeeper_area"
+  ):
+      super().__init__(name)
+      self.kicker = kicker
+
+    def setup(self, **kwargs: Any) -> None:
+      if self.kicker is None:
+          raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
+      return super().setup(**kwargs)
+    
+    def update(self) -> py_trees.common.Status:
+      # Inicializações que eu vou precisar
+      ball_pose = _ws.get_ball_position()
+
+     # Verifica se o robô está na área do goleiro ou se a bola está, daí ele nem tenta chegar perto
+      if (_pos_helper.outside_walls(ball_pose, 2*ROBOT_RADIUS or
+            _pos_helper.is_in_goalkeeper_area(ball_pose, 0))):
+          return py_trees.common.Status.FAILURE
+      return py_trees.common.Status.SUCCESS
+
+
+
 class Goal_visibility(py_trees.behaviour.Behaviour):
     def __init__(
       self,
-      attacker: Bob,
+      kicker: Bob,
       name: str = "Goal_visibility"
   ):
       super().__init__(name)
-      self.attacker = attacker
+      self.kicker = kicker
 
-def setup(self, **kwargs: Any) -> None:
-      if self.attacker is None:
-          raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
-      return super().setup(**kwargs)
-def update(self) -> py_trees.common.Status:
-      obstacles_pose = _ws.get_all_robot_position()
-      attacker_id = self.attacker.robot_id.value   # Transforma de enum para int
-      attacker_pose = _ws.get_team_robot_pose(attacker_id)
-      goal_center = _pos_helper.get_goal_center()
-      x_goal = goal_center.x
-    
-      if(vis_gol.max_range_of_visibility(obstacles_pose, attacker_pose, x_goal)):
-          return py_trees.common.Status.SUCCESS
-      return py_trees.common.Status.FAILURE
-
+    def setup(self, **kwargs: Any) -> None:
+        if self.kicker is None:
+            raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
+        return super().setup(**kwargs)
+    def update(self) -> py_trees.common.Status:
+        #Inicializações
+        obstacles_pose = _ws.get_all_robot_position()
+        kicker_id = self.kicker.robot_id.value   # Transforma de enum para int
+        kicker_pose = _ws.get_team_robot_pose(kicker_id)
+        goal_center = _pos_helper.get_goal_center()
+        
+        # Cálculo do ângulo máximo de visibilidade do gol
+        if(vis_gol.max_range_of_visibility(obstacles_pose, kicker_pose, goal_center)):
+            return py_trees.common.Status.SUCCESS
+        return py_trees.common.Status.FAILURE
 
 
 
 class Goal_distance(py_trees.behaviour.Behaviour):
-  def __init__(
+    def __init__(
       self,
-      attacker: Bob,
+      kicker: Bob,
       name: str = "Goal_distance",
   ):
       super().__init__(name)
-      self.attacker = attacker
+      self.kicker = kicker
 
-def setup(self, **kwargs: Any) -> None:
-      if self.attacker is None:
+    def setup(self, **kwargs: Any) -> None:
+      if self.kicker is None:
           raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
       return super().setup(**kwargs)
 
-def update(self) -> py_trees.common.Status:
-      attacker_id = self.attacker.robot_id.value   # Transforma de enum para int
-      attacker_pose = _ws.get_team_robot_pose(attacker_id)
-
+    def update(self) -> py_trees.common.Status:
+      kicker_id = self.kicker.robot_id.value
+      kicker_pose = _ws.get_team_robot_pose(kicker_id)
       goal_center = _pos_helper.get_goal_center()
-      x_goal = goal_center.x
 
-      distance_to_goal = attacker_pose.distance_to(Pose2D(x_goal, goal_center.y))
+      distance_to_goal = kicker_pose.distance_to(Pose2D(goal_center.x, goal_center.y))
       if(distance_to_goal <= MAX_SHOOT_DISTANCE):
           return py_trees.common.Status.SUCCESS
       return py_trees.common.Status.FAILURE
