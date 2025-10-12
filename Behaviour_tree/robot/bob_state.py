@@ -92,8 +92,8 @@ class Bob_State:
         """
         if not self.path:
             return
-
-        self.target_position = self.path[self.path_index]
+        if self.path_index < len(self.path):
+            self.target_position = self.path[self.path_index]
         if self.target_position.is_in_range(
             self.position, self.configuration.threshould_arrived_target
         ):
