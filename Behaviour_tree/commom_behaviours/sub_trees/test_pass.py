@@ -4,7 +4,7 @@ import time
 
 import py_trees as pt
 
-from Behaviour_tree.bob_manager import BobManager
+from Behaviour_tree.managers.bob_manager import BobManager
 from Behaviour_tree.commom_behaviours import actions as s_action_nodes
 from Behaviour_tree.commom_behaviours import condition as c_condition_nodes
 from Behaviour_tree.core import event_callbacks as callbacks

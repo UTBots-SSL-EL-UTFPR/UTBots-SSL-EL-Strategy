@@ -2,7 +2,7 @@
 import logging
 import time
 
-from Behaviour_tree.bob_manager import BobManager
+from Behaviour_tree.managers.bob_manager import BobManager
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
 from Behaviour_tree.core.World_State import RobotID, World_State

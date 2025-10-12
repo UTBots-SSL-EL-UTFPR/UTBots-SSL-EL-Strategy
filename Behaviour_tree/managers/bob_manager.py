@@ -4,7 +4,8 @@ from Behaviour_tree.helpers.field_helper import FIELD_X_MAX, FIELD_X_MIN, HALF_L
 from Behaviour_tree.helpers.motion_helper import MotionHelper
 from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from Behaviour_tree.trees.tree import Tree
-from .robot.bob import Bob
+
+from Behaviour_tree.robot.bob import Bob
 
 from typing import Dict
 from utils.pose2D import Pose2D
@@ -18,24 +19,27 @@ from utils.defines import (
     FIELD_X_MIN,
     FIELD_X_MAX,
 )
-from .core.World_State import World_State
-from .core.World_State import RobotID
+from Behaviour_tree.core.ws import ws
+from Behaviour_tree.core.ws import RobotID
 from SSL_configuration.configuration import Configuration
 import math
-from .positioning.positioning_helper import Positioning_helper, MIN_PASS_DISTANCE, HALF_LEGHT
+from Behaviour_tree.positioning.positioning_helper import Positioning_helper, MIN_PASS_DISTANCE, HALF_LEGHT
 
-class BobManager:
+from Behaviour_tree.core.blackboard import Blackboard_Manager
+from Behaviour_tree.managers.base_manager import BaseManager
+
+
+class BobManager(BaseManager):
     _instance = None
     """
     Responsável por instanciar e gerenciar todos os robôs e suas árvores de comportamento.
     """
 
     def __init__(self):
+        super().__init__() # traz self.ws e self.bb do BaseManager
         self.bobs: Dict[RobotID, Bob] = {}
-        
         self.trees: Dict[RobotID, Tree] = {}
         self.configuration = Configuration.getObject()
-        self.world_state = World_State.get_object()
         self.positioning_helper = PositioningHelper.get_object()
 
         self._create_bob(RobotID.Kamiji)
@@ -63,12 +67,27 @@ class BobManager:
         self.bobs[robot_id] = bob
         #self.trees[robot_id] = tree(bob)
 
+    
     def update_all(self):
-        self.ball_pos = self.world_state.get_ball_position()
+        self.ball_pos = self.ws.get_ball_position()
+
+        #se o referee mandou para, para e fds tudo
+        if self._apply_referee_gating():
+            return
 
         for bob in self.bobs.values():
             if(bob.state):
                 bob.state.update()
+
+    #da classe pai
+    def create(self) -> None:
+        self._create_bob(RobotID.Kamiji)
+        self._create_bob(RobotID.Defender)
+        self._create_bob(RobotID.Goalkeeper)
+
+    #da classe pai
+    def update(self, dt = 0):
+        self.update_all()
 
 
     def tick_all(self):
@@ -81,6 +100,26 @@ class BobManager:
     def get_tree(self, robot_id):
         return self.trees.get(robot_id)
     
+    def _apply_referee_gating(self) -> bool:
+        """
+        freio global: se o referee proibir movimento, zera os comandos de todos os robos
+        retorna True se bloqueou, False caso contrario
+        """
+        if bool(self.bb.get("gc_can_move")):
+            return False
+
+        # referee proibiu movimento (ex: HALT/STOP/READY_*): zera todas asrodas
+        for bob in self.bobs.values():
+            try:
+                bob.cmd_builder.command_robots(id=bob.robot_id.value, wheelsspeed=False)
+                bob.cmd = bob.cmd_builder.build()
+                bob.cmd_sender.send(bob.cmd)
+            except Exception:
+                pass
+        return True
+
+
+    
     #---------------------------------------#
     #               Posicionamento          #
     #---------------------------------------#
@@ -92,7 +131,7 @@ class BobManager:
         robot.state.role = RoleType.KICKER
 
         target = Pose2D.align_two(self.ball_pos, Pose2D(2500, 0), 200, True) #TODO fazer gol dinamico (troca de lados)
-        obstacles = self.world_state.get_all_robot_position()
+        obstacles = self.ws.get_all_robot_position()
         for obs in obstacles:
             if obs == robot.state.position:
                 obstacles.remove(obs)
@@ -114,7 +153,7 @@ class BobManager:
 
         robot_pos = robot.state.position
         
-        opponents = self.world_state.get_all_foes_position()
+        opponents = self.ws.get_all_foes_position()
         goal_center = Pose2D(1500, 0)
 
         target_pose = robot_pos
@@ -163,7 +202,7 @@ class BobManager:
                     target_pose = Pose2D(Pose2D._clamp(safest_point.x,-2050,2050),Pose2D._clamp(safest_point.y, -1300, 1300))
                     
                     break 
-        obstacles = self.world_state.get_all_robot_position()
+        obstacles = self.ws.get_all_robot_position()
         obstacles = [obs for obs in obstacles if obs != robot_pos]
         print(target_pose, robot_pos)
         print(obstacles)
@@ -207,7 +246,7 @@ class BobManager:
         else:
             primary_target = Pose2D(TARGET_X, TARGET_Y_MAGNITUDE)
 
-        opponents = self.world_state.get_all_foes_position()
+        opponents = self.ws.get_all_foes_position()
         target_pose = primary_target 
 
         if opponents:
@@ -223,7 +262,7 @@ class BobManager:
 
                 target_pose = Pose2D(new_x, primary_target.y)
 
-        obstacles = self.world_state.get_all_robot_position()
+        obstacles = self.ws.get_all_robot_position()
         obstacles = [obs for obs in obstacles if obs != robot.state.position]
         
         robot.state.target_position = target_pose
@@ -245,7 +284,7 @@ class BobManager:
             return None
         robot_pos = robot.state.position
         self.ball_pos
-        obstacles = self.world_state.get_all_robot_position()
+        obstacles = self.ws.get_all_robot_position()
         obstacles = [obs for obs in obstacles if obs != robot_pos]
 
         target_pose = Pose2D(-100, 0)
@@ -280,7 +319,7 @@ class BobManager:
             area_x_min, area_x_max = 1650, 2250
         area_y_min, area_y_max = -600, 600
 
-        ball = self.ball_pos if self.ball_pos else self.world_state.get_ball_position()
+        ball = self.ball_pos if self.ball_pos else self.ws.get_ball_position()
         if ball is None:
             return None
 
@@ -315,7 +354,7 @@ class BobManager:
         target_pose = Pose2D(target_x, target_y)
 
         # Planejamento de caminho
-        obstacles = self.world_state.get_all_robot_position()
+        obstacles = self.ws.get_all_robot_position()
         obstacles = [obs for obs in obstacles if obs != robot.state.position]
         robot.state.target_position = target_pose
         new_path = MotionHelper.find_shortest_path(
@@ -355,7 +394,7 @@ class BobManager:
                 ally_candidates.append((rid, bob.state.position))
 
         # Oponentes (sem ID explícito disponível aqui, usamos índice)
-        foe_positions = self.world_state.get_all_foes_position()
+        foe_positions = self.ws.get_all_foes_position()
         foe_candidates = list(enumerate(foe_positions)) if foe_positions else []
 
         # Função de chave conforme o lado defendido
