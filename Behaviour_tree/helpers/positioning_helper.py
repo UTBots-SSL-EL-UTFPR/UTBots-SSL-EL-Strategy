@@ -13,6 +13,7 @@ from ..core.World_State import TeamID, World_State
 from .field_helper import (GOAL_LENGHT, GRID_STEP, HALF_GOALKEEPER_AREA_WIDTH,
                            HALF_LEGHT, KEEPER_MARGIN, WALL_MARGIN)
 from .geometry_helper import GeometryHelper
+import Behaviour_tree.helpers.visiblidade_gol as vis_gol
 import numpy as np
 
 
@@ -825,38 +826,34 @@ class PositioningHelper:
         return None
 
     @staticmethod
-    def is_aligned_to_goal(
-        attacker_pose: Pose2D, desired_angle: float, tolerance: float = 0.15
-    ) -> bool:
-
-        if abs(attacker_pose.theta - desired_angle) <= tolerance:
-            return True
-        else:
-            return False
-
-    @staticmethod
-    def is_aligned_angular (
-            attacker_pose: Pose2D, 
-            desired_angle: float,
-            tolerance: float = 5
-    ) -> bool : 
-        
-        if abs(attacker_pose.theta - desired_angle) <= tolerance:
-            return True  
-        else :
-            return False
-        
-    def is_aligned_linear (
+    def is_aligned (
         attacker_pose: Pose2D, 
-        target_position: Pose2D,
-        tolerance: float = 30
+        desired_angle: float,
+        goal_pose: Pose2D,
+        tolerance: float = 0.10
     ) -> bool : 
-        
-        if (abs(attacker_pose.x - target_position.x) <= tolerance and
-           abs(attacker_pose.y - target_position.y) <= tolerance) :
+        if abs(attacker_pose.theta - desired_angle) <= tolerance:
             return True  
         else :
             return False
+        
+    @staticmethod
+    def middle_goal_visibility_range (
+        attacker_pose: Pose2D,
+        goal_pose: Pose2D,
+        obstacles_pose: List[Pose2D]
+    ) -> float : 
+        # Função que cálculo o ângulo de maior visibilidade do gol
+        max_angle_visibility_field, min_angle_visibility_field = vis_gol.limits_of_visibility(obstacles_pose,
+                                                                                               attacker_pose,
+                                                                                                 goal_pose)
+        desired_angle = (max_angle_visibility_field + min_angle_visibility_field) / 2
+        if goal_pose.x < 0:    # Esse angulo é dado em relacação ao eixo x+ quando x_gol>0 e x- quando x_gol<0
+            desired_angle = desired_angle*(-1) + math.pi
+            if desired_angle > math.pi :
+                desired_angle = desired_angle - 2*math.pi 
+
+        return desired_angle
 
     @staticmethod
     def is_between_points_with_obstacle(
