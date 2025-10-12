@@ -2,6 +2,7 @@ import math
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Set
+import numpy as np
 
 from .defines import FIELD_INVERTED_SIDE
 
@@ -311,3 +312,6 @@ class Pose2D:
         É mais rápido que distance_to() pois evita a raiz quadrada.
         """
         return (self.x - other.x) ** 2 + (self.y - other.y) ** 2
+
+    def to_numpy(self):
+        return np.array([self.x, self.y])

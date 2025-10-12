@@ -175,6 +175,13 @@ class Bob:
         self.cmd = self.cmd_builder.build()
         self.cmd_sender.send(self.cmd)
 
+    def stop(self):
+        """Interrompe qualquer movimento do robô."""
+        self.state.target_velocity = 0.0
+        self.state.angular_velocity = 0.0
+        self.state.target_position = self.state.position  # Mantém posição atual
+        self.state.current_command = "Parado"
+        
     def kick_ball(self, ballSpeed: float = 3.0) -> bool:
 
         # 3 m/s é a velocidade maxima permitida para a bola no EL, não utilize valores maiores!!!!!

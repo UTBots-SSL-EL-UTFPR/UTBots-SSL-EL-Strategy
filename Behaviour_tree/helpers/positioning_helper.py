@@ -13,6 +13,7 @@ from ..core.World_State import TeamID, World_State
 from .field_helper import (GOAL_LENGHT, GRID_STEP, HALF_GOALKEEPER_AREA_WIDTH,
                            HALF_LEGHT, KEEPER_MARGIN, WALL_MARGIN)
 from .geometry_helper import GeometryHelper
+import numpy as np
 
 
 class ShadowCone:
@@ -832,3 +833,109 @@ class PositioningHelper:
             return True
         else:
             return False
+
+    @staticmethod
+    def is_aligned_angular (
+            attacker_pose: Pose2D, 
+            desired_angle: float,
+            tolerance: float = 5
+    ) -> bool : 
+        
+        if abs(attacker_pose.theta - desired_angle) <= tolerance:
+            return True  
+        else :
+            return False
+        
+    def is_aligned_linear (
+        attacker_pose: Pose2D, 
+        target_position: Pose2D,
+        tolerance: float = 30
+    ) -> bool : 
+        
+        if (abs(attacker_pose.x - target_position.x) <= tolerance and
+           abs(attacker_pose.y - target_position.y) <= tolerance) :
+            return True  
+        else :
+            return False
+
+    @staticmethod
+    def is_between_points_with_obstacle(
+        point: Pose2D, start: Pose2D, end: Pose2D, obstacle: Pose2D, tolerance: float
+    ) -> bool:
+        """
+        Verifica se 'point' está aproximadamente entre 'start' e 'end',
+        sem colidir com 'obstacle'. 'tolerance' define a distância mínima
+        permitida do obstáculo.
+        """
+        # Distância entre start e end
+        dist_start_end = start.distance_to(end)
+        if dist_start_end == 0:
+            return False
+
+        # Distância do ponto à linha start-end
+        dist_point_line_sq = PositioningHelper._distance_point_to_segment_sq(
+            point, start, end
+        )
+
+        # Distância do obstáculo à linha start-end
+        dist_obstacle_line_sq = PositioningHelper._distance_point_to_segment_sq(
+            obstacle, start, end
+        )
+
+        # Verifica se está dentro da faixa linear e fora da colisão
+        return dist_point_line_sq <= tolerance**2 and dist_obstacle_line_sq >= tolerance**2
+
+    @staticmethod
+    def get_detour_point_avoiding_point(
+        start: Pose2D,
+        end: Pose2D,
+        obstacle: Pose2D,
+        clearance: float = ROBOT_RADIUS + 50
+    ) -> Pose2D:
+        """
+        Calcula um ponto de desvio para ir de 'start' a 'end' sem passar por 'obstacle',
+        garantindo uma distância mínima de 'clearance'.
+        """
+        # Vetor start->end
+        dx = end.x - start.x
+        dy = end.y - start.y
+
+        # Vetor perpendicular para desviar lateralmente
+        perp_x = -dy
+        perp_y = dx
+
+        norm = math.hypot(perp_x, perp_y)
+        if norm == 0:
+            norm = 1.0
+        perp_x /= norm
+        perp_y /= norm
+
+        # Determina lado do desvio baseado na posição do obstáculo
+        vec_to_obstacle_x = obstacle.x - start.x
+        vec_to_obstacle_y = obstacle.y - start.y
+        side = np.sign(perp_x * vec_to_obstacle_y - perp_y * vec_to_obstacle_x)
+
+        detour_x = obstacle.x + perp_x * clearance * side
+        detour_y = obstacle.y + perp_y * clearance * side
+
+        return Pose2D(detour_x, detour_y)
+
+    @staticmethod
+    def get_point_between(a: Pose2D, b: Pose2D, ratio: float = 0.5) -> Pose2D:
+        """Retorna um ponto na linha entre A e B (ratio=0.5 -> meio do caminho)."""
+        return Pose2D(
+            a.x + (b.x - a.x) * ratio,
+            a.y + (b.y - a.y) * ratio
+        )
+
+    @staticmethod
+    def get_lateral_offset(start: Pose2D, end: Pose2D, obstacle: Pose2D, distance: float) -> Pose2D:
+        """Gera um desvio lateral perpendicular ao caminho start→end para evitar obstacle."""
+        dx, dy = end.x - start.x, end.y - start.y
+        norm = math.hypot(dx, dy)
+        if norm == 0:
+            return Pose2D(start.x, start.y)
+        dx, dy = dx / norm, dy / norm
+        # Perpendicular à direita
+        offset_x, offset_y = -dy * distance, dx * distance
+        return Pose2D(obstacle.x + offset_x, obstacle.y + offset_y)

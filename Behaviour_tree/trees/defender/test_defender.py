@@ -7,9 +7,10 @@ from Behaviour_tree.core.World_State import TeamID, World_State
 from Behaviour_tree.robot.bob import Bob
 from Behaviour_tree.robot.FoesManager import FoesManager
 
-# Importa os componentes necessários para a nova lógica
+# Árvores e análises
 from Behaviour_tree.core.game_state_analyzer import GameStateAnalyzer 
 from .defender_tree import get_defender_tree
+from .auxiliary_defender_tree import get_auxiliary_defender_tree  # <-- novo import
 
 logging.basicConfig(
     level=logging.INFO,
@@ -18,6 +19,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+# =========================================================
+#   FUNÇÕES AUXILIARES
+# =========================================================
 def create_bobs():
     """Cria e reseta os robôs da equipe."""
     kamiji = Bob(TeamID.Kamiji)
@@ -25,6 +30,7 @@ def create_bobs():
     sabkawa = Bob(TeamID.SabKawa)
     kamiji.state.reset(), argenton.state.reset(), sabkawa.state.reset()
     return kamiji, argenton, sabkawa
+
 
 def create_scenario(all_bobs: list[Bob]):
     """Prepara o ambiente, aguardando que o WorldState receba dados."""
@@ -39,15 +45,20 @@ def create_scenario(all_bobs: list[Bob]):
     logger.info("World State inicializado. Iniciando simulação do defensor.")
     print("-" * 100)
 
+
 def prints_e_logs(robot_to_watch: Bob):
     """Exibe informações úteis sobre o estado do robô no console."""
-    print("=" * 50)
-    logger.info(f"ROBÔ DEFENSOR: {robot_to_watch.robot_id.name}")
+    print("=" * 60)
+    logger.info(f"ROBÔ: {robot_to_watch.robot_id.name}")
     logger.info(f"POSIÇÃO ATUAL: {robot_to_watch.state.position}")
     logger.info(f"ALVO ATUAL: {robot_to_watch.state.target_position}")
     logger.info(f"COMANDO ATUAL: '{robot_to_watch.state.current_command}'")
-    print("=" * 50)
+    print("=" * 60)
 
+
+# =========================================================
+#   LOOP DE TESTE
+# =========================================================
 if __name__ == "__main__":
     # --- Inicialização dos Gerenciadores ---
     world_state = World_State.get_object()
@@ -58,18 +69,20 @@ if __name__ == "__main__":
     kamiji, argenton, goalkeeper = create_bobs()
     all_bobs = [kamiji, argenton, goalkeeper]
     
-    # --- Atribuição de Papel (Apenas para o Defensor) ---
-    defender_robot = argenton
-    logger.info(f"Atribuindo árvore de comportamento de defensor ao robô {defender_robot.robot_id.name}")
+    # --- Atribuição de Papéis ---
+    defender_robot = argenton       # defensor principal (marca a bola)
+    auxiliary_robot = kamiji        # defensor auxiliar (marca jogador adversário)
+    
+    logger.info(f"Atribuindo árvores de comportamento...")
     defender_tree = get_defender_tree(defender_robot)
+    auxiliary_tree = get_auxiliary_defender_tree(auxiliary_robot)
 
-    # --- Preparação do Cenário de Simulação ---
+    # --- Preparação do Cenário ---
     create_scenario(all_bobs)
     
     # --- Loop de Simulação ---
-    update_delay = 0.02  # Frequência alta (50Hz) para movimento fluido
+    update_delay = 0.02  # 50 Hz
     print_delay = 1.0
-    
     tPrint = time.time()
     tUpdate = time.time()
     
@@ -78,17 +91,18 @@ if __name__ == "__main__":
             current_time = time.time()
             
             if current_time >= update_delay + tUpdate:
-                # 1. PERCEPÇÃO: Ler dados do simulador
+                # 1. PERCEPÇÃO
                 world_state.update()
                 foes_manager.update()
                 
-                # 2. ANÁLISE: Interpretar dados e definir flags
+                # 2. ANÁLISE
                 game_analyzer.update()
                 
-                # 3. DECISÃO E AÇÃO: A árvore "pensa" e as ações comandam o robô
+                # 3. DECISÃO E AÇÃO
                 defender_tree.tick()
+                auxiliary_tree.tick()
                 
-                # Atualiza o estado interno dos robôs (como a posição)
+                # Atualiza estado interno
                 for bob in all_bobs:
                     bob.update()
                 
@@ -96,6 +110,7 @@ if __name__ == "__main__":
                 
             if current_time >= print_delay + tPrint:
                 prints_e_logs(defender_robot)
+                prints_e_logs(auxiliary_robot)
                 tPrint = current_time
 
     except KeyboardInterrupt:
