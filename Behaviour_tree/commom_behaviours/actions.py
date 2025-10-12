@@ -27,9 +27,12 @@ import py_trees as pt
 import Behaviour_tree.helpers as hp
 from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
+from utils.pose2D import RoleType
 
 import Behaviour_tree.helpers.visiblidade_gol as vis_gol
 from Behaviour_tree.helpers.positioning_helper import PositioningHelper
+from Behaviour_tree.helpers.motion_helper import MotionHelper
+from utils.defines import (BALL_DISTANCE_FOR_KICK)
 
 _pos_helper = PositioningHelper.get_object()
 _ws = World_State.get_object()
@@ -455,99 +458,198 @@ class Align_for_pass(pt.behaviour.Behaviour):
 #                                      CHUTE                                              #
 # --------------------------------------------------------------------------------------- #
 
-class Align_for_shoot(pt.behaviour.Behaviour):
-  def __init__(
-      self,
-      attacker: Bob,
-      name: str = "Align_for_shoot",
-      tolerance = 0.15
-  ):
-      super().__init__(name)
-      self.attacker = attacker
-      self.bb = Blackboard_Manager.get_instance()
-      self.tolerance = tolerance
+# Calcula o ponto aonde o robô deve ir para poder chutar no gol (específico do chute no gol)
+class Calculate_linear_target(pt.behaviour.Behaviour):
+    def __init__(
+        self,
+        kicker: Bob,
+        name: str = "Calculate_kick_target"
+    ):
+        super().__init__(name)
+        self.kicker = kicker
+        self._bb = Blackboard_Manager.get_instance()
+        self.desired_angle = 0.0
 
+    def setup(self, **kwargs):
+        if self.kicker is None:
+            raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
+        return super().setup(**kwargs)
 
-  def setup(self, **kwargs):
-      if self.attacker is None:
-          raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
-      return super().setup(**kwargs)
+    def initialise(self):
+        self._bb.set(f"{self.kicker.robot_id.name}_team_kick", True)
+        self.kicker.state.role = RoleType.KICKER
 
-
-  def initialise(self):
-      self.bb.set(f"{self.attacker.robot_id.name}_team_kick", True)
-      self.bb.set(f"{self.attacker.robot_id.name}_cmd_rotation", 0.0)
-
-
-  def update(self) -> pt.common.Status:
-      if (
-          self.attacker is None
-          or self.attacker.state is None
+    def update(self) -> pt.common.Status:
+        if (
+          self.kicker is None
+          or self.kicker.state is None
       ):
           return pt.common.Status.FAILURE
     
-      attacker_pose = self.attacker.state.position
-      goal_pose = _pos_helper.get_goal_center()
-      x_goal = goal_pose.x
-      obstacles_pose = _ws.get_all_robot_position()
+        # Inicializações que eu vou precisar
+        kicker_pose = self.kicker.state.position
+        goal_pose = _pos_helper.get_goal_center()
+        obstacles_pose = _ws.get_all_robot_position()
+        obstacles_pose.remove(kicker_pose)
+        ball_pose = _ws.get_ball_position()
 
-      max_angle_visibility_field, min_angle_visibility_field = vis_gol.limits_of_visibility(obstacles_pose, attacker_pose, x_goal)
-      # Esse angulo é dado em relacação ao eixo x+ quando x_gol>0 e x- quando x_gol<0
-      visArea_center_rad = (max_angle_visibility_field + min_angle_visibility_field) / 2
-     
-      if x_goal < 0 :
-          visArea_center_rad = (visArea_center_rad + math.pi)*-1
+        # Cálculo do ângulo
+        desired_angle = _pos_helper.middle_goal_visibility_range(kicker_pose, goal_pose, obstacles_pose)
 
-      if hp.PositioningHelper.is_aligned_to_goal(
-            attacker_pose,
-            visArea_center_rad,
+        # Cálculo o ponto alvo de alinhamento      
+        x_target = ball_pose.x - BALL_DISTANCE_FOR_KICK * math.cos(desired_angle)
+        y_target = ball_pose.y - BALL_DISTANCE_FOR_KICK * math.sin(desired_angle)
+    
+        # Settando o target e a trajetória
+        self.kicker.state.set_target_position((Pose2D)(x_target, y_target, self.kicker.state.position.theta))
+        self.kicker.state.path = MotionHelper.find_shortest_path(kicker_pose, self.kicker.state.target_position, obstacles_pose, ball_pose)
+
+        return pt.common.Status.SUCCESS
+
+
+
+# Calcula o angulo que o robo deve estar para chutar o gol (cálculo do ângulo específico para o chute no gol)
+class Calculate_angular_target(pt.behaviour.Behaviour):
+    def __init__(
+        self,
+        kicker: Bob,
+        name: str = "Calculate_angular_target"
+    ):
+        super().__init__(name)
+        self.kicker = kicker
+        self.bb = Blackboard_Manager.get_instance()
+
+    def setup(self, **kwargs):
+        if self.kicker is None:
+            raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
+        return super().setup(**kwargs)
+
+    def initialise(self):
+        pass
+
+    def update(self) -> pt.common.Status:
+        if (
+          self.kicker is None
+          or self.kicker.state is None
+      ):
+          return pt.common.Status.FAILURE
+    
+        # Inicializações que eu vou precisar
+        kicker_pose = self.kicker.state.position
+        goal_pose = _pos_helper.get_goal_center()
+        obstacles_pose = _ws.get_all_robot_position()
+        obstacles_pose.remove(kicker_pose)
+
+        # Cálculo do ângulo
+        desired_angle = _pos_helper.middle_goal_visibility_range(kicker_pose, goal_pose, obstacles_pose)
+    
+        # Settando o target
+        self.kicker.state.set_target_position((Pose2D)(kicker_pose.x, kicker_pose.y, desired_angle))
+
+        return pt.common.Status.SUCCESS
+
+
+
+# Faz o alinhamento angular com o gol (pode ser usado por qualquer bob que quer girar para um target já settado)
+class Angular_align(pt.behaviour.Behaviour):
+    def __init__(
+        self,
+        robot: Bob,
+        name: str = "Angular_align",
+        tolerance = 0.10
+    ):
+        super().__init__(name)
+        self.robot = robot
+        self._bb = Blackboard_Manager.get_instance()
+        self.tolerance = tolerance
+        self._bb = Blackboard_Manager.get_instance()
+
+
+    def setup(self, **kwargs):
+        if self.robot is None:
+            raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
+        return super().setup(**kwargs)
+
+
+    def initialise(self):
+        self._bb.set(f"{self.robot.robot_id.name}_team_kick", True)
+
+
+    def update(self) -> pt.common.Status:
+        if (
+            self.robot is None
+            or self.robot.state is None
+        ):
+            return pt.common.Status.FAILURE
+
+        # Inicializações que eu vou precisar
+        robot_id = self.robot.robot_id.value   # Transforma de enum para int
+        robot_pose = _ws.get_team_robot_pose(robot_id)
+        goal_pose = _pos_helper.get_goal_center()
+        obstacles_pose = _ws.get_all_robot_position()
+        obstacles_pose.remove(robot_pose)
+
+        # Cálculo do ângulo
+        desired_angle = _pos_helper.middle_goal_visibility_range(robot_pose, goal_pose, obstacles_pose)
+
+        # Verifica se o movimento foi feito
+        if hp.PositioningHelper.is_aligned(
+            robot_pose,
+            desired_angle,
+            goal_pose,
             tolerance = self.tolerance,
         ):
             return pt.common.Status.SUCCESS
+        
+        # Retorna failure se o robo estiver travado em um mesmo movimento há muito tempo
 
-      rotate_cmd = self.attacker.rotate(visArea_center_rad)
+        # Realiza o movimento
+        rotate_cmd = self.robot.rotate()
 
-      if not rotate_cmd:
-          return pt.common.Status.FAILURE
-      else:
-          return pt.common.Status.RUNNING
+        if self._bb.get(
+            f"{self.robot.robot_id.name}{BlackboardKeys.Flags.Navigation.IS_STUCK}"
+        ):
+            logger.debug(
+                f"{self.name} - {self.robot.robot_id.name} - FAILURE  ROBOT STUCK"
+            )
+            return pt.common.Status.FAILURE
+
+        if not rotate_cmd:
+            return pt.common.Status.FAILURE
+        else:
+            return pt.common.Status.RUNNING
 
 
-  def terminate(self, new_status: pt.common.Status):
-      self.bb.set(f"{self.attacker.robot_id.name}_cmd_rotation", 0.0)
+    def terminate(self, new_status: pt.common.Status):
+        self.robot.state.reset()
 
 
 
 class Shoot_to_goal(pt.behaviour.Behaviour):
-  def __init__(
+    def __init__(
       self,
-      attacker: Bob,
+      kicker: Bob,
       name: str = "Shoot_to_goal",
   ):
       super().__init__(name)
-      self.attacker = attacker
-      self.bb = Blackboard_Manager.get_instance()
+      self.kicker = kicker
+      self._bb = Blackboard_Manager.get_instance()
 
 
-  def setup(self, **kwargs):
-      if self.attacker is None:
+    def setup(self, **kwargs):
+      if self.kicker is None:
           raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
       return super().setup(**kwargs)
 
 
-  def initialise(self):
-      self.bb.set(f"{self.attacker.robot_id.name}_cmd_rotation", 0.0)
-
-
-  def update(self) -> pt.common.Status:
+    def update(self) -> pt.common.Status:
       if (
-          self.attacker is None
-          or self.attacker.state is None
+          self.kicker is None
+          or self.kicker.state is None
       ):
           return pt.common.Status.FAILURE
      
-      kick_cmd = self.attacker.kick_ball()
-
+      kick_cmd = self.kicker.kick_ball()
 
       if not kick_cmd:
           return pt.common.Status.FAILURE
@@ -555,5 +657,6 @@ class Shoot_to_goal(pt.behaviour.Behaviour):
           return pt.common.Status.SUCCESS
      
      
-  def terminate(self, new_status: pt.common.Status):
-      self.bb.set(f"{self.attacker.robot_id.name}_team_kick", False)
+    def terminate(self, new_status: pt.common.Status):
+      self._bb.set(f"{self.kicker.robot_id.name}_team_kick", False)
+      self.kicker.state.reset()
