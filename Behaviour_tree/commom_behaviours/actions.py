@@ -99,6 +99,23 @@ class Move_node(pt.behaviour.Behaviour):
         """
         if self.robot is None or self.robot.state is None:
             return pt.common.Status.FAILURE
+        
+        # --- REFEREE GATING: nao mover quando o referee bloquear ---
+        # se gc_can_move for falso (ex.: HALT, STOP, READY_*), NAO envia comando
+        # e retorna FAILURE para permitir que o selector tente outro comportamento.
+        state = (self._bb.get("gc_state") or "").lower()
+        if not bool(self._bb.get("gc_can_move")):
+            # em HALT/STOP/placement_them falha (tentar outro ramo)
+            if state in ("halt", "stop", "ball_placement_them"):
+                logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
+                return pt.common.Status.FAILURE
+            # em fases READY_* pode preferir RUNNING (congelar pos ate liberar)
+            if state.startswith("ready_"):
+                return pt.common.Status.RUNNING
+            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
+            return pt.common.Status.FAILURE
+        # -----------------------------------------------------------
+
 
         if bool(self._bb.get(self.target_reached_key)):
             logging.debug(f"{self.name}-{self.robot.robot_id} SUCCESS")
@@ -180,6 +197,17 @@ class Receive_pass(pt.behaviour.Behaviour):
 
         if self.robot is None or getattr(self.robot, "state", None) is None:
             return pt.common.Status.FAILURE
+        
+        # --- REFEREE GATING: preparacao de movimento bloqueada quando nao pode mover ---
+        state = (self._bb.get("gc_state") or "").lower()
+        if not bool(self._bb.get("gc_can_move")):
+            if state in ("halt", "stop", "ball_placement_them"):
+                return pt.common.Status.FAILURE
+            if state.startswith("ready_"):
+                return pt.common.Status.RUNNING
+            return pt.common.Status.FAILURE
+        # -------------------------------------------------------------------------------
+
 
         passe = self._bb.get(self.receive_key)
         if not passe:
@@ -233,6 +261,19 @@ class Rebound_position(pt.behaviour.Behaviour):
         if self.robot is None or self.robot.state is None:
             logger.warning("robo NONE")
             return pt.common.Status.FAILURE
+
+        # --- REFEREE GATING: preparacao de movimento bloqueada quando nao pode mover ---
+        state = (self._bb.get("gc_state") or "").lower()
+        if not bool(self._bb.get("gc_can_move")):
+            if state in ("halt", "stop", "ball_placement_them"):
+                logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
+                return pt.common.Status.FAILURE
+            if state.startswith("ready_"):
+                return pt.common.Status.RUNNING
+            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
+            return pt.common.Status.FAILURE
+        # -------------------------------------------------------------------------------
+
         if not self._bb.get(self.team_kick_key):
             logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
             return pt.common.Status.FAILURE
@@ -273,6 +314,20 @@ class RecuperarBola(py_trees.behaviour.Behaviour):
         if not self._bb.get(self.team_has_ball):
             logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
             return py_trees.common.Status.FAILURE
+        
+        # --- REFEREE GATING: recuperacao da bola bloqueada quando nao pode mover ---
+        state = (self._bb.get("gc_state") or "").lower()
+        if not bool(self._bb.get("gc_can_move")):
+            if state in ("halt", "stop", "ball_placement_them"):
+                logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
+                return pt.common.Status.FAILURE
+            if state.startswith("ready_"):
+                return pt.common.Status.RUNNING
+            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
+            return pt.common.Status.FAILURE
+        # -------------------------------------------------------------------------------
+
+
         self.robot.state.target_position = (
             hp.StrategyHelper.get_ball_recovery_position()
         )
@@ -298,6 +353,19 @@ class MovimentoUnico(py_trees.behaviour.Behaviour):
         logger.debug("movimento unitario")
 
     def update(self) -> py_trees.common.Status:
+        # --- REFEREE GATING: movimento bloqueado quando nao pode mover ---
+        state = (self._bb.get("gc_state") or "").lower()
+        if not bool(self._bb.get("gc_can_move")):
+            if state in ("halt", "stop", "ball_placement_them"):
+                logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
+                return pt.common.Status.FAILURE
+            if state.startswith("ready_"):
+                return pt.common.Status.RUNNING
+            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
+            return pt.common.Status.FAILURE
+        # -------------------------------------------------------------------------------
+
+
         self.robot.fast_movement()
         self.robot.state.current_command = self.name
 
@@ -397,6 +465,19 @@ class Align_for_pass(pt.behaviour.Behaviour):
             or self.receiver.state is None
         ):
             return pt.common.Status.FAILURE
+        
+        # --- REFEREE GATING: (alinhamento): nao alinhar quando nao pode mover ---
+        state = (self._bb.get("gc_state") or "").lower()
+        if not bool(self._bb.get("gc_can_move")):
+            if state in ("halt", "stop", "ball_placement_them"):
+                logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
+                return pt.common.Status.FAILURE
+            if state.startswith("ready_"):
+                return pt.common.Status.RUNNING
+            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
+            return pt.common.Status.FAILURE
+        # -------------------------------------------------------------------------------
+
 
         passer_pose = self.passer.state.position
         receiver_pose = self.receiver.state.position
@@ -447,104 +528,126 @@ class Align_for_pass(pt.behaviour.Behaviour):
 # --------------------------------------------------------------------------------------- #
 
 class Align_for_shoot(pt.behaviour.Behaviour):
-  def __init__(
-      self,
-      attacker: Bob,
-      name: str = "Align_for_shoot",
-      tolerance = 0.15
-  ):
-      super().__init__(name)
-      self.attacker = attacker
-      self.bb = Blackboard_Manager.get_instance()
-      self.tolerance = tolerance
+    def __init__(
+        self,
+        attacker: Bob,
+        name: str = "Align_for_shoot",
+        tolerance = 0.15
+    ):
+        super().__init__(name)
+        self.attacker = attacker
+        self.bb = Blackboard_Manager.get_instance()
+        self.tolerance = tolerance
 
 
-  def setup(self, **kwargs):
-      if self.attacker is None:
-          raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
-      return super().setup(**kwargs)
+    def setup(self, **kwargs):
+        if self.attacker is None:
+            raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
+        return super().setup(**kwargs)
 
 
-  def initialise(self):
-      self.bb.set(f"{self.attacker.robot_id.name}_team_kick", True)
-      self.bb.set(f"{self.attacker.robot_id.name}_cmd_rotation", 0.0)
+    def initialise(self):
+        self.bb.set(f"{self.attacker.robot_id.name}_team_kick", True)
+        self.bb.set(f"{self.attacker.robot_id.name}_cmd_rotation", 0.0)
 
 
-  def update(self) -> pt.common.Status:
-      if (
-          self.attacker is None
-          or self.attacker.state is None
-      ):
-          return pt.common.Status.FAILURE
-    
-      attacker_pose = self.attacker.state.position
-      goal_pose = _pos_helper.get_goal_center()
-      x_goal = goal_pose.x
-      obstacles_pose = _ws.get_all_robot_position()
-
-      max_angle_visibility_field, min_angle_visibility_field = vis_gol.limits_of_visibility(obstacles_pose, attacker_pose, x_goal)
-      # Esse angulo é dado em relacação ao eixo x+ quando x_gol>0 e x- quando x_gol<0
-      visArea_center_rad = (max_angle_visibility_field + min_angle_visibility_field) / 2
-     
-      if x_goal < 0 :
-          visArea_center_rad = (visArea_center_rad + math.pi)*-1
-
-      if hp.PositioningHelper.is_aligned_to_goal(
-            attacker_pose,
-            visArea_center_rad,
-            tolerance = self.tolerance,
+    def update(self) -> pt.common.Status:
+        if (
+            self.attacker is None
+            or self.attacker.state is None
         ):
-            return pt.common.Status.SUCCESS
+            return pt.common.Status.FAILURE
+        
+        # --- REFEREE GATING: (alinhamento): nao alinhar quando nao pode mover ---
+        state = (self._bb.get("gc_state") or "").lower()
+        if not bool(self._bb.get("gc_can_move")):
+            if state in ("halt", "stop", "ball_placement_them"):
+                logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
+                return pt.common.Status.FAILURE
+            if state.startswith("ready_"):
+                return pt.common.Status.RUNNING
+            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
+            return pt.common.Status.FAILURE
+        # -------------------------------------------------------------------------------
+          
+        
+        attacker_pose = self.attacker.state.position
+        goal_pose = _pos_helper.get_goal_center()
+        x_goal = goal_pose.x
+        obstacles_pose = _ws.get_all_robot_position()
 
-      rotate_cmd = self.attacker.rotate(visArea_center_rad)
+        max_angle_visibility_field, min_angle_visibility_field = vis_gol.limits_of_visibility(obstacles_pose, attacker_pose, x_goal)
+        # Esse angulo é dado em relacação ao eixo x+ quando x_gol>0 e x- quando x_gol<0
+        visArea_center_rad = (max_angle_visibility_field + min_angle_visibility_field) / 2
+        
+        if x_goal < 0 :
+            visArea_center_rad = (visArea_center_rad + math.pi)*-1
 
-      if not rotate_cmd:
-          return pt.common.Status.FAILURE
-      else:
-          return pt.common.Status.RUNNING
+        if hp.PositioningHelper.is_aligned_to_goal(
+                attacker_pose,
+                visArea_center_rad,
+                tolerance = self.tolerance,
+            ):
+                return pt.common.Status.SUCCESS
+
+        rotate_cmd = self.attacker.rotate(visArea_center_rad)
+
+        if not rotate_cmd:
+            return pt.common.Status.FAILURE
+        else:
+            return pt.common.Status.RUNNING
 
 
-  def terminate(self, new_status: pt.common.Status):
-      self.bb.set(f"{self.attacker.robot_id.name}_cmd_rotation", 0.0)
+    def terminate(self, new_status: pt.common.Status):
+        self.bb.set(f"{self.attacker.robot_id.name}_cmd_rotation", 0.0)
 
 
 
 class Shoot_to_goal(pt.behaviour.Behaviour):
-  def __init__(
-      self,
-      attacker: Bob,
-      name: str = "Shoot_to_goal",
-  ):
-      super().__init__(name)
-      self.attacker = attacker
-      self.bb = Blackboard_Manager.get_instance()
+    def __init__(
+        self,
+        attacker: Bob,
+        name: str = "Shoot_to_goal",
+    ):
+        super().__init__(name)
+        self.attacker = attacker
+        self.bb = Blackboard_Manager.get_instance()
 
 
-  def setup(self, **kwargs):
-      if self.attacker is None:
-          raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
-      return super().setup(**kwargs)
+    def setup(self, **kwargs):
+        if self.attacker is None:
+            raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
+        return super().setup(**kwargs)
 
 
-  def initialise(self):
-      self.bb.set(f"{self.attacker.robot_id.name}_cmd_rotation", 0.0)
+    def initialise(self):
+        self.bb.set(f"{self.attacker.robot_id.name}_cmd_rotation", 0.0)
 
 
-  def update(self) -> pt.common.Status:
-      if (
-          self.attacker is None
-          or self.attacker.state is None
-      ):
-          return pt.common.Status.FAILURE
-     
-      kick_cmd = self.attacker.kick_ball()
+    def update(self) -> pt.common.Status:
+        if (
+            self.attacker is None
+            or self.attacker.state is None
+        ):
+            return pt.common.Status.FAILURE
+        
+        # --- REFEREE GATING: chutar so quando o referee permitir ---
+        if not bool(self.bb.get("gc_can_kick")):
+            # nunca chutar em halt/stop/ready_* e ambos placements
+            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
+            return pt.common.Status.FAILURE
+        # -----------------------------------------------------------
+
+        
+        
+        kick_cmd = self.attacker.kick_ball()
 
 
-      if not kick_cmd:
-          return pt.common.Status.FAILURE
-      else:
-          return pt.common.Status.SUCCESS
-     
-     
-  def terminate(self, new_status: pt.common.Status):
-      self.bb.set(f"{self.attacker.robot_id.name}_team_kick", False)
+        if not kick_cmd:
+            return pt.common.Status.FAILURE
+        else:
+            return pt.common.Status.SUCCESS
+        
+        
+    def terminate(self, new_status: pt.common.Status):
+        self.bb.set(f"{self.attacker.robot_id.name}_team_kick", False)
