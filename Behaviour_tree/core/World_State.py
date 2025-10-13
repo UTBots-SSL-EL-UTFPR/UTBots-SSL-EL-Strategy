@@ -23,7 +23,7 @@ from utils.pose2D import Pose2D
 # =====================================================
 # Enum de IDs de robôs
 # =====================================================
-class TeamID(Enum):
+
 class TeamID(Enum):
     Kamiji = 0
     Argenton = 1

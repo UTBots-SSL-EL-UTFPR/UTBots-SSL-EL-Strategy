@@ -8,7 +8,7 @@ import Behaviour_tree.helpers.visiblidade_gol as vis_gol
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
 from Behaviour_tree.core.World_State import TeamID, World_State
-from Behaviour_tree.helpers.positioning_helper import PositioningHelper
+from Behaviour_tree.helpers.positioning_helper import PositioningHelper as _pos_helper
 from Behaviour_tree.robot.bob import Bob
 from utils.defines import MAX_SHOOT_DISTANCE
 from utils.pose2D import Pose2D
@@ -167,7 +167,7 @@ class ReceiverUnmarked(py_trees.behaviour.Behaviour):
         super().__init__(name)
         self.robot = robot
         self._bb = Blackboard_Manager.get_instance()
-        self.pos_helper = PositioningHelper.get_object() 
+        self.pos_helper = _pos_helper.PositioningHelper.get_object() 
 
     def setup(self, **kwargs):
         logger.debug(f"--> SETUP EXECUTADO: {self.name}")
