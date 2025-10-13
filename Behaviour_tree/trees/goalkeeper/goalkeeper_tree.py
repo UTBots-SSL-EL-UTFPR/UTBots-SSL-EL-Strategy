@@ -7,10 +7,15 @@ import logging
 import py_trees
 
 from Behaviour_tree import helpers as hp
-from Behaviour_tree.commom_behaviours.actions import MovimentoUnico, RecuperarBola
-from Behaviour_tree.commom_behaviours.condition import BolaSegura, FoesHaveBall
+from Behaviour_tree.commom_behaviours.actions import MovimentoUnico, RecuperarBola 
+from Behaviour_tree.commom_behaviours.condition import BolaSegura, FoesHaveBall , HasBall
 from Behaviour_tree.commom_behaviours.sub_trees.kick_subtree import get_kick_subtree
 from Behaviour_tree.robot.bob import Bob
+
+from Behaviour_tree.core.World_State import World_State
+from Behaviour_tree.core import Blackboard_Manager
+
+
 
 # ---------------------------------------------------------------------------------------#
 #                                         MOVIMENTO                                     #
@@ -44,6 +49,7 @@ def get_goalkeeper_tree(robot: Bob) -> py_trees.trees.BehaviourTree:
 
     goalkeeper_tree = py_trees.composites.Selector(
         name="GoalkeeperTree", memory=True, children=[kick, bola_solta, defesa_comum]
+    )
     #caso Ultimo Homem e suas folhas=========================================
     checkLastMan = CheckLastMan(robot)
     follow_ball = followBall(robot)
@@ -53,7 +59,7 @@ def get_goalkeeper_tree(robot: Bob) -> py_trees.trees.BehaviourTree:
         memory=False,
         children=[checkLastMan, follow_ball],
     )
-    )
+    
 
     #tem a bola==============================================================
     passe_obj = passe(robot)
@@ -96,7 +102,7 @@ class CheckLastMan(py_trees.behaviour.Behaviour):
     def __init__(self, robot: Bob, name: str = "CheckLastMan"):
         super().__init__(name)
         self.robot = robot
-        self._pos_helper = PositioningHelper.get_object()
+        self._pos_helper = hp.PositioningHelper.get_object()
         self._bb = Blackboard_Manager.get_instance()
     
     def setup(self, **kwargs) -> None:
@@ -115,7 +121,7 @@ class followBall(py_trees.behaviour.Behaviour):
     def __init__(self, robot: Bob, name: str = "followBall"):
         super().__init__(name)
         self.robot = robot
-        self._pos_helper = PositioningHelper.get_object()
+        self._pos_helper = hp.PositioningHelper.get_object()
         self._bb = Blackboard_Manager.get_instance()
     
     def setup(self, **kwargs) -> None:
@@ -132,8 +138,11 @@ class followBall(py_trees.behaviour.Behaviour):
         if ball_position is None:
             # Se não conseguir pegar a posição da bola, falha
             return py_trees.common.Status.FAILURE
-
-        self.robot.set_new_target(position)
+        
+        # Define a posição da bola como alvo
+        self.robot.set_new_target(ball_position)
+        
+        # Usa movimento rápido para ir direto na direção da bola
         self.robot.fast_movement()
         
         return py_trees.common.Status.SUCCESS
@@ -142,7 +151,7 @@ class passe(py_trees.behaviour.Behaviour):
     def __init__(self, robot: Bob, name: str = "passear"):
         super().__init__(name)
         self.robot = robot
-        self._pos_helper = PositioningHelper.get_object()
+        self._pos_helper = hp.PositioningHelper.get_object()
         self._bb = Blackboard_Manager.get_instance()
     
     def setup(self, **kwargs) -> None:
@@ -155,7 +164,7 @@ class chute(py_trees.behaviour.Behaviour):
     def __init__(self, robot: Bob, name: str = "chutar"):
         super().__init__(name)
         self.robot = robot
-        self._pos_helper = PositioningHelper.get_object()
+        self._pos_helper = hp.PositioningHelper.get_object()
         self._bb = Blackboard_Manager.get_instance()
     
     def setup(self, **kwargs) -> None:
@@ -163,5 +172,3 @@ class chute(py_trees.behaviour.Behaviour):
 
     def update(self) -> py_trees.common.Status:
         ...
-
-
