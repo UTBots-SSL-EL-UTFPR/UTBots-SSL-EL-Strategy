@@ -182,12 +182,11 @@ class StrategyHelper:
         return final_target
 
     @classmethod
-    def calculate_attack_support_pos(
-        cls, ball_carrier_pose: Pose2D, opponents: List[Pose2D]
-    ) -> Pose2D:
+    def calculate_attack_support_pos(cls, ball_carrier_pose: Pose2D) -> Pose2D:
         """Calcula a melhor posição para se oferecer como opção de passe no ataque."""
         FORWARD_PASS_DISTANCE = 800
         SAFE_PASS_RECEPTION_DISTANCE = 400
+        opponents = cls._ws.get_all_foes_position()
 
         target_y_magnitude = FieldHelper.get_attack_y_magnitude()
         opponent_goal = FieldHelper.get_enemy_goal_center()
@@ -224,12 +223,13 @@ class StrategyHelper:
         return ideal_target_pose
 
     @classmethod
-    def calculate_defense_support_pos(cls, opponents: List[Pose2D]) -> Pose2D:
+    def calculate_defense_support_pos(cls) -> Pose2D:
         """Calcula a melhor posição para interceptar um contra-ataque."""
         INTERCEPT_DISTANCE_FROM_OPPONENT = 600
+        opponents = cls._ws.get_all_foes_position()
 
         if not opponents:
-            return Pose2D(-500, 0) 
+            return Pose2D(-500, 0)
 
         our_goal = FieldHelper.get_team_goal_center()
         most_advanced_opponent = max(opponents, key=lambda opp: opp.x)
