@@ -9,10 +9,15 @@ from Behaviour_tree.core.World_State import TeamID, World_State
 from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
 
-from .pass_subtree import get_pass_subtree
+from .kick_subtree import get_kick_subtree
+
+'''
+Para o teste eu mudei algumas coisas:
+- 
+'''
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s | %(name)-12s | %(levelname)-8s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
@@ -41,10 +46,10 @@ def create_scenario(all_bobs: list[Bob]):
     t0 = time.time()
     while time.time() <= delay + t0:
         wd.update()
-        for bob in all_bobs:
-            bob.update()
     # --- BLOCO DE CRIACAO DE TESTES --- #
 
+    # teste 1. O robo deve chutar
+    # sub teste 1. O robo deve chutar se gol aberto
 
     logger.info("Inicio simulacao")
     print("-" * 100)
@@ -66,14 +71,14 @@ def prints_e_logs(robot: Bob, others: list[Bob]):
     print("=" * 50)
 
 
-# EXECUTAR: python3 -m Behaviour_tree.commom_behaviours.sub_trees.test_pass
+# EXECUTAR: python3 -m Behaviour_tree.commom_behaviours.sub_trees.test_kick
 if __name__ == "__main__":
     bob_state = BobManager.get_object()
     wd = World_State.get_object()
     _bb = Blackboard_Manager.get_instance()
-    kamiji, argenton, SabKawa = create_bobs()
-    all_bobs = [kamiji, argenton, SabKawa]
-    pass_subtree = get_pass_subtree(SabKawa)
+    kamiji, defender, goalkeeper = create_bobs()
+    all_bobs = [kamiji, defender, goalkeeper]
+    kick_subtree = get_kick_subtree(kamiji)
 
     create_scenario(all_bobs)
     update_delay = 0.02
@@ -88,5 +93,5 @@ if __name__ == "__main__":
             wd.update()
             for b in all_bobs:
                 b.state.update()
-            pass_subtree.tick()
+            kick_subtree.tick()
             tUpdate = time.time()

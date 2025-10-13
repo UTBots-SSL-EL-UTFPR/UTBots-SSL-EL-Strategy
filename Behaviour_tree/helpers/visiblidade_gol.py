@@ -20,6 +20,12 @@ class Obstacle:
         self.theta_bottom = theta_bottom
         self.theta_top = theta_top
 
+    # teste
+    '''
+    def __repr__(self):
+        return f"Obstacle(xr={self.xr}, yr={self.yr}, theta_bottom={self.theta_bottom}, theta_top={self.theta_top})"
+    '''
+
 
 """_summary_: Combina as expressões (x=x0+cos(angulo), y=y0+sen(angulo)) com
 (x+x0)²+(y+y0)²=ROBOT_RADIUS² para verificar se a reta cruza o bob
@@ -184,3 +190,14 @@ def limits_of_visibility(obstacles: list[Pose2D], p0: Pose2D, gol_center: Pose2D
 def max_range_of_visibility(obstacles: list[Pose2D], p0: Pose2D, gol_center: Pose2D) -> float:
     kick_angle = limits_of_visibility(obstacles, p0, gol_center)
     return abs(kick_angle[1] - kick_angle[0])
+
+# Teste
+'''
+if __name__ == "__main__":
+    obstacles = [(Pose2D)(2065, -250)]
+    p0 = (Pose2D)(1525, 670)
+    gol_center = (Pose2D)(2250, 0)
+    inicio, fim = limits_of_visibility(obstacles, p0, gol_center)
+    print(math.degrees(inicio))
+    print(math.degrees(fim))
+'''

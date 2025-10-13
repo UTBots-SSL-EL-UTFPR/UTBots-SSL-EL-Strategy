@@ -11,12 +11,29 @@ from communication.receiver.vision_receiver import VisionReceiver
 from SSL_configuration.configuration import Configuration
 from utils.pose2D import Pose2D
 
+from communication.generated import ssl_vision_wrapper_pb2 as vision_pb
+from communication.parsers.referee_parser import RefereeParser
+from communication.parsers.vision_parser import VisionParser
+from communication.receiver.referee_receiver import RefereeReceiver
+from communication.receiver.vision_receiver import VisionReceiver
+from SSL_configuration.configuration import Configuration
+from utils.pose2D import Pose2D
+
 
 # =====================================================
 # Enum de IDs de robôs
 # =====================================================
 class TeamID(Enum):
+class TeamID(Enum):
     Kamiji = 0
+    Argenton = 1
+    SabKawa = 2
+
+
+class FoesID(Enum):
+    TauraBots = 0
+    GralhaBots = 1
+    Cerberus = 2
     Argenton = 1
     SabKawa = 2
 
@@ -40,6 +57,8 @@ class World_State:
             self.field = FieldState()
         except KeyError as e:
             print(e)
+
+        self.referee_data: referee_pb.Referee = None  # type: ignore
 
         self.referee_data: referee_pb.Referee = None  # type: ignore
         self.vision_data: dict = {}
