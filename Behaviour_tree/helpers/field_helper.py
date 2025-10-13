@@ -158,3 +158,8 @@ class FieldHelper:
         post_top = Pose2D(goal_x, cls.GOAL_Y_LIMIT)
         post_bottom = Pose2D(goal_x, -cls.GOAL_Y_LIMIT)
         return post_top, post_bottom
+    
+    @classmethod
+    def get_attack_y_magnitude(cls) -> float:
+        """Retorna a magnitude no eixo Y largura no ataque."""
+        return 1200
