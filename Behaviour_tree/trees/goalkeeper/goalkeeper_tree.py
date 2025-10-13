@@ -13,8 +13,8 @@ from Behaviour_tree.commom_behaviours.sub_trees.kick_subtree import get_kick_sub
 from Behaviour_tree.robot.bob import Bob
 
 from Behaviour_tree.core.World_State import World_State
-from Behaviour_tree.core import Blackboard_Manager
-
+from ...core.blackboard import Blackboard_Manager
+from ...bob_manager import BobManager
 
 
 # ---------------------------------------------------------------------------------------#
