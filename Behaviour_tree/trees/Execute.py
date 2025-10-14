@@ -2,8 +2,8 @@
 import logging
 import time
 
-from defender.defender_tree import get_defender_tree
-from suporte_recuado.suporte_recuado import get_pivo_tree
+from .defender.defender_tree import get_defender_tree
+from .suporte_recuado.suporte_recuado import get_pivo_tree
 
 from Behaviour_tree.bob_manager import BobManager
 from Behaviour_tree.core.blackboard import Blackboard_Manager
@@ -47,7 +47,8 @@ def create_scenario(all_bobs: list[Bob]):
     t0 = time.time()
     while time.time() <= delay + t0:
         wd.update()
-        bob.update()
+        for bob in all_bobs:
+            bob.update()
     logger.info("Inicio")
     print("-" * 100)
     return

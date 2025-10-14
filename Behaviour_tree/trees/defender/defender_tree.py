@@ -14,21 +14,6 @@ from .defender_strategy_helper import DefenderStrategyHelper
 
 POSITIONAL_TOLERANCE = 150.0
 
-
-import math
-
-from Behaviour_tree.core.World_State import World_State
-from Behaviour_tree.helpers.field_helper import FieldHelper
-from Behaviour_tree.helpers.positioning_helper import PositioningHelper  # <-- import
-from Behaviour_tree.robot.bob import Bob
-from utils.pose2D import Pose2D
-
-from .defender_conditions import IsBallInDefensiveHalf
-from .defender_strategy_helper import DefenderStrategyHelper
-
-POSITIONAL_TOLERANCE = 150.0
-
-
 class SmartMarking(py_trees.behaviour.Behaviour):
     BALL_MOVEMENT_THRESHOLD = 50.0  # mm
     SAFE_DISTANCE = 200.0  # distância mínima da bola em mm

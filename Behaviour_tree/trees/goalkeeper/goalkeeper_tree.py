@@ -64,7 +64,7 @@ def get_goalkeeper_tree(robot: Bob) -> py_trees.trees.BehaviourTree:
     #tem a bola==============================================================
     passe_obj = passe(robot)
     chutar = chute(robot)
-    hasBall = HasBall()
+    hasBall = HasBall(robot)
 
     tem_a_bola = py_trees.composites.Sequence(
         name="Tem_a_Bola", memory=False, children=[hasBall, passe_obj, chutar]
@@ -72,7 +72,7 @@ def get_goalkeeper_tree(robot: Bob) -> py_trees.trees.BehaviourTree:
 
     #Raiz da arvore==========================================================
     root = py_trees.composites.Selector(
-        name="GoalkeeperTree", children=[bola_solta, defesa_comum, ultimo_homem, tem_a_bola]
+        name="root", memory=False,children=[ ultimo_homem, tem_a_bola]
     )
     root = py_trees.trees.BehaviourTree(goalkeeper_tree)
     root.setup()

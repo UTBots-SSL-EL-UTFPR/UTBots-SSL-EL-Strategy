@@ -19,7 +19,7 @@ from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from ..core.event_callbacks import BlackboardKeys
 from ..core.World_State import TeamID, World_State
 
-from utils.defines import BALL_DISTANCE_FOR_SHOOT
+# from utils.defines import BALL_DISTANCE_FOR_SHOOT
 
 positions = BlackboardKeys.Values.Positions
 import time

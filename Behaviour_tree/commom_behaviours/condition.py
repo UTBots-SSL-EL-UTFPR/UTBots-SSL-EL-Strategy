@@ -167,7 +167,7 @@ class ReceiverUnmarked(py_trees.behaviour.Behaviour):
         super().__init__(name)
         self.robot = robot
         self._bb = Blackboard_Manager.get_instance()
-        self.pos_helper = _pos_helper.PositioningHelper.get_object() 
+        self.pos_helper = _pos_helper.get_object() 
 
     def setup(self, **kwargs):
         logger.debug(f"--> SETUP EXECUTADO: {self.name}")
