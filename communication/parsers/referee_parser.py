@@ -15,6 +15,8 @@ class RefereeParser:
     
         referee_msg = referee_pb.Referee()
         referee_msg.ParseFromString(raw_data)
+        print("rAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa")
+        print(referee_msg)
         return referee_msg
 
 

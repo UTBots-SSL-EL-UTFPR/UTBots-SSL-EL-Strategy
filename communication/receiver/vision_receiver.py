@@ -34,12 +34,14 @@ class VisionReceiver(Receiver):
                 data = self.sock.recv(2048)
                 self.latest_raw = data # salva o pacote bruto recebido
                 self.latest_parsed = self.parser.parse(data) # usa o parser para decodificar os bytes do pacote em um objeto python com campos acessíveis
+                print(self.latest_parsed)
             except Exception as e:
                 print(f"[VisionReceiver] Erro ao receber pacote: {e}")
 
 
     # 2 gets para retornar os dados mais recentes
     def get_latest_raw(self):
+        # print(self.latest_raw)
         return self.latest_raw
 
     def get_latest_parsed(self):
