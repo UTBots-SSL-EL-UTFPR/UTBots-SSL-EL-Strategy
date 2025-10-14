@@ -6,6 +6,7 @@ from SSL_configuration.configuration import Configuration
 from utils import defines
 from utils.defines import Quadrant, QuadrantType, RoleType, ZoneType
 from utils.pose2D import Pose2D
+from typing import Optional
 
 from ..core.World_State import RobotID, World_State
 
