@@ -70,6 +70,8 @@ class Bob:
             "prev_err": 0.0,
             "prev_time": None,
         }
+        # Limite de velocidade lenta (m/s) quando acionado via set_slow_speed
+        self._slow_speed: float | None = None
 
     def move(self, vel_x: float, vel_y: float) -> bool:
         return True
@@ -157,6 +159,50 @@ class Bob:
         """
         vx_s, vy_s, w = self.compute_world_velocity(
             self.state.position, self.state.target_position, mode="rotation_only"
+        )
+        q = np.array([[w], [vx_s], [vy_s]], dtype=float)
+
+        # velocidade individual de cada roda
+        u = self.motorVel(q, self.state.position.theta)
+        u = np.clip(u, -120.0, 120.0)
+
+        # envia um pacote
+        self.cmd_builder.command_robots(
+            id=self.robot_id.value,
+            wheelsspeed=True,
+            wheel1=-u[0].item(),
+            wheel2=-u[1].item(),
+            wheel3=-u[2].item(),
+            wheel4=-u[3].item(),
+        )
+        self.cmd = self.cmd_builder.build()
+        self.cmd_sender.send(self.cmd)
+
+    def set_slow_speed(self, speed_mps: float) -> None:
+        """Define um limite de velocidade linear (m/s) para movimentos lentos.
+
+        Esse valor é usado por slow_movement(); não afeta fast_movement().
+        """
+        try:
+            self._slow_speed = float(speed_mps)
+        except Exception:
+            self._slow_speed = None
+
+    def slow_movement(self):
+        """Movimento semelhante ao fast_movement porém com limite de velocidade reduzido.
+
+        Usa o limite configurado via set_slow_speed(); se não houver, usa 0.1 m/s.
+        """
+        if self.state is None or self.state.target_position is None:
+            return
+
+        vmax = self._slow_speed if (self._slow_speed is not None) else 0.1
+        # Mantém orientação atual, limitando apenas velocidade linear
+        vx_s, vy_s, w = self.compute_world_velocity(
+            self.state.position,
+            self.state.target_position,
+            mode="maintain_orientation",
+            vmax=vmax,
         )
         q = np.array([[w], [vx_s], [vy_s]], dtype=float)
 

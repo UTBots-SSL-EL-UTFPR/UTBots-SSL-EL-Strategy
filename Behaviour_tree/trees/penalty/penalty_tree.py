@@ -1,32 +1,45 @@
 """
-Penalty tree: verifica cenário de pênalti (stub), posiciona entre bola e gol, escolhe lado e chuta.
+Penalty tree: usa o subárvore de chute existente e adiciona uma etapa opcional de condução
+da bola para um ângulo melhor antes de chutar.
 """
 
 from __future__ import annotations
 
+import math
 import py_trees as pt
 
-from Behaviour_tree.bob_manager import BobManager
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.World_State import World_State
 from Behaviour_tree.robot.bob import Bob
+from Behaviour_tree.commom_behaviours.sub_trees.kick_subtree import get_kick_subtree
+from Behaviour_tree.commom_behaviours import actions as cb_actions
+from Behaviour_tree.helpers.positioning_helper import PositioningHelper
+from Behaviour_tree.helpers.motion_helper import MotionHelper
 from utils.pose2D import Pose2D
+from utils.defines import PENALTY_DRIVE_ADVANCE_MM
 
 
 def get_penalty_tree(robot: Bob) -> pt.trees.BehaviourTree:
-    # Nó de sequência principal do pênalti
-    is_penalty = IsPenalty(robot)
-    position_between_ball_and_goal = PositionBetweenBallAndGoal(robot)
-    choose_side_and_shoot = ChooseSideAndShoot(robot)
+    """Sequência de pênalti:
+    1) Checa contexto de pênalti (stub por enquanto);
+    2) Calcula alvo para conduzir a bola em melhor ângulo;
+    3) Move até esse alvo (conduzindo);
+    4) Reutiliza o subárvore de chute (alinha e chuta).
+    """
 
-    tree = pt.composites.Sequence(
+    is_penalty = IsPenalty(robot)
+    drive_ball = DriveBallToShootingAngle(robot)
+    move = cb_actions.Move_node(robot)
+    kick_subtree = get_kick_subtree(robot)
+
+    root_seq = pt.composites.Sequence(
         name="PenaltyTree",
         memory=False,
-        children=[is_penalty, position_between_ball_and_goal, choose_side_and_shoot],
+        children=[is_penalty, drive_ball, move, kick_subtree],
     )
-    root = pt.trees.BehaviourTree(tree)
-    root.setup()
-    return root
+    tree = pt.trees.BehaviourTree(root_seq)
+    tree.setup()
+    return tree
 
 
 class IsPenalty(pt.behaviour.Behaviour):
@@ -43,51 +56,47 @@ class IsPenalty(pt.behaviour.Behaviour):
         return pt.common.Status.SUCCESS
 
 
-class PositionBetweenBallAndGoal(pt.behaviour.Behaviour):
-    """Posiciona o robô entre a bola e o gol adversário."""
+class DriveBallToShootingAngle(pt.behaviour.Behaviour):
+    """Calcula um ponto adiante da bola no melhor ângulo de visibilidade do gol
+    e define esse ponto como alvo, permitindo conduzir a bola antes de chutar.
+    """
 
-    def __init__(self, robot: Bob, name: str = "PositionBetweenBallAndGoal"):
+    def __init__(self, robot: Bob, name: str = "DriveBallToShootingAngle", advance_mm: int = PENALTY_DRIVE_ADVANCE_MM):
         super().__init__(name)
         self.robot = robot
+        self.advance_mm = advance_mm
+        self._bb = Blackboard_Manager.get_instance()
 
     def update(self) -> pt.common.Status:
+        if self.robot is None or self.robot.state is None:
+            return pt.common.Status.FAILURE
+
         ws = World_State.get_object()
+        pos_helper = PositioningHelper.get_object()
+
         ball = ws.get_ball_position()
         if ball is None:
             return pt.common.Status.FAILURE
 
-        # Centro do gol adversário (assumindo eixo X positivo é ataque; ajuste se houver flag de lado)
-        goal_center = Pose2D(2250, 0)
+        kicker_pose = self.robot.state.position
+        goal_pose = pos_helper.get_goal_center()
+        obstacles = ws.get_all_robot_position()
+        # remove o próprio robô da lista de obstáculos, se presente
+        obstacles = [o for o in obstacles if o != kicker_pose]
 
-        # Posiciona num ponto alinhado bola->gol, a uma pequena margem da bola para chutar
-        target = Pose2D.align_two(ball, goal_center, margin=200, is_left_team=True)
-        self.robot.set_new_target(target)
-        self.robot.fast_movement()
+        # melhor ângulo para chutar (considera goleiro e obstáculos)
+        desired_angle = pos_helper.middle_goal_visibility_range(kicker_pose, goal_pose, obstacles)
+
+        # alvo para conduzir a bola para frente nesse ângulo
+        target_x = int(ball.x + self.advance_mm * math.cos(desired_angle))
+        target_y = int(ball.y + self.advance_mm * math.sin(desired_angle))
+        target = Pose2D(target_x, target_y, self.robot.state.position.theta)
+
+        # define alvo e caminho; movimento será executado pelo Move_node seguinte
+        self.robot.state.set_target_position(target)
+        new_path = MotionHelper.find_shortest_path(kicker_pose, target, obstacles, ball)
+        self.robot.set_path(new_path)
         return pt.common.Status.SUCCESS
 
 
-class ChooseSideAndShoot(pt.behaviour.Behaviour):
-    """Escolhe um lado do gol e chuta."""
-
-    def __init__(self, robot: Bob, name: str = "ChooseSideAndShoot"):
-        super().__init__(name)
-        self.robot = robot
-
-    def update(self) -> pt.common.Status:
-        ws = World_State.get_object()
-        ball = ws.get_ball_position()
-        if ball is None:
-            return pt.common.Status.FAILURE
-
-        # heurística simples: escolhe lado com maior y livre (placeholder)
-        left_post = Pose2D(2250, 300)
-        right_post = Pose2D(2250, -300)
-
-        # Escolha simplificada: alterna pelo y da bola
-        target = left_post if ball.y < 0 else right_post
-
-        # Orienta e chuta
-        self.robot.set_new_target(target)
-        self.robot.fast_movement()
-        self.robot.kick()
-        return pt.common.Status.SUCCESS
+    

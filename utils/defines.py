@@ -17,3 +17,6 @@ INFLUENCE_RADIUS = 500
 
 # Velocidade lenta usada no estado HALT (m/s)
 HALT_SLOW_SPEED = 0.1
+
+# Avanço, em milímetros, para conduzir a bola antes do chute no pênalti
+PENALTY_DRIVE_ADVANCE_MM = 250
