@@ -1,22 +1,30 @@
 """
 Stop tree: verifica condição de stop (TODO) e, se verdadeiro, para o robô.
 """
+
 from __future__ import annotations
 
 import py_trees as pt
+
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.robot.bob import Bob
 
 
-def get_stop_tree(robot: Bob) -> pt.behaviour.Behaviour:
+def get_stop_tree(robot: Bob) -> pt.trees.BehaviourTree:
     """Retorna uma árvore: IsStopCondition -> StopRobot."""
     is_stop = IsStopCondition(robot)
     stop_robot = StopRobot(robot)
-    return pt.composites.Sequence(name="StopTree", memory=False, children=[is_stop, stop_robot])
+    tree = pt.composites.Sequence(
+        name="StopTree", memory=False, children=[is_stop, stop_robot]
+    )
+    root = pt.trees.BehaviourTree(tree)
+    root.setup()
+    return root
 
 
 class IsStopCondition(pt.behaviour.Behaviour):
     """TODO: Implementar checagem real (árbitro, segurança, etc.)."""
+
     def __init__(self, robot: Bob, name: str = "IsStopCondition"):
         super().__init__(name)
         self.robot = robot
@@ -29,6 +37,7 @@ class IsStopCondition(pt.behaviour.Behaviour):
 
 class StopRobot(pt.behaviour.Behaviour):
     """Para o robô enviando velocidades zero, ou usando robot.stop() se existir."""
+
     def __init__(self, robot: Bob, name: str = "StopRobot"):
         super().__init__(name)
         self.robot = robot

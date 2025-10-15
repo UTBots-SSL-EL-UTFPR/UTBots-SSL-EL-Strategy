@@ -14,10 +14,10 @@ from .geometry_helper import GeometryHelper
 FIELD_WIDTH = 4500
 FIELD_HEIGHT = 3000
 
-FIELD_X_MIN = -FIELD_WIDTH / 2  # -2250
-FIELD_X_MAX = FIELD_WIDTH / 2  #  2250
-FIELD_Y_MIN = -FIELD_HEIGHT / 2  # -1500
-FIELD_Y_MAX = FIELD_HEIGHT / 2  #  1500
+FIELD_X_MIN = int(-FIELD_WIDTH / 2)  # -2250
+FIELD_X_MAX = int(FIELD_WIDTH / 2)  #  2250
+FIELD_Y_MIN = int(-FIELD_HEIGHT / 2)  # -1500
+FIELD_Y_MAX = int(FIELD_HEIGHT / 2)  #  1500
 HALF_GOALKEEPER_AREA_WIDTH = 675
 GOAL_LENGHT = int(500)
 WALL_MARGIN = int(200)
@@ -158,7 +158,7 @@ class FieldHelper:
         post_top = Pose2D(goal_x, cls.GOAL_Y_LIMIT)
         post_bottom = Pose2D(goal_x, -cls.GOAL_Y_LIMIT)
         return post_top, post_bottom
-    
+
     @classmethod
     def get_attack_y_magnitude(cls) -> float:
         """Retorna a magnitude no eixo Y largura no ataque."""

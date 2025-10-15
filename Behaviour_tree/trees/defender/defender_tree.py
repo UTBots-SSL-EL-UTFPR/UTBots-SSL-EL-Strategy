@@ -14,6 +14,7 @@ from .defender_strategy_helper import DefenderStrategyHelper
 
 POSITIONAL_TOLERANCE = 150.0
 
+
 class SmartMarking(py_trees.behaviour.Behaviour):
     BALL_MOVEMENT_THRESHOLD = 50.0  # mm
     SAFE_DISTANCE = 200.0  # distância mínima da bola em mm
@@ -150,4 +151,5 @@ def get_defender_tree(robot: Bob) -> py_trees.trees.BehaviourTree:
         memory=False,
         children=[defensive_branch, base_branch],
     )
+    root.setup()
     return py_trees.trees.BehaviourTree(root)

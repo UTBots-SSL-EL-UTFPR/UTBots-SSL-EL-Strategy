@@ -1,32 +1,37 @@
 """
 Penalty tree: verifica cenário de pênalti (stub), posiciona entre bola e gol, escolhe lado e chuta.
 """
+
 from __future__ import annotations
 
 import py_trees as pt
-from Behaviour_tree.core.World_State import World_State
-from Behaviour_tree.core.blackboard import Blackboard_Manager
+
 from Behaviour_tree.bob_manager import BobManager
+from Behaviour_tree.core.blackboard import Blackboard_Manager
+from Behaviour_tree.core.World_State import World_State
 from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
 
 
-def get_penalty_tree(robot: Bob) -> pt.behaviour.Behaviour:
+def get_penalty_tree(robot: Bob) -> pt.trees.BehaviourTree:
     # Nó de sequência principal do pênalti
     is_penalty = IsPenalty(robot)
     position_between_ball_and_goal = PositionBetweenBallAndGoal(robot)
     choose_side_and_shoot = ChooseSideAndShoot(robot)
 
-    root = pt.composites.Sequence(
+    tree = pt.composites.Sequence(
         name="PenaltyTree",
         memory=False,
         children=[is_penalty, position_between_ball_and_goal, choose_side_and_shoot],
     )
+    root = pt.trees.BehaviourTree(tree)
+    root.setup()
     return root
 
 
 class IsPenalty(pt.behaviour.Behaviour):
     """Stub: checagem de pênalti (deixe em branco por enquanto)."""
+
     def __init__(self, robot: Bob, name: str = "IsPenalty"):
         super().__init__(name)
         self.robot = robot
@@ -40,6 +45,7 @@ class IsPenalty(pt.behaviour.Behaviour):
 
 class PositionBetweenBallAndGoal(pt.behaviour.Behaviour):
     """Posiciona o robô entre a bola e o gol adversário."""
+
     def __init__(self, robot: Bob, name: str = "PositionBetweenBallAndGoal"):
         super().__init__(name)
         self.robot = robot
@@ -62,6 +68,7 @@ class PositionBetweenBallAndGoal(pt.behaviour.Behaviour):
 
 class ChooseSideAndShoot(pt.behaviour.Behaviour):
     """Escolhe um lado do gol e chuta."""
+
     def __init__(self, robot: Bob, name: str = "ChooseSideAndShoot"):
         super().__init__(name)
         self.robot = robot
