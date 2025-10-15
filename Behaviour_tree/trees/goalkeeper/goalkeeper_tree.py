@@ -32,7 +32,7 @@ def get_goalkeeper_tree(robot: Bob) -> py_trees.trees.BehaviourTree:
         children=[bola_segura, recuperar_bola, movimento_unico],
     )
 
-    #caso de defesa comum e suas folhas======================================
+    # caso de defesa comum e suas folhas======================================
     foesHasBall = FoesHaveBall()
     goalkeeperCommonPosition = GoalkeeperCommonPosition(robot)
 
@@ -66,33 +66,5 @@ class GoalkeeperCommonPosition(py_trees.behaviour.Behaviour):
 
         self.robot.set_new_target(position)
         self.robot.fast_movement()
-        
+
         return py_trees.common.Status.SUCCESS
-
-class passe(py_trees.behaviour.Behaviour):
-    def __init__(self, robot: Bob, name: str = "passear"):
-        super().__init__(name)
-        self.robot = robot
-        self._pos_helper = PositioningHelper.get_object()
-        self._bb = Blackboard_Manager.get_instance()
-    
-    def setup(self, **kwargs) -> None:
-        return super().setup(**kwargs)
-
-    def update(self) -> py_trees.common.Status:
-        ...
-
-class chute(py_trees.behaviour.Behaviour):
-    def __init__(self, robot: Bob, name: str = "chutar"):
-        super().__init__(name)
-        self.robot = robot
-        self._pos_helper = PositioningHelper.get_object()
-        self._bb = Blackboard_Manager.get_instance()
-    
-    def setup(self, **kwargs) -> None:
-        return super().setup(**kwargs)
-
-    def update(self) -> py_trees.common.Status:
-        ...
-
-
