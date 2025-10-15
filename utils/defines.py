@@ -14,3 +14,6 @@ BALL_DISTANCE_FOR_KICK = 80   # Distância que o robô deve estar da bola para c
 MAX_SHOOT_DISTANCE = 2000
 DISTANCE_PRESS_OPPONENT = 400
 INFLUENCE_RADIUS = 500
+
+# Velocidade lenta usada no estado HALT (m/s)
+HALT_SLOW_SPEED = 0.1

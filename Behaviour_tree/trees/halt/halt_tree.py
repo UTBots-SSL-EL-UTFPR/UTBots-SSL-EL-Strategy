@@ -11,8 +11,8 @@ from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.World_State import World_State
 from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
+from utils.defines import HALT_SLOW_SPEED
 
-SLOW_SPEED = 0.1  # m/s (ajuste conforme seu controlador, usado apenas se houver API)
 SAFE_BALL_DISTANCE = int(500)  # 50 cm em milímetros (projeto usa mm)
 
 
@@ -62,7 +62,7 @@ class GoToDefaultDefensePos(pt.behaviour.Behaviour):
         # Movimento lento: se houver API para setar velocidade, use; caso não, use um modo lento
         if hasattr(self.robot, "set_slow_speed"):
             try:
-                self.robot.set_slow_speed(SLOW_SPEED)
+                self.robot.set_slow_speed(HALT_SLOW_SPEED)
             except Exception:
                 pass
 
