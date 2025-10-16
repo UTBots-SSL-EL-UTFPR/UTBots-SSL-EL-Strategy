@@ -117,19 +117,16 @@ class CalculateWallParameters(py_trees.behaviour.Behaviour):
         bb = py_trees.blackboard.Blackboard()
         prefix = f"wall_{self.robot.robot_id}_"
 
-        # Use unified parameter calculation for main wall
         wall_params = defense_helpers.calculate_unified_wall_parameters(
             self.robot.robot_id, wall_type="main"
         )
         
         if not wall_params:
-            # Clear blackboard on failure
             for k in ("center_x", "center_y", "perp_dx", "perp_dy", "spacing", "n_wall", "selected_ids", "offsets"):
                 if hasattr(bb, prefix + k):
                     delattr(bb, prefix + k)
             return py_trees.common.Status.FAILURE
 
-        # Write results to blackboard
         for key, value in wall_params.items():
             setattr(bb, prefix + key, value)
 
@@ -173,13 +170,10 @@ class PositionWallRobot(py_trees.behaviour.Behaviour):
         target_y = center_y + perp_dy * offset
         target = Pose2D(target_x, target_y, 0)
 
-        # Apply goalkeeper-style positioning constraints
+        # Apply positioning constraints (handles ball reference or uses target as fallback)
         ball = ws.get_ball_position()
-        if ball is not None:
-            target = defense_helpers.apply_wall_positioning_constraints(target, ball)
-        else:
-            # Fallback constraint application without ball reference
-            target = defense_helpers.clamp_out_goalkeeper_area(target)
+        ball_ref = ball if ball is not None else target
+        target = defense_helpers.apply_wall_positioning_constraints(target, ball_ref)
 
         # Path planning integration using existing motion helper
         try:

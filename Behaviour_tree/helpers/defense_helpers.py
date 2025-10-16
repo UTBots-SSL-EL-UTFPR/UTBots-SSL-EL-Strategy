@@ -153,40 +153,91 @@ def calculate_unified_wall_parameters(robot_id: int, wall_type: str = "main") ->
     # Wall size calculation
     if wall_type == "main":
         n_wall = 1  # Main wall always uses exactly 1 robot
-        # Simple positioning along ball->goal line using existing geometry helper
-        center_point = GeometryHelper.calculate_point_on_line(ball, goal_center, base_dist)
+        
+        # Get goalkeeper position to determine which post is farthest
+        gk_pos = _get_goalkeeper_position_or_fallback()
+        
+        # Determine farthest post from goalkeeper
+        dist_top = gk_pos.distance_to(post_top)
+        dist_bottom = gk_pos.distance_to(post_bottom)
+        farthest_post = post_top if dist_top >= dist_bottom else post_bottom
+        
+        # Calculate bisector between goalkeeper and farthest post (as seen from ball)
+        bisector_dir = GeometryHelper.calculate_bisector_direction(
+            ball, gk_pos, farthest_post
+        )
+        
+        # Position along bisector at base_dist from ball
+        center_point = GeometryHelper.calculate_point_on_line(
+            ball, 
+            Pose2D(ball.x + bisector_dir.x * 1000, ball.y + bisector_dir.y * 1000, 0),
+            base_dist
+        )
         center_x, center_y = center_point.x, center_point.y
         
-        # Perpendicular direction for wall orientation
-        dx = goal_center.x - ball.x
-        dy = goal_center.y - ball.y
-        length = ball.distance_to(goal_center)
-        if length == 0:
-            return {}
-        ux, uy = dx / length, dy / length
-        perp_dx, perp_dy = -uy, ux
+        # Perpendicular direction for wall orientation (perpendicular to bisector)
+        perp_dx, perp_dy = -bisector_dir.y, bisector_dir.x
         
         offsets = [0.0]  # Single robot at center
         
     else:  # auxiliary wall
         n_wall = max(1, choose_wall_size(vis_angle))
         
-        # Choose better side between the two goal posts
-        # Use existing distance calculations
+        # Get goalkeeper position to determine coverage
         gk_pos = _get_goalkeeper_position_or_fallback()
+        gk_zone = ZoneType.TEAM_GOALKEEPER.value
         
-        dist_top = gk_pos.distance_to(post_top)
-        dist_bottom = gk_pos.distance_to(post_bottom)
-        chosen_post = post_top if dist_top >= dist_bottom else post_bottom
+        # Calculate which side has more exposed angle
+        # Check multiple candidate positions to find best coverage
+        best_position = None
+        best_coverage_angle = 0.0
         
-        # Position toward the chosen post using existing geometry helper
-        center_point = GeometryHelper.calculate_point_on_line(ball, chosen_post, base_dist)
-        center_x, center_y = center_point.x, center_point.y
+        # Generate candidate positions in a grid around base_dist from ball
+        candidates = []
+        for angle_offset in [-45, -30, -15, 0, 15, 30, 45]:  # degrees
+            angle = math.atan2(goal_center.y - ball.y, goal_center.x - ball.x) + math.radians(angle_offset)
+            for dist_factor in [0.8, 1.0, 1.2]:  # variation in distance
+                dist = base_dist * dist_factor
+                candidate_x = ball.x + dist * math.cos(angle)
+                candidate_y = ball.y + dist * math.sin(angle)
+                candidate = Pose2D(candidate_x, candidate_y, 0)
+                
+                # Skip if inside goalkeeper area
+                if gk_zone.contains(candidate.x, candidate.y):
+                    continue
+                    
+                candidates.append(candidate)
         
-        # Perpendicular direction
-        dx = chosen_post.x - ball.x
-        dy = chosen_post.y - ball.y
-        length = ball.distance_to(chosen_post)
+        # Evaluate each candidate by angle coverage
+        for candidate in candidates:
+            # Calculate angles from candidate to each goal post
+            angle_to_top = math.atan2(post_top.y - candidate.y, post_top.x - candidate.x)
+            angle_to_bottom = math.atan2(post_bottom.y - candidate.y, post_bottom.x - candidate.x)
+            angle_to_gk = math.atan2(gk_pos.y - candidate.y, gk_pos.x - candidate.x)
+            
+            # Calculate uncovered angle (angle not covered by goalkeeper)
+            # The wall should cover the side that GK doesn't cover
+            coverage = abs(angle_to_top - angle_to_bottom)
+            
+            # Prefer positions farther from GK to avoid overlap
+            gk_dist_factor = min(1.0, candidate.distance_to(gk_pos) / 500.0)
+            weighted_coverage = coverage * gk_dist_factor
+            
+            if weighted_coverage > best_coverage_angle:
+                best_coverage_angle = weighted_coverage
+                best_position = candidate
+        
+        # Fallback if no good position found
+        if best_position is None:
+            best_position = GeometryHelper.calculate_point_on_line(ball, goal_center, base_dist)
+        
+        center_x, center_y = best_position.x, best_position.y
+        center_point = best_position
+        
+        # Calculate perpendicular direction for wall spreading
+        dx = goal_center.x - ball.x
+        dy = goal_center.y - ball.y
+        length = ball.distance_to(goal_center)
         if length == 0:
             return {}
         ux, uy = dx / length, dy / length
@@ -258,10 +309,3 @@ def apply_wall_positioning_constraints(target: Pose2D, ball: Pose2D) -> Pose2D:
             constrained.y = goal_center.y + dy * scale_factor
     
     return constrained
-
-
-def clamp_out_goalkeeper_area(pos: Pose2D) -> Pose2D:
-    """
-    Simple wrapper that projects position out of goalkeeper area.
-    """
-    return apply_wall_positioning_constraints(pos, pos)
