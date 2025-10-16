@@ -104,10 +104,6 @@ class IsRobotAssignedToWall(py_trees.behaviour.Behaviour):
 # +------------------------------------------------------------------------+ #
 
 class CalculateWallParameters(py_trees.behaviour.Behaviour):
-    """Compute wall center, size and which robots should form the wall. Write results to the blackboard.
-
-    This node now re-uses the goalkeeper-bisector placement logic so wall geometry matches the GK logic.
-    """
     def __init__(self, robot: Bob, name: str = "CalculateWallParameters"):
         super().__init__(name)
         self.robot = robot
@@ -162,28 +158,27 @@ class PositionWallRobot(py_trees.behaviour.Behaviour):
         if offsets is not None and idx < len(offsets):
             offset = offsets[idx]
         else:
-            # For single robot wall, always use zero offset (center position)
             offset = 0.0
         
-        # Calculate initial target position
         target_x = center_x + perp_dx * offset
         target_y = center_y + perp_dy * offset
         target = Pose2D(target_x, target_y, 0)
-
-        # Apply positioning constraints (handles ball reference or uses target as fallback)
+        
         ball = ws.get_ball_position()
         ball_ref = ball if ball is not None else target
-        target = defense_helpers.apply_wall_positioning_constraints(target, ball_ref)
+        
+        
+        gk_zone = ZoneType.TEAM_GOALKEEPER.value
+        if gk_zone.contains(target.x, target.y):
+            target = defense_helpers.apply_wall_positioning_constraints(target, ball_ref)
 
-        # Path planning integration using existing motion helper
         try:
-            # Get obstacle positions
+            
             obstacles = ws.get_all_robot_position()
-            # Remove self from obstacles
+            
             current_pos = getattr(self.robot.state, 'position', self.robot.pose)
             obstacles = [obs for obs in obstacles if obs != current_pos]
             
-            # Generate optimal path to target using existing motion helper
             self.robot.state.target_position = target
             new_path = MotionHelper.find_shortest_path(
                 current_pos,
@@ -194,10 +189,8 @@ class PositionWallRobot(py_trees.behaviour.Behaviour):
             self.robot.set_path(new_path)
             
         except (ImportError, AttributeError):
-            # Fallback to direct movement if path planning unavailable
             self.robot.set_new_target(target)
             
-        # Use appropriate movement type
         self.robot.fast_movement()
         return py_trees.common.Status.SUCCESS
 

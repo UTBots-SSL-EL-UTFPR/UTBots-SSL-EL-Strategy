@@ -1,5 +1,4 @@
 # defense_helpers.py
-# Minimal wall system helpers that reuse existing codebase functionality
 
 import math
 from typing import List, Optional
@@ -15,7 +14,7 @@ from utils.pose2D import ZoneType, Pose2D, RoleType, Zone
 
 
 def find_goalkeeper() -> Optional[Bob]:
-    """Find and return the goalkeeper robot from the BobManager."""
+    """Acha o goleiro"""
     bob_mgr = BobManager.get_object()
     
     for bob in bob_mgr.bobs.values():
@@ -30,8 +29,7 @@ def find_goalkeeper() -> Optional[Bob]:
 
 def get_wall_robots(center_point: Optional[Pose2D] = None, n_wall: Optional[int] = None) -> List[Bob]:
     """
-    Return up to `n_wall` robots chosen to form the wall.
-    Excludes goalkeeper and any robot that currently has the ball.
+    Retorna os robos da barreira
     """
     bob_mgr = BobManager.get_object()
     all_bobs = list(bob_mgr.bobs.values())
@@ -47,7 +45,6 @@ def get_wall_robots(center_point: Optional[Pose2D] = None, n_wall: Optional[int]
     if n_wall is None or center_point is None:
         return candidates
 
-    # Sort by distance using existing Pose2D.distance_to()
     entries = [] 
     for robot in candidates:
         pos = getattr(robot.state, 'position', None)
@@ -66,7 +63,7 @@ def get_wall_robots(center_point: Optional[Pose2D] = None, n_wall: Optional[int]
 def analyze_threatening_foe(ws: World_State, gk_zone: Zone, ball, goal_center, prev_wall_active: bool = False, 
                            threat_distance_enter: float = 1200.0, threat_distance_exit: float = 1400.0, 
                            min_vis_angle: float = 0.20):
-    """Determine whether there's a threatening foe and compute the primary foe and its visibility."""
+    """Verifica ameaças, o adversário mais perigoso e seu angulo de visão"""
     from Behaviour_tree.helpers.visiblidade_gol import max_range_of_visibility
     
     foes = ws.get_all_foes_position()
@@ -82,7 +79,7 @@ def analyze_threatening_foe(ws: World_State, gk_zone: Zone, ball, goal_center, p
         if gk_zone.contains(foe.x, foe.y):
             continue
         vis_angle = max_range_of_visibility(obstacles, foe, goal_center.x)
-        dist_to_ball = ball.distance_to(foe)  # Use existing Pose2D method
+        dist_to_ball = ball.distance_to(foe)  
         if vis_angle > min_vis_angle and dist_to_ball < threshold:
             if dist_to_ball < primary_dist:
                 primary_dist = dist_to_ball
@@ -99,7 +96,7 @@ def analyze_threatening_foe(ws: World_State, gk_zone: Zone, ball, goal_center, p
             if gk_zone.contains(foe.x, foe.y):
                 continue
             vis_angle = max_range_of_visibility(obstacles, foe, goal_center.x)
-            dist_to_ball = ball.distance_to(foe)  # Use existing Pose2D method
+            dist_to_ball = ball.distance_to(foe)  
             if vis_angle > min_vis_angle and dist_to_ball < threat_distance_exit:
                 still_threat = True
                 break
@@ -110,7 +107,7 @@ def analyze_threatening_foe(ws: World_State, gk_zone: Zone, ball, goal_center, p
 
 def choose_wall_size(vis_angle: float, vis_angle_for_2: float = 0.35, 
                     min_vis_angle: float = 0.20, max_wall: int = 2, min_wall: int = 1) -> int:
-    """Choose wall size based on visibility angle."""
+    """Escolha do tamanho da barreira"""
     if vis_angle >= vis_angle_for_2:
         return min(max_wall, 2)
     if vis_angle >= min_vis_angle:
@@ -120,20 +117,19 @@ def choose_wall_size(vis_angle: float, vis_angle_for_2: float = 0.35,
 
 def calculate_unified_wall_parameters(robot_id: int, wall_type: str = "main") -> dict:
     """
-    Unified wall parameter calculation for both main and auxiliary walls.
-    Uses existing geometry and positioning helpers where possible.
+    Calcula os parâmetros utilizados por ambos barreira e auxiliar.
     """
     import py_trees
     from Behaviour_tree.commom_behaviours.sub_trees.wall_subtree import (
         WALL_FACTOR, MIN_WALL_DIST, MAX_WALL_DIST
     )
     
-    # Setup common variables
+    
     ws = World_State.get_object()
     bb = py_trees.blackboard.Blackboard()
     prefix = f"wall_{robot_id}_"
     
-    # Check activation state
+    
     active = getattr(bb, prefix + "active", False)
     primary_foe = getattr(bb, prefix + "primary_foe", None)
     vis_angle = getattr(bb, prefix + "vis_angle", 0.0)
@@ -141,85 +137,80 @@ def calculate_unified_wall_parameters(robot_id: int, wall_type: str = "main") ->
     if not active or primary_foe is None:
         return {}
     
-    # Common calculations
+   
     goal_center = FieldHelper.get_team_goal_center()
     post_top, post_bottom = FieldHelper.get_team_goal_posts()
     ball = ws.get_ball_position()
     
-    # Use existing distance calculation
+    
     foe_to_goal = goal_center.distance_to(primary_foe)
     base_dist = max(MIN_WALL_DIST, min(MAX_WALL_DIST, foe_to_goal * WALL_FACTOR))
     
-    # Wall size calculation
+    
     if wall_type == "main":
-        n_wall = 1  # Main wall always uses exactly 1 robot
+        n_wall = 1  
         
-        # Get goalkeeper position to determine which post is farthest
+        
         gk_pos = _get_goalkeeper_position_or_fallback()
         
-        # Determine farthest post from goalkeeper
+        
         dist_top = gk_pos.distance_to(post_top)
         dist_bottom = gk_pos.distance_to(post_bottom)
         farthest_post = post_top if dist_top >= dist_bottom else post_bottom
         
-        # Calculate bisector between goalkeeper and farthest post (as seen from ball)
+    
         bisector_dir = GeometryHelper.calculate_bisector_direction(
             ball, gk_pos, farthest_post
         )
         
-        # Position along bisector at base_dist from ball
+       
         center_point = GeometryHelper.calculate_point_on_line(
             ball, 
             Pose2D(ball.x + bisector_dir.x * 1000, ball.y + bisector_dir.y * 1000, 0),
             base_dist
         )
+        
+        center_point = apply_wall_positioning_constraints(center_point, ball)
         center_x, center_y = center_point.x, center_point.y
         
-        # Perpendicular direction for wall orientation (perpendicular to bisector)
+    
         perp_dx, perp_dy = -bisector_dir.y, bisector_dir.x
         
-        offsets = [0.0]  # Single robot at center
+        offsets = [0.0]  
         
     else:  # auxiliary wall
         n_wall = max(1, choose_wall_size(vis_angle))
         
-        # Get goalkeeper position to determine coverage
+        
         gk_pos = _get_goalkeeper_position_or_fallback()
         gk_zone = ZoneType.TEAM_GOALKEEPER.value
         
-        # Calculate which side has more exposed angle
-        # Check multiple candidate positions to find best coverage
+        
         best_position = None
         best_coverage_angle = 0.0
         
-        # Generate candidate positions in a grid around base_dist from ball
+        
         candidates = []
-        for angle_offset in [-45, -30, -15, 0, 15, 30, 45]:  # degrees
+        for angle_offset in [-45, -30, -15, 0, 15, 30, 45]:  
             angle = math.atan2(goal_center.y - ball.y, goal_center.x - ball.x) + math.radians(angle_offset)
-            for dist_factor in [0.8, 1.0, 1.2]:  # variation in distance
+            for dist_factor in [0.8, 1.0, 1.2]: 
                 dist = base_dist * dist_factor
                 candidate_x = ball.x + dist * math.cos(angle)
                 candidate_y = ball.y + dist * math.sin(angle)
                 candidate = Pose2D(candidate_x, candidate_y, 0)
                 
-                # Skip if inside goalkeeper area
+                
                 if gk_zone.contains(candidate.x, candidate.y):
                     continue
                     
                 candidates.append(candidate)
         
-        # Evaluate each candidate by angle coverage
         for candidate in candidates:
-            # Calculate angles from candidate to each goal post
             angle_to_top = math.atan2(post_top.y - candidate.y, post_top.x - candidate.x)
             angle_to_bottom = math.atan2(post_bottom.y - candidate.y, post_bottom.x - candidate.x)
-            angle_to_gk = math.atan2(gk_pos.y - candidate.y, gk_pos.x - candidate.x)
             
-            # Calculate uncovered angle (angle not covered by goalkeeper)
-            # The wall should cover the side that GK doesn't cover
             coverage = abs(angle_to_top - angle_to_bottom)
             
-            # Prefer positions farther from GK to avoid overlap
             gk_dist_factor = min(1.0, candidate.distance_to(gk_pos) / 500.0)
             weighted_coverage = coverage * gk_dist_factor
             
@@ -227,14 +218,13 @@ def calculate_unified_wall_parameters(robot_id: int, wall_type: str = "main") ->
                 best_coverage_angle = weighted_coverage
                 best_position = candidate
         
-        # Fallback if no good position found
         if best_position is None:
             best_position = GeometryHelper.calculate_point_on_line(ball, goal_center, base_dist)
-        
+
+        best_position = apply_wall_positioning_constraints(best_position, ball)
         center_x, center_y = best_position.x, best_position.y
         center_point = best_position
-        
-        # Calculate perpendicular direction for wall spreading
+
         dx = goal_center.x - ball.x
         dy = goal_center.y - ball.y
         length = ball.distance_to(goal_center)
@@ -243,7 +233,6 @@ def calculate_unified_wall_parameters(robot_id: int, wall_type: str = "main") ->
         ux, uy = dx / length, dy / length
         perp_dx, perp_dy = -uy, ux
         
-        # Multiple robots spread along perpendicular
         if n_wall == 1:
             offsets = [0.0]
         else:
@@ -251,7 +240,6 @@ def calculate_unified_wall_parameters(robot_id: int, wall_type: str = "main") ->
             total_span = (n_wall - 1) * spacing
             offsets = [i * spacing - total_span/2 for i in range(n_wall)]
     
-    # Robot selection using existing functionality
     selected = get_wall_robots(center_point=Pose2D(center_x, center_y, 0), n_wall=n_wall)
     selected_ids = [getattr(r, 'robot_id', None) for r in selected]
     
@@ -270,7 +258,7 @@ def calculate_unified_wall_parameters(robot_id: int, wall_type: str = "main") ->
 
 
 def _get_goalkeeper_position_or_fallback() -> Pose2D:
-    """Get goalkeeper position or fallback to goal center."""
+    """Pega a posição do goleiro"""
     gk_bob = find_goalkeeper()
     if gk_bob and hasattr(gk_bob, 'state') and gk_bob.state:
         gk_pos = getattr(gk_bob.state, 'position', None)
@@ -281,28 +269,27 @@ def _get_goalkeeper_position_or_fallback() -> Pose2D:
 
 def apply_wall_positioning_constraints(target: Pose2D, ball: Pose2D) -> Pose2D:
     """
-    Apply simple positioning constraints to keep wall robots in valid positions.
+    Usado para manter a barreira em áreas válidas
     """
-    # Simple field boundary check using field helper
-    from Behaviour_tree.helpers.field_helper import HALF_LEGHT
     
-    # Clamp to field boundaries with margin
+    from Behaviour_tree.helpers.field_helper import HALF_LEGHT
+
     margin = 100
     constrained_x = max(-HALF_LEGHT + margin, min(target.x, HALF_LEGHT - margin))
     constrained_y = max(-HALF_LEGHT + margin, min(target.y, HALF_LEGHT - margin))
     constrained = Pose2D(constrained_x, constrained_y, target.theta)
     
-    # Simple goalkeeper area avoidance
+    
     gk_zone = ZoneType.TEAM_GOALKEEPER.value
     if gk_zone.contains(constrained.x, constrained.y):
-        # Push away from goal center
+        
         goal_center = FieldHelper.get_team_goal_center()
         dx = constrained.x - goal_center.x
         dy = constrained.y - goal_center.y
         length = goal_center.distance_to(constrained)
         
         if length > 0:
-            # Push further out by 150mm margin
+            
             safety_margin = 150
             scale_factor = (length + safety_margin) / length
             constrained.x = goal_center.x + dx * scale_factor

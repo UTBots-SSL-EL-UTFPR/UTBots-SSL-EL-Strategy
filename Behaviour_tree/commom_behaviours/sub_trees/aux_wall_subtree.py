@@ -1,5 +1,4 @@
 # aux_wall_subtree.py
-# Auxiliary wall behaviour tree that places robots on the best side of the wall mouth.
 
 import py_trees
 import math
@@ -21,11 +20,7 @@ from Behaviour_tree.commom_behaviours.sub_trees.wall_subtree import (
 # +------------------------------------------------------------------------+ #
 
 class AuxWallCalculateParameters(py_trees.behaviour.Behaviour):
-    """Calculate wall parameters constrained to the best side of the goal mouth (left or right half).
 
-    This node selects offsets only on the chosen side so the auxiliary wall places robots on one side.
-    Enhanced with goalkeeper-inspired adaptive positioning and constraint management.
-    """
     def __init__(self, robot: Bob, name: str = "AuxWallCalculateParameters"):
         super().__init__(name)
         self.robot = robot
@@ -59,12 +54,7 @@ class AuxWallCalculateParameters(py_trees.behaviour.Behaviour):
 # =========================================================================== #
 
 def get_aux_wall_subtree(robot: Bob) -> py_trees.composites.Sequence:
-    """Auxiliary wall subtree: places robots on the best side of the wall mouth.
 
-    This function constructs a behaviour tree sequence that mirrors the main wall
-    subtree but uses the side-aware AuxWallCalculateParameters node so robots
-    are placed on the most threatened side of the goal mouth.
-    """
     foes_have_ball = cb_condition.FoesHaveBall(robot)
     is_threatening_foe = IsThreateningFoe(robot)
 
