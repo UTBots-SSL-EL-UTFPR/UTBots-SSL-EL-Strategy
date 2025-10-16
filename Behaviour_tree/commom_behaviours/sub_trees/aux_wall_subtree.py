@@ -5,12 +5,11 @@ import py_trees
 import math
 
 from Behaviour_tree.robot.bob import Bob
-from Behaviour_tree.helpers.field_helper import FieldHelper
 from Behaviour_tree.helpers import defense_helpers
 from Behaviour_tree.core.World_State import World_State
 
 from utils.defines import ROBOT_RADIUS
-from utils.pose2D import ZoneType, Pose2D, RoleType
+from utils.pose2D import Pose2D
 from Behaviour_tree.commom_behaviours import actions as cb_actions, condition as cb_condition
 
 # Import shared wall functions and classes
@@ -145,9 +144,8 @@ def get_aux_wall_subtree(robot: Bob) -> py_trees.composites.Sequence:
 
     # Use auxiliary-specific positioning node that handles triangle-optimized parameters
     position_wall_node = AuxWallPositioner(robot)
-    move_node = cb_actions.Move_node(robot)
 
-    wall_sequence = py_trees.composites.Sequence(
+    aux_wall_subtree = py_trees.composites.Sequence(
         "Aux Wall Sequence",
         memory=True,
         children=[
@@ -155,10 +153,8 @@ def get_aux_wall_subtree(robot: Bob) -> py_trees.composites.Sequence:
             is_threatening_foe,
             calculate_params,
             is_assigned,
-            position_wall_node,
-            move_node,
+            position_wall_node
         ],
     )
-    wall_root = py_trees.trees.BehaviourTree(wall_sequence)
-    wall_root.setup()
-    return wall_root
+    aux_wall_subtree.setup()
+    return aux_wall_subtree

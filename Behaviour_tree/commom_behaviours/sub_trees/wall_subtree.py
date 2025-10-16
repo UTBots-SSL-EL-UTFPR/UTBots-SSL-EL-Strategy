@@ -9,10 +9,11 @@ import math
 from Behaviour_tree.robot.bob import Bob
 from Behaviour_tree.helpers.field_helper import FieldHelper
 from Behaviour_tree.helpers import defense_helpers
+from Behaviour_tree.helpers.motion_helper import MotionHelper
 from Behaviour_tree.core.World_State import World_State
 
 from utils.defines import ROBOT_RADIUS
-from utils.pose2D import ZoneType, Pose2D, RoleType
+from utils.pose2D import ZoneType, Pose2D
 from Behaviour_tree.commom_behaviours import actions as cb_actions, condition as cb_condition
 
 # -------------------------------------------------------------------------- #
@@ -180,17 +181,15 @@ class PositionWallRobot(py_trees.behaviour.Behaviour):
             # Fallback constraint application without ball reference
             target = defense_helpers.clamp_out_goalkeeper_area(target)
 
-        # Path planning integration (inspired by goalkeeper path planning)
+        # Path planning integration using existing motion helper
         try:
-            from Behaviour_tree.helpers.motion_helper import MotionHelper
-            
-            # Get obstacle positions (similar to goalkeeper obstacle avoidance)
+            # Get obstacle positions
             obstacles = ws.get_all_robot_position()
             # Remove self from obstacles
             current_pos = getattr(self.robot.state, 'position', self.robot.pose)
             obstacles = [obs for obs in obstacles if obs != current_pos]
             
-            # Generate optimal path to target
+            # Generate optimal path to target using existing motion helper
             self.robot.state.target_position = target
             new_path = MotionHelper.find_shortest_path(
                 current_pos,
@@ -212,7 +211,6 @@ class PositionWallRobot(py_trees.behaviour.Behaviour):
 # ====================== CRIAÇÃO DA ÁRVORE DE BARREIRA ====================== #
 # =========================================================================== #
 
-
 def get_wall_subtree(robot: Bob) -> py_trees.composites.Sequence:
 
     foes_have_ball = cb_condition.FoesHaveBall(robot)
@@ -223,9 +221,8 @@ def get_wall_subtree(robot: Bob) -> py_trees.composites.Sequence:
     is_assigned = IsRobotAssignedToWall(robot)
 
     position_wall_node = PositionWallRobot(robot)
-    move_node = cb_actions.Move_node(robot)
 
-    wall_sequence = py_trees.composites.Sequence(
+    wall_subtree = py_trees.composites.Sequence(
         "Form Wall Sequence",
         memory=True, 
         children=[
@@ -233,13 +230,12 @@ def get_wall_subtree(robot: Bob) -> py_trees.composites.Sequence:
             is_threatening_foe,
             calculate_params,
             is_assigned,
-            position_wall_node,
-            move_node,
+            position_wall_node
         ],
     )
-    wall_root = py_trees.trees.BehaviourTree(wall_sequence)
-    wall_root.setup()
-    return wall_root
+
+    wall_subtree.setup()
+    return wall_subtree
 
 
 
