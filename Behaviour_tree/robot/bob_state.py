@@ -49,6 +49,7 @@ class Bob_State:
     # ---------------------------------------------------------------------------------------#
 
     def update(self):
+        print(self.target_position)
         self.is_ball_with_robot()
         self.is_robot_stuck()
         self.target_reached()

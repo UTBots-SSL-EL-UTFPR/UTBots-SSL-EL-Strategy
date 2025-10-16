@@ -99,7 +99,31 @@ class HasBall(py_trees.behaviour.Behaviour):
 
 class ValidLine(py_trees.behaviour.Behaviour):
 
-    def __init__(self, name: str = "Valid_Line"):
+    def __init__(self, bob: Bob, name: str = "Valid_Line"):
+        super().__init__(name)
+        self.robot = bob
+
+    def setup(self, **kwargs):
+        logger.debug(f"--> SETUP EXECUTADO: {self.name}")
+        return super().setup(**kwargs)
+
+    def update(self) -> py_trees.common.Status:
+
+        key = f"{self.robot.robot_id.name}{BlackboardKeys.Flags.TeamContext.VALID_LINE}"
+        if _bb.get(key):
+            logger.debug(f"[{self.name}] Sucesso: Flag '{key}' é True na Blackboard.")
+            return py_trees.common.Status.SUCCESS
+        else:
+            logger.debug(
+                f"[{self.name}] Falhou: Flag '{key}' não é True ou não existe."
+            )
+            return py_trees.common.Status.FAILURE
+
+
+class BolaSegura(py_trees.behaviour.Behaviour):
+    def __init__(self, robot: Bob, name: str = "BolaSegura"):
+        self._ws = World_State.get_object()
+        self.robot = robot
         super().__init__(name)
 
     def setup(self, **kwargs):
