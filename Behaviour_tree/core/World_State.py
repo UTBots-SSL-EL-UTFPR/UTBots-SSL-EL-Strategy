@@ -11,12 +11,29 @@ from communication.receiver.vision_receiver import VisionReceiver
 from SSL_configuration.configuration import Configuration
 from utils.pose2D import Pose2D
 
+from communication.generated import ssl_vision_wrapper_pb2 as vision_pb
+from communication.parsers.referee_parser import RefereeParser
+from communication.parsers.vision_parser import VisionParser
+from communication.receiver.referee_receiver import RefereeReceiver
+from communication.receiver.vision_receiver import VisionReceiver
+from SSL_configuration.configuration import Configuration
+from utils.pose2D import Pose2D
+
 
 # =====================================================
 # Enum de IDs de robôs
 # =====================================================
+
 class TeamID(Enum):
     Kamiji = 0
+    Argenton = 1
+    SabKawa = 2
+
+
+class FoesID(Enum):
+    TauraBots = 0
+    GralhaBots = 1
+    Cerberus = 2
     Argenton = 1
     SabKawa = 2
 
@@ -42,6 +59,8 @@ class World_State:
             print(e)
 
         self.referee_data: referee_pb.Referee = None  # type: ignore
+
+        self.referee_data: referee_pb.Referee = None  # type: ignore
         self.vision_data: dict = {}
 
         # Dados granulares
@@ -52,6 +71,8 @@ class World_State:
         self.last_camera_frames = {}
 
         self._initialized = True
+
+        self._ball_velocity: tuple[float, float] = (0, 0)
 
     @staticmethod
     def get_object():
@@ -104,6 +125,8 @@ class World_State:
         balls = detection.get("balls", [])
         if balls:
             self._ball_position = (balls[0]["x"], balls[0]["y"])
+            self._ball_velocity = (balls[0].get("vx", 0.0), balls[0].get("vy", 0.0))
+
 
         for bot in detection.get("robots_blue", []):
             rid = bot["robot_id"]
@@ -135,6 +158,11 @@ class World_State:
     def get_ball_position(self):
         position = self._ball_position
         return Pose2D(int(position[0]), int(position[1]))
+    
+    def get_ball_velocity(self) -> Pose2D:
+        """Retorna a velocidade atual da bola como um objeto Pose2D (vx, vy)."""
+        velocity = self._ball_velocity
+        return Pose2D(int(velocity[0]), int(velocity[1]))
 
     # team
     def get_team_robot_pose(self, robot_id: int) -> Pose2D | None:

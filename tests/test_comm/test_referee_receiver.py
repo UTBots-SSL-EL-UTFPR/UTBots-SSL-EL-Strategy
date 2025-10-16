@@ -1,4 +1,4 @@
-from communication.referee_receiver import RefereeReceiver
+from ...communication.receiver.referee_receiver import RefereeReceiver
 from communication.parsers.referee_parser import RefereeParser
 from pprint import pprint
 from time import sleep

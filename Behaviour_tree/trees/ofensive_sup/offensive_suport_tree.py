@@ -37,6 +37,7 @@ class OffSupRepos(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def initialise(self) -> None:
+        self._last_update_time = 0.1
         current_time = time.time()
         new_path = StrategyHelper.set_offensive_suport_position(
             self.robot.state.position

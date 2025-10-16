@@ -2,12 +2,14 @@
 #                                  IMPORTS                                   #
 # -------------------------------------------------------------------------- #
 
+from typing import List
+
 from Behaviour_tree.core.World_State import TeamID, World_State
 from SSL_configuration.configuration import Configuration
 from utils.defines import DISTANCE_PRESS_OPPONENT, MIN_PASS_DISTANCE
 from utils.pose2D import Pose2D, Quadrant, QuadrantType, RoleType
 
-from .field_helper import GRID_STEP, FieldHelper
+from .field_helper import GRID_STEP, HALF_LEGHT, HALF_WID, FieldHelper
 from .geometry_helper import GeometryHelper
 from .motion_helper import MotionHelper
 from .positioning_helper import PositioningHelper
@@ -24,7 +26,7 @@ class StrategyHelper:
     @classmethod
     def get_press_oponent_position(cls):
         ball_position = cls._ws.get_ball_position()
-        goal_position = FieldHelper.get_enemy_goal_center()
+        goal_position = FieldHelper.get_team_goal_center()
         return GeometryHelper.calculate_point_on_line(
             ball_position, goal_position, DISTANCE_PRESS_OPPONENT
         )
@@ -32,10 +34,10 @@ class StrategyHelper:
     @classmethod
     def get_ball_recovery_position(cls):
         ball_position = cls._ws.get_ball_position()
-        
+
         goal_position = FieldHelper.get_enemy_goal_center()
         return GeometryHelper.calculate_point_on_line(
-            goal_position, ball_position, DISTANCE_PRESS_OPPONENT
+            ball_position, goal_position, -DISTANCE_PRESS_OPPONENT
         )
 
     @classmethod
@@ -102,16 +104,144 @@ class StrategyHelper:
                         Pose2D._clamp(safest_point.y, -1300, 1300),
                     )
                     break
-        print(robot_pos)
 
         return cls.get_Robot_path(target_pose, robot_pos, ball_pos)
 
     @classmethod
+    def set_goalkeeper_position(cls, robot_pos: Pose2D):
+
+        obstacles = cls._ws.get_all_robot_position()
+        obstacles = [obs for obs in obstacles if obs != robot_pos]
+
+        target_pose = Pose2D(-100, 0)
+        new_path = MotionHelper.find_shortest_path(
+            robot_pos,
+            target_pose,
+            obstacles,
+            cls._ws.get_ball_position(),
+        )
+        return new_path
+
+    @classmethod
     def get_Robot_path(
-        cls, target_pose: Pose2D, robot_position: Pose2D, ball_position: Pose2D
+        cls, target_pose: Pose2D, robot_position: Pose2D, ball_position: Pose2D | None
     ):
         obstacles = cls._ws.get_all_robot_position()
         obstacles = [obs for obs in obstacles if obs != robot_position]
         return MotionHelper.find_shortest_path(
             robot_position, target_pose, obstacles, ball_position
         )
+
+    @classmethod
+    def _decide_goalkeeper_depth_factor(cls, ball_position: Pose2D) -> float:
+        """
+        Decide o quão agressivo o goleiro deve ser.
+        """
+        goal_center = FieldHelper.get_team_goal_center()
+        dist_ball_to_goal = abs(ball_position.x - goal_center.x)
+
+        if dist_ball_to_goal < 800:
+            return 0.8
+        if dist_ball_to_goal < 1200:
+            return 0.6
+        return 0.1
+
+    @classmethod
+    def get_goalkeeper_defense_position(cls) -> Pose2D:
+        """
+        Executa a estratégia do goleiro para encontrar a melhor posição.
+        """
+        ball = cls._ws.get_ball_position()
+        our_goal = FieldHelper.get_team_goal_center()
+
+        if ball is None:
+            return our_goal
+
+        is_behind_goal = (our_goal.x < 0 and ball.x < our_goal.x) or (
+            our_goal.x > 0 and ball.x > our_goal.x
+        )
+        if is_behind_goal:
+            return FieldHelper.clamp_into_goalkeeper_area(our_goal)
+
+        depth_factor = cls._decide_goalkeeper_depth_factor(ball)
+
+        defense_x = FieldHelper.calculate_defense_line_x(depth_factor)
+
+        post_top, post_bottom = FieldHelper.get_team_goal_posts()
+
+        bisector_dir = GeometryHelper.calculate_bisector_direction(
+            ball, post_top, post_bottom
+        )
+
+        ideal_target = GeometryHelper.find_line_intersection_with_vertical(
+            start_point=ball, direction_vec=bisector_dir, vertical_line_x=defense_x
+        )
+
+        final_target = FieldHelper.clamp_into_goalkeeper_area(ideal_target)
+
+        return final_target
+
+    @classmethod
+    def calculate_attack_support_pos(cls, ball_carrier_pose: Pose2D) -> Pose2D:
+        """Calcula a melhor posição para se oferecer como opção de passe no ataque."""
+        FORWARD_PASS_DISTANCE = 800
+        SAFE_PASS_RECEPTION_DISTANCE = 400
+        opponents = cls._ws.get_all_foes_position()
+
+        target_y_magnitude = FieldHelper.get_attack_y_magnitude()
+        opponent_goal = FieldHelper.get_enemy_goal_center()
+
+        target_y_side = int(
+            -target_y_magnitude if ball_carrier_pose.y >= 0 else target_y_magnitude
+        )
+
+        ideal_x = ball_carrier_pose.x + FORWARD_PASS_DISTANCE
+        if ideal_x > opponent_goal.x - 500:
+            ideal_x = opponent_goal.x - 500
+
+        ideal_target_pose = Pose2D(ideal_x, target_y_side)
+
+        is_safe = all(
+            opp.distance_to(ideal_target_pose) > SAFE_PASS_RECEPTION_DISTANCE
+            for opp in opponents
+        )
+
+        if is_safe:
+            return ideal_target_pose
+        else:
+            for dx in [-300, 0, 300]:
+                for dy in [-400, 0, 400]:
+                    candidate_pos = Pose2D(
+                        ideal_target_pose.x + dx, ideal_target_pose.y + dy
+                    )
+                    if all(
+                        opp.distance_to(candidate_pos) > SAFE_PASS_RECEPTION_DISTANCE
+                        for opp in opponents
+                    ):
+                        return candidate_pos
+
+        return ideal_target_pose
+
+    @classmethod
+    def calculate_defense_support_pos(cls) -> Pose2D:
+        """Calcula a melhor posição para interceptar um contra-ataque."""
+        INTERCEPT_DISTANCE_FROM_OPPONENT = 600
+        opponents = cls._ws.get_all_foes_position()
+
+        if not opponents:
+            return Pose2D(-500, 0)
+
+        our_goal = FieldHelper.get_team_goal_center()
+        most_advanced_opponent = max(opponents, key=lambda opp: opp.x)
+
+        target_pose = GeometryHelper.calculate_point_on_line(
+            origin=our_goal,
+            target=most_advanced_opponent,
+            radius=INTERCEPT_DISTANCE_FROM_OPPONENT,
+        )
+
+        target_pose.theta = GeometryHelper.calculate_angle_between_points(
+            start_point=target_pose, end_point=most_advanced_opponent
+        )
+
+        return target_pose

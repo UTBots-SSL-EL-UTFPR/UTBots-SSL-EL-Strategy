@@ -14,34 +14,30 @@ import py_trees
 from Behaviour_tree.core import event_callbacks as callbacks
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
+from Behaviour_tree.helpers.field_helper import FIELD_X_MAX, FIELD_X_MIN, HALF_LEGHT
+from utils.pose2D import QuadrantType, RoleType, ZoneType
 from utils.defines import (
     BALL_RADIUS,
     FIELD_INVERTED_SIDE,
-    FIELD_X_MAX,
-    FIELD_X_MIN,
     ROBOT_RADIUS,
-    QuadrantType,
-    RoleType,
-    ZoneType,
 )
 from utils.pose2D import Pose2D
 
-from ....core.event_callbacks import BlackboardKeys
-from ....core.World_State import RobotID, World_State
+from ...core.event_callbacks import BlackboardKeys
+from ...core.World_State import TeamID, World_State
 
-navigation_flags = BlackboardKeys.Flags.motion.navigation
+navigation_flags = BlackboardKeys.Flags.Navigation
 positions = BlackboardKeys.Values.Positions
-team_flags = BlackboardKeys.Flags.Team_Flags
+team_flags = BlackboardKeys.Flags.TeamContext
 import time
 from typing import Optional, Tuple
 
 import py_trees as pt
 
-team_flags = BlackboardKeys.Flags.Team_Flags
 from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from Behaviour_tree.robot.bob import Bob
 
-from ....helpers import positioning_helper as Positioning_helper
+from ...helpers import positioning_helper as Positioning_helper
 
 # ---------------------------------------------------------------------------------------#
 #                                         MOVIMENTO                                     #
@@ -61,7 +57,11 @@ class DefenderActions(pt.behaviour.Behaviour):
         self.positioning_helper = PositioningHelper.get_object()
         self.logger = logging.getLogger(__name__)
 
-    def set_defensive_position(self, robot_id: RobotID):
+    def update(self):
+        # Implementação do método abstrato
+        pass
+    
+    def set_defensive_position(self, robot_id: TeamID):
         """
         Posiciona o defensor para proteger a área defensiva.
 
@@ -73,8 +73,8 @@ class DefenderActions(pt.behaviour.Behaviour):
         if robot is None or robot.state is None:
             return None
 
-        ball = self.world_state.get_ball_position()
-        if ball is None:
+        ball_position = self.world_state.get_ball_position()
+        if ball_position is None:
             return None
 
         # Define a área defensiva
@@ -82,8 +82,8 @@ class DefenderActions(pt.behaviour.Behaviour):
         area_y_min, area_y_max = -1300, 1300
 
         # Calcula a posição alvo do defensor
-        target_x = max(area_x_min, min(ball.x - 300, area_x_max))
-        target_y = max(area_y_min, min(ball.y, area_y_max))
+        target_x = max(area_x_min, min(ball_position.x - 300, area_x_max))
+        target_y = max(area_y_min, min(ball_position.y, area_y_max))
 
         target_pose = Pose2D(target_x, target_y)
 
@@ -95,7 +95,7 @@ class DefenderActions(pt.behaviour.Behaviour):
             target_pose,
             obstacles,
             ROBOT_RADIUS,
-            ball,
+            ball_position,
             BALL_RADIUS,
         )
         robot.state.role = RoleType.DEFENDER
@@ -103,7 +103,7 @@ class DefenderActions(pt.behaviour.Behaviour):
         self.logger.info(f"Defensor {robot_id} posicionado em {target_pose}")
         return target_pose
 
-    def intercept_ball(self, robot_id: RobotID):
+    def intercept_ball(self, robot_id: TeamID):
         """
         Posiciona o defensor para interceptar a bola.
 

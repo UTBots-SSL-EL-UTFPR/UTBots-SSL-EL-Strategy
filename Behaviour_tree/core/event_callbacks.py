@@ -68,8 +68,12 @@ class BlackboardKeys:
             PATH_BLOCKED = "path_blocked"
             IS_STUCK = "is_stuck"
             LOST_PATH = "lost_path"
+
         class Motion(StringEnum):
             navigation = "navigation_flag"
+
+        class Defense(StringEnum):
+            BALL_IN_DEFENSIVE_HALF = "ball_in_defensive_half"
 
     class Values:
         class Positions(StringEnum):
@@ -77,6 +81,7 @@ class BlackboardKeys:
             ZONE = "zone"
             POS_BALL_VISIBLE = "pos_ball_visible"
             POS_PASS_TARGET = "pos_pass_target"
+            BALL_POSITION = "ball_position"
 
 
 # ----------------------------------------------------------------------------#
@@ -89,16 +94,12 @@ _bb = Blackboard_Manager.get_instance()
 # ----------------------------------ball posetion----------------------------------#
 def team_got_ball_posetion(robot_id: str):
     logger.debug("TEAM got ball posetion")
-
-    _bb.set(f"{robot_id}{BlackboardKeys.Flags.BallMotion.HAS_BALL}", True)
-    _bb.set(
-        f"{BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL}",
-        True,
-    )
-    _bb.set(
-        f"{BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL}",
-        False,
-    )
+    if not _bb.get(BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL):
+        _bb.set(f"{robot_id}{BlackboardKeys.Flags.BallMotion.HAS_BALL}", True)
+        _bb.set(
+            f"{BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL}",
+            True,
+        )
 
 
 def lost_ball_posetion(robot_id: str):
@@ -193,3 +194,8 @@ def new_quadrant(robot_id, new_quadrant):
 
 def new_zone(robot_id, new_zone):
     _bb.set(f"{robot_id}{BlackboardKeys.Values.Positions.ZONE}", new_zone)
+
+
+def set_ball_in_defensive_half(value: bool):
+    """Callback para definir se a bola está no campo de defesa."""
+    _bb.set(BlackboardKeys.Flags.Defense.BALL_IN_DEFENSIVE_HALF, value)

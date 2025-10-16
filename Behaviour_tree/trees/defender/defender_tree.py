@@ -1,128 +1,155 @@
+# Behaviour_tree/trees/defender/defender_tree.py
+import math
+
 import py_trees
 
-from Behaviour_tree.core.blackboard import Blackboard_Manager
-from Behaviour_tree.core.World_State import TeamID
+from Behaviour_tree.core.World_State import World_State
+from Behaviour_tree.helpers.field_helper import FieldHelper
+from Behaviour_tree.helpers.positioning_helper import PositioningHelper  # <-- import
+from Behaviour_tree.robot.bob import Bob
+from utils.pose2D import Pose2D
 
-from ..defender.defender_actions import DefenderActions
-from ..defender.defender_conditions import (
-    Ball_in_defensive_area,
-    Ball_moving_towards_goal,
-    Opponent_has_ball_in_danger_zone,
-    Opponent_in_danger_zone,
-)
+from .defender_conditions import IsBallInDefensiveHalf
+from .defender_strategy_helper import DefenderStrategyHelper
+
+POSITIONAL_TOLERANCE = 150.0
 
 
-class DefenderTree:
-    """
-    Árvore de comportamento para o defensor.
-    """
+class SmartMarking(py_trees.behaviour.Behaviour):
+    BALL_MOVEMENT_THRESHOLD = 50.0  # mm
+    SAFE_DISTANCE = 200.0  # distância mínima da bola em mm
 
-    def __init__(self, robot_id: TeamID):
-        self.robot_id = robot_id
-        self.blackboard = Blackboard_Manager.get_instance()
-        self.defender_actions = DefenderActions(
-            name="DefenderActions", blackboard=self.blackboard
+    def __init__(self, robot: Bob, name: str = "Marcação Inteligente"):
+        super().__init__(name)
+        self.robot = robot
+        self._ws = World_State.get_object()
+        self._last_ball_pos: Pose2D | None = None
+        self._locked_safe_target: Pose2D | None = None
+        self._using_lateral_step: bool = (
+            False  # flag para indicar se está passando pelo desvio
         )
 
-    def create_tree(self) -> py_trees.behaviour.Behaviour:
-        """
-        Cria a árvore de comportamento do defensor.
-        """
+    def update(self) -> py_trees.common.Status:
+        current_robot_pose = self._ws.get_team_robot_pose(self.robot.robot_id.value)
+        if not current_robot_pose:
+            return py_trees.common.Status.FAILURE
 
-        # ---------------------------------------------------------------------#
-        #                          CONDIÇÕES                                   #
-        # ---------------------------------------------------------------------#
+        ball_pos = self._ws.get_ball_position()
+        if not ball_pos:
+            return py_trees.common.Status.FAILURE
 
-        ball_in_defensive_area = Ball_in_defensive_area(name="Ball in Defensive Area")
-        opponent_in_danger_zone = Opponent_in_danger_zone(
-            name="Opponent in Danger Zone"
-        )
-        opponent_has_ball_in_danger_zone = Opponent_has_ball_in_danger_zone(
-            name="Opponent Has Ball in Danger Zone"
-        )
-        ball_moving_towards_goal = Ball_moving_towards_goal(
-            name="Ball Moving Towards Goal"
-        )
+        # Ponto final desejado entre bola e nosso gol
+        final_target = DefenderStrategyHelper.get_aggressive_marking_pose()
+        if not final_target:
+            return py_trees.common.Status.FAILURE
 
-        # ---------------------------------------------------------------------#
-        #                          AÇÕES                                       #
-        # ---------------------------------------------------------------------#
+        # Recalcula desvio lateral se a bola se moveu muito ou desvio não definido
+        if (
+            self._last_ball_pos is None
+            or self._last_ball_pos.distance_to(ball_pos) > self.BALL_MOVEMENT_THRESHOLD
+            or self._locked_safe_target is None
+        ):
 
-        set_defensive_position = py_trees.behaviours.Success(
-            name="Set Defensive Position",
-            action=lambda: self.defender_actions.set_defensive_position(self.robot_id),
-        )
-        intercept_ball = py_trees.behaviours.Success(
-            name="Intercept Ball",
-            action=lambda: self.defender_actions.intercept_ball(self.robot_id),
-        )
+            lateral_target = DefenderStrategyHelper.get_safe_target_pose(
+                current_robot_pose
+            )
 
-        # ---------------------------------------------------------------------#
-        #                          RAMOS                                       #
-        # ---------------------------------------------------------------------#
+            # Garante distância mínima da bola
+            vec_to_ball = Pose2D(
+                lateral_target.x - ball_pos.x, lateral_target.y - ball_pos.y
+            )
+            dist_to_ball = math.hypot(vec_to_ball.x, vec_to_ball.y)
+            if dist_to_ball < self.SAFE_DISTANCE:
+                if dist_to_ball > 1e-3:
+                    scale = self.SAFE_DISTANCE / dist_to_ball
+                    lateral_target.x = int(ball_pos.x + vec_to_ball.x * scale)
+                    lateral_target.y = int(ball_pos.y + vec_to_ball.y * scale)
+                else:
+                    lateral_target.x = int(ball_pos.x + self.SAFE_DISTANCE)
+                    lateral_target.y = int(ball_pos.y)
 
-        # Ramo: Interceptar a bola se ela estiver se movendo em direção ao gol
-        intercept_ball_branch = py_trees.composites.Sequence(
-            name="Intercept Ball Branch",
-            memory=False,
-            children=[ball_moving_towards_goal, intercept_ball],
-        )
+            self._locked_safe_target = lateral_target
+            self._last_ball_pos = Pose2D(ball_pos.x, ball_pos.y)
+            self._using_lateral_step = False
 
-        # Ramo: Bloquear o oponente se ele estiver na zona perigosa com a bola
-        block_opponent_branch = py_trees.composites.Sequence(
-            name="Block Opponent Branch",
-            memory=False,
-            children=[opponent_has_ball_in_danger_zone, set_defensive_position],
-        )
+        # Define o alvo real
+        target_to_move = final_target
 
-        # Ramo: Proteger a área defensiva se a bola estiver na área defensiva
-        protect_area_branch = py_trees.composites.Sequence(
-            name="Protect Area Branch",
-            memory=False,
-            children=[ball_in_defensive_area, set_defensive_position],
+        # Se houver obstáculo, primeiro passa pelo desvio lateral
+        obstacle_in_path = not PositioningHelper.is_between_points_with_obstacle(
+            point=final_target,
+            start=ball_pos,
+            end=final_target,
+            obstacle=ball_pos,
+            tolerance=self.SAFE_DISTANCE,
         )
 
-        # Ramo: Monitorar oponente na zona perigosa
-        monitor_opponent_branch = py_trees.composites.Sequence(
-            name="Monitor Opponent Branch",
-            memory=False,
-            children=[opponent_in_danger_zone, set_defensive_position],
+        if obstacle_in_path and not self._using_lateral_step:
+            # Passo intermediário pelo desvio lateral
+            target_to_move = self._locked_safe_target
+            # Se chegar no lateral, seta flag para seguir para final_target
+            if (
+                current_robot_pose.distance_to(self._locked_safe_target)
+                <= POSITIONAL_TOLERANCE
+            ):
+                self._using_lateral_step = True
+        else:
+            target_to_move = final_target
+
+        # Movimenta ou ajusta ângulo
+        distance_to_target = current_robot_pose.distance_to(target_to_move)
+        if distance_to_target > POSITIONAL_TOLERANCE:
+            self.robot.state.target_position = target_to_move
+            self.robot.state.current_command = "Aproximando da Posição Segura"
+            self.robot.fast_movement()
+        else:
+            angle_to_ball = math.atan2(
+                ball_pos.y - current_robot_pose.y, ball_pos.x - current_robot_pose.x
+            )
+            final_angle = Pose2D.normalize_angle_to_pi(angle_to_ball)
+            self.robot.state.target_position = Pose2D(
+                current_robot_pose.x, current_robot_pose.y, final_angle
+            )
+            self.robot.state.current_command = "Ajustando Ângulo Frente à Bola"
+            error_rad = Pose2D.normalize_angle_to_pi(
+                final_angle - current_robot_pose.theta
+            )
+            ANGLE_TOLERANCE = math.radians(5)
+            if abs(error_rad) < ANGLE_TOLERANCE:
+                self.robot.stop()
+                self.robot.state.current_command = "Ângulo Frente à Bola Ajustado"
+            else:
+                self.robot.rotate()
+
+        return py_trees.common.Status.RUNNING
+
+
+class ReturnToBase(py_trees.behaviour.Behaviour):
+    def __init__(self, robot: Bob, name: str = "Retornar para Base"):
+        super().__init__(name)
+        self.robot = robot
+        self.base_position = DefenderStrategyHelper.get_base_position_by_id(
+            robot.robot_id
         )
 
-        # ---------------------------------------------------------------------#
-        #                          NÓ RAIZ                                     #
-        # ---------------------------------------------------------------------#
-
-        # O nó raiz escolhe entre os ramos de interceptação, bloqueio ou proteção
-        root = py_trees.composites.Selector(
-            name="Defender Root",
-            memory=False,
-            children=[
-                intercept_ball_branch,
-                block_opponent_branch,
-                protect_area_branch,
-                monitor_opponent_branch,
-            ],
-        )
-
-        return root
+    def update(self) -> py_trees.common.Status:
+        self.robot.state.target_position = self.base_position
+        self.robot.state.current_command = "Retornando para a Base"
+        self.robot.fast_movement()
+        return py_trees.common.Status.RUNNING
 
 
-if __name__ == "__main__":
-    import py_trees.display
-
-    robot_id = TeamID.Argenton
-    defender_tree = DefenderTree(robot_id=robot_id)
-
-    tree = defender_tree.create_tree()
-
-    print("\n=== ESTRUTURA EM ASCII ===")
-    print(py_trees.display.unicode_tree(tree))
-
-    try:
-        py_trees.display.render_dot_tree(tree, name="defender_tree")
-        print(
-            "\nArquivo DOT gerado como 'defender_tree.dot' e imagem PNG correspondente."
-        )
-    except Exception as e:
-        print(f"Não foi possível gerar DOT/PNG: {e}")
+def get_defender_tree(robot: Bob) -> py_trees.trees.BehaviourTree:
+    defensive_branch = py_trees.composites.Sequence(
+        "Ramo: Defender",
+        memory=False,
+        children=[IsBallInDefensiveHalf(), SmartMarking(robot)],
+    )
+    base_branch = ReturnToBase(robot)
+    root = py_trees.composites.Selector(
+        "Comportamento do Defensor",
+        memory=False,
+        children=[defensive_branch, base_branch],
+    )
+    root.setup()
+    return py_trees.trees.BehaviourTree(root)

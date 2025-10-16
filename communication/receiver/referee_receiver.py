@@ -32,6 +32,8 @@ class RefereeReceiver(Receiver):
                 data, _ = self.sock.recvfrom(65535)
                 self.latest_raw = data #salva o pacote bruto recebido                                                                                                                                                                                                                                                                                                 
                 self.latest_parsed = self.parser.parse(data) #usa o parser para decodificar os bytes do pacote em um objeto pyhton com campos acessiveis
+                #print(self.latest_parsed)
+                #print(self.latest_raw)
             except Exception as e:
                 print(f"[RefereeReceiver] Erro ao receber pacote: {e}")
 

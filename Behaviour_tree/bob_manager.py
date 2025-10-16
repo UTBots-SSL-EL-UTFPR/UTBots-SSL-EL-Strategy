@@ -1,28 +1,21 @@
 # core/bob_manager.py
 from __future__ import annotations
+
+import math
+from typing import Dict
+
 from Behaviour_tree.helpers.field_helper import FIELD_X_MAX, FIELD_X_MIN, HALF_LEGHT
 from Behaviour_tree.helpers.motion_helper import MotionHelper
 from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from Behaviour_tree.trees.tree import Tree
 from SSL_configuration.configuration import Configuration
-from utils.defines import BALL_RADIUS, FIELD_INVERTED_SIDE, ROBOT_RADIUS
-from utils.pose2D import Pose2D, QuadrantType, RoleType
+from utils.defines import FIELD_INVERTED_SIDE  # BOB_RADIUS,
+from utils.defines import BALL_RADIUS, MIN_PASS_DISTANCE, ROBOT_RADIUS
+from utils.pose2D import Pose2D, QuadrantType, RoleType, ZoneType
 
-from .core.World_State import TeamID, World_State
+from .core.World_State import FoesID, TeamID, World_State
 from .robot.bob import Bob
 
-from typing import Dict
-from utils.pose2D import Pose2D, RoleType, ZoneType, QuadrantType
-from utils.defines import (
-    #BOB_RADIUS,
-    BALL_RADIUS,
-    MIN_PASS_DISTANCE,
-    FIELD_INVERTED_SIDE,
-)
-from .core.World_State import World_State
-from .core.World_State import RobotID
-from SSL_configuration.configuration import Configuration
-import math
 
 class BobManager:
     _instance = None
@@ -49,27 +42,26 @@ class BobManager:
         if not BobManager._instance:
             BobManager._instance = BobManager()
         return BobManager._instance
-    
+
     def _create_bob(self, robot_id):
         """
         Cria uma instância de Bob e associa à sua árvore.
 
         Args:
-            robot_id (RobotID): ID do robô.
+            robot_id (TeamID): ID do robô.
             tree (Tree): Classe da árvore associada.
         """
         bob = Bob(robot_id=robot_id)
         # bob.state.reset()
         self.bobs[robot_id] = bob
-        #self.trees[robot_id] = tree(bob)
+        # self.trees[robot_id] = tree(bob)
 
     def update_all(self):
         self.ball_pos = self.world_state.get_ball_position()
 
         for bob in self.bobs.values():
-            if(bob.state):
+            if bob.state:
                 bob.state.update()
-
 
     def tick_all(self):
         for tree in self.trees.values():
@@ -80,10 +72,10 @@ class BobManager:
 
     def get_tree(self, robot_id):
         return self.trees.get(robot_id)
-    
-    #---------------------------------------#
+
+    # ---------------------------------------#
     #               Posicionamento          #
-    #---------------------------------------#
+    # ---------------------------------------#
 
     def set_kicker_position(self, id: TeamID):
         robot = self.bobs.get(id)
@@ -91,19 +83,21 @@ class BobManager:
             return
         robot.state.role = RoleType.KICKER
 
-        target = Pose2D.align_two(self.ball_pos, Pose2D(2500, 0), 200, True) #TODO fazer gol dinamico (troca de lados)
+        target = Pose2D.align_two(
+            self.ball_pos, Pose2D(2500, 0), 200, True
+        )  # TODO fazer gol dinamico (troca de lados)
         obstacles = self.world_state.get_all_robot_position()
         for obs in obstacles:
             if obs == robot.state.position:
                 obstacles.remove(obs)
-        robot.state.path = robot.find_shortest_path(robot.state.position, target, obstacles, BOB_RADIUS, self.ball_pos, BALL_RADIUS)
+        robot.state.path = robot.find_shortest_path(robot.state.position, target, obstacles, ROBOT_RADIUS, self.ball_pos, BALL_RADIUS)
 
         
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
-    def set_offensive_suport_position(self, id: RobotID):
+    def set_offensive_suport_position(self, id: TeamID):
         """
         Calcula a posição do SUPORTE OFENSIVO de forma determinística, buscando
         o maior espaço com visibilidade tanto do cobrador quanto do gol.
@@ -167,7 +161,7 @@ class BobManager:
         obstacles = [obs for obs in obstacles if obs != robot_pos]
         print(target_pose, robot_pos)
         print(obstacles)
-        robot.state.path = robot.find_shortest_path(robot_pos, target_pose, obstacles, BOB_RADIUS, self.ball_pos, BALL_RADIUS)
+        robot.state.path = robot.find_shortest_path(robot_pos, target_pose, obstacles, ROBOT_RADIUS, self.ball_pos, BALL_RADIUS)
         print("passei_2")
         robot.state.role = RoleType.OFFENSIVE_SUPPORT
         return
@@ -176,9 +170,10 @@ class BobManager:
             robot.state.position,
             target,
             obstacles,
+            ROBOT_RADIUS,
             self.ball_pos,
+            BALL_RADIUS,
         )
-        robot.set_path(new_path)
 
     # ------------------------------------------------------------------------------------------------------------------------------------------------------------------#
     # ------------------------------------------------------------------------------------------------------------------------------------------------------------------#
@@ -238,6 +233,7 @@ class BobManager:
         
         return target_pose
 
+
     def set_goalkeeper_position(self, id: TeamID):
         robot = self.bobs.get(id)
         if robot is None or robot.state is None:
@@ -256,7 +252,7 @@ class BobManager:
         )
         robot.set_path(new_path)
         robot.state.role = RoleType.OFFENSIVE_SUPPORT
-
+    
     def set_goalkeeper_defense_position(self, id: TeamID):
         """Posiciona o goleiro para defender com base na posição atual da bola.
 
@@ -329,7 +325,7 @@ class BobManager:
 
     #---------------------------------------#
     #        Último homem (global)          #
-    #---------------------------------------#
+    # ---------------------------------------#
     def get_last_man(self):
         """
         Retorna informações do robô (aliado ou oponente) que está MAIS PRÓXIMO do nosso gol
@@ -341,7 +337,7 @@ class BobManager:
         Retorno:
             dict com chaves:
                 team: 'ally' | 'foe'
-                id: RobotID | None           (preenchido se ally)
+                id: TeamID | None           (preenchido se ally)
                 index: int | None            (índice na lista de foes, se foe)
                 pos: Pose2D                  (posição do robô)
         """
@@ -380,16 +376,15 @@ class BobManager:
 
         return best_item
 
-    def get_last_man_id(self) -> RobotID | None:
+    def get_last_man_id(self) -> TeamID | None:
         """
-        Retorna o RobotID do "último homem" se ele for do nosso time; caso o último seja oponente,
+        Retorna o TeamID do "último homem" se ele for do nosso time; caso o último seja oponente,
         retorna None. Use get_last_man() para detalhes quando for oponente.
         """
         info = self.get_last_man()
         if info and info["team"] == "ally":
             return info["id"]
         return None
-    
 
     def set_bob_freekick_position(self):
         """
@@ -397,23 +392,23 @@ class BobManager:
         Para bola parada defenciva, podemos ter goleiro cobrador e  2 apoio
         """
         if self.ball_pos.x < self.configuration.max_ball_y_to_goalkeeper_kick: # type: ignore
-            self.set_offensive_suport_position(RobotID.Kamiji)
-            aux = self.bobs.get(RobotID.Kamiji)
+            self.set_offensive_suport_position(TeamID.Kamiji)
+            aux = self.bobs.get(TeamID.Kamiji)
             if not aux or not aux.state:
                 return
             pos = aux.state.path[len(aux.state.path) - 1]
-            self.set_midlle_suport_position(RobotID.Defender, pos) # type: ignore
-            self.set_kicker_position(RobotID.Goalkeeper)
+            self.set_midlle_suport_position(TeamID.Defender, pos) # type: ignore
+            self.set_kicker_position(TeamID.Goalkeeper)
         else:
-            self.set_kicker_position(RobotID.Kamiji)
+            self.set_kicker_position(TeamID.Kamiji)
 
-            self.set_offensive_suport_position(RobotID.Defender)
+            self.set_offensive_suport_position(TeamID.Defender)
             print("tres")
 
-            self.set_goalkeeper_position(RobotID.Goalkeeper)
+            self.set_goalkeeper_position(TeamID.Goalkeeper)
             print("quatro")
 
-        return 
+        return
 
 
 if __name__ == "__main__":

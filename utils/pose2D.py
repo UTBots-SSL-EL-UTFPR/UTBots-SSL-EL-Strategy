@@ -3,6 +3,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Set
 
+import numpy as np
+
 from .defines import FIELD_INVERTED_SIDE
 
 _QUADRANT_INVERT_MAP = {
@@ -181,10 +183,10 @@ class ZoneType(Enum):
 
 
 class Pose2D:
-    def __init__(self, x=0, y=0, theta=0):
+    def __init__(self, x=0, y=0, theta: float | int = 0):
         self.x = x if x is not None else 0
         self.y = y if y is not None else 0
-        self.theta = theta if theta is not None else 0
+        self.theta: int | float = theta if theta is not None else 0
 
     # ---------------------------------------------------------------------------------------#
     #                                       SOBRECARGAS                                     #
@@ -311,3 +313,6 @@ class Pose2D:
         É mais rápido que distance_to() pois evita a raiz quadrada.
         """
         return (self.x - other.x) ** 2 + (self.y - other.y) ** 2
+
+    def to_numpy(self):
+        return np.array([self.x, self.y])
