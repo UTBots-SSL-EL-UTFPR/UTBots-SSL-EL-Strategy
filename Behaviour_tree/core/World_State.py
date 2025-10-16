@@ -29,15 +29,6 @@ class TeamID(Enum):
     Argenton = 1
     SabKawa = 2
 
-
-class FoesID(Enum):
-    TauraBots = 0
-    GralhaBots = 1
-    Cerberus = 2
-    Argenton = 1
-    SabKawa = 2
-
-
 class FoesID(Enum):
     TauraBots = 0
     GralhaBots = 1

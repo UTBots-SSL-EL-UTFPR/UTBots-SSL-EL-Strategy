@@ -49,7 +49,6 @@ class Bob_State:
     # ---------------------------------------------------------------------------------------#
 
     def update(self):
-        print(self.target_position)
         self.is_ball_with_robot()
         self.is_robot_stuck()
         self.target_reached()
@@ -123,27 +122,6 @@ class Bob_State:
         )
         event_callbacks.on_ball_reachable(self.robot_id.name, reachable)
 
-    # ---------------------------------------------------------------------------------------#
-    #                                         Setters                                       #
-    # ---------------------------------------------------------------------------------------#
-    def set_position(self, position: Pose2D):
-        """Define manualmente a posição e recalcula quadrante e role."""
-        self.position = position
-        self.quadrant_index = self.position.quadrant
-
-    def set_velocity(self, velocity: Pose2D):
-        """Atualiza o vetor de velocidade (vx, vy)."""
-        self.velocity = velocity
-
-    def set_orientation(self, angle: float):
-        """Define a orientação atual do robô."""
-        self.orientation = angle
-
-    def set_target_position(self, position: Pose2D):
-        """Define uma posição alvo (goal) para planejamento de movimento."""
-        event_callbacks.target_reset(self.robot_id.name)
-        self.target_position = position
-
     def reset(self):
         """Restaura o estado para valores padrão (limpa alvo, role e quadrante)."""
         self.position = Pose2D()
@@ -169,8 +147,3 @@ class Bob_State:
     # =================== Getters simples para agregador ===================
     def get_position(self) -> Pose2D:
         return self.position
-
-    def get_velocity(self) -> Pose2D:
-        return self.velocity
-
-    # =================== Internos de classificação ===================

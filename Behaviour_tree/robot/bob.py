@@ -54,10 +54,8 @@ class Bob:
     def __init__(self, robot_id: TeamID):
         self._bb = Blackboard_Manager.get_instance()
         self.robot_id = robot_id
-        self.config = Bob_Config(robot_id)
         self.state: Bob_State = Bob_State(robot_id)
         self._has_ball = False
-        self.foes: list[FoesState]  # TODO
         self.cmd_builder = CommandBuilder()
         self.cmd_sender = CommandSenderSim()
         self.cmd: bytes | None = None
@@ -70,11 +68,6 @@ class Bob:
             "prev_err": 0.0,
             "prev_time": None,
         }
-        # Limite de velocidade lenta (m/s) quando acionado via set_slow_speed
-        self._slow_speed: float | None = None
-
-    def move(self, vel_x: float, vel_y: float) -> bool:
-        return True
 
     def update(self):
         if self.state:
@@ -105,7 +98,7 @@ class Bob:
         vx_s, vy_s, w = self.compute_world_velocity(
             self.state.position, self.state.target_position, mode="precision_movement"
         )
-        
+
         q = np.array([[w], [vx_s], [vy_s]], dtype=float)
 
         # velocidade individual de cada roda
@@ -178,74 +171,23 @@ class Bob:
         self.cmd = self.cmd_builder.build()
         self.cmd_sender.send(self.cmd)
 
-    def set_slow_speed(self, speed_mps: float) -> None:
-        """Define um limite de velocidade linear (m/s) para movimentos lentos.
-
-        Esse valor é usado por slow_movement(); não afeta fast_movement().
-        """
-        try:
-            self._slow_speed = float(speed_mps)
-        except Exception:
-            self._slow_speed = None
-
-    def slow_movement(self):
-        """Movimento semelhante ao fast_movement porém com limite de velocidade reduzido.
-
-        Usa o limite configurado via set_slow_speed(); se não houver, usa 0.1 m/s.
-        """
-        if self.state is None or self.state.target_position is None:
-            return
-
-        vmax = self._slow_speed if (self._slow_speed is not None) else 0.1
-        # Mantém orientação atual, limitando apenas velocidade linear
-        vx_s, vy_s, w = self.compute_world_velocity(
-            self.state.position,
-            self.state.target_position,
-            mode="maintain_orientation",
-            vmax=vmax,
-        )
-        q = np.array([[w], [vx_s], [vy_s]], dtype=float)
-
-        # velocidade individual de cada roda
-        u = self.motorVel(q, self.state.position.theta)
-        u = np.clip(u, -120.0, 120.0)
-
-        # envia um pacote
-        self.cmd_builder.command_robots(
-            id=self.robot_id.value,
-            wheelsspeed=True,
-            wheel1=-u[0].item(),
-            wheel2=-u[1].item(),
-            wheel3=-u[2].item(),
-            wheel4=-u[3].item(),
-        )
-        self.cmd = self.cmd_builder.build()
-        self.cmd_sender.send(self.cmd)
-
     def stop(self):
         """Interrompe qualquer movimento do robô."""
-        self.state.target_velocity = 0.0
-        self.state.angular_velocity = 0.0
-        self.state.target_position = self.state.position  # Mantém posição atual
+        self.state.path.clear()
+        self.set_new_target(self.state.position)
         self.state.current_command = "Parado"
-        
+
     def kick_ball(self, ballSpeed: float = 3.0) -> bool:
-
-        # 3 m/s é a velocidade maxima permitida para a bola no EL, não utilize valores maiores!!!!!
-
         """
-        a bola tem q estar encostada no chutador na frente do robo, o chutador 
-        no simulador nao se projeta pra frente, ele so pisca em vermelho como 
+        a bola tem q estar encostada no chutador na frente do robo, o chutador
+        no simulador nao se projeta pra frente, ele so pisca em vermelho como
         indicativo visual de q foi acionado.
         """
 
         if self.state is None:
             return False
-        
-        self.cmd_builder.command_robots(
-            id = self.robot_id.value,
-            kick_x = ballSpeed
-        )
+
+        self.cmd_builder.command_robots(id=self.robot_id.value, kick_x=ballSpeed)
 
         self.cmd = self.cmd_builder.build()
         self.cmd_sender.send(self.cmd)
@@ -450,10 +392,6 @@ class Bob:
 
     # ===================================================#
     # ==== metodos auxiliares para os metodos do BOB ====#
-
-    def go_to_ball(self, ball_position: Pose2D) -> bool:
-        return self.move(ball_position.x, ball_position.y)
-
     def shoot_to_goal(self, goal_position: Pose2D) -> bool:
         if self.state is None:
             return False
@@ -466,12 +404,6 @@ class Bob:
         self.rotate()
         return self.kick_ball()
 
-    def mark_opponent(self, opponent_pos: Pose2D, own_goal: Pose2D) -> bool:
-        # Posição entre oponente e o gol (interceptação simples)
-        intercept_x = (opponent_pos.x + own_goal.x) / 2
-        intercept_y = (opponent_pos.y + own_goal.y) / 2
-        return self.move(intercept_x, intercept_y)
-
     def pass_to_teammate(self, teammate_pos: Pose2D) -> bool:
         if self.state is None:
             return False
@@ -481,32 +413,3 @@ class Bob:
         self.state.target_theta = math.atan2(dy, dx)
         self.rotate()
         return self.kick_ball()
-
-    def dribble_towards(self, target_pos: Pose2D) -> bool:
-        if not self._has_ball:
-            return False
-        return self.move(target_pos.x, target_pos.y)
-
-    def is_visible(self):
-        # TODO
-        pass
-
-    def valid_range(
-        self,
-        position1: tuple[float, float],
-        position2: tuple[float, float],
-        limit: tuple[float, float],
-    ):
-        distance = utilsp.get_distance(position1, position2)
-        if distance > limit[LOWER] and distance < limit[UPPER]:
-            return True
-        return False
-
-    def distance_nearest_foe(self):
-        if self.state is None:
-            return False
-        distances = []
-        for foe in self.foes:
-            distances.append(self.state.position.distance_to(foe.position))
-        self.nearest_foe = utilsp.min(distances)
-        return self.nearest_foe

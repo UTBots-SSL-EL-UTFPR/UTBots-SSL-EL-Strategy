@@ -111,12 +111,10 @@ class ValidLine(py_trees.behaviour.Behaviour):
 
         key = f"{self.robot.robot_id.name}{BlackboardKeys.Flags.TeamContext.VALID_LINE}"
         if _bb.get(key):
-            logger.debug(f"[{self.name}] Sucesso: Flag '{key}' é True na Blackboard.")
+            logger.debug(f"{self.name} Sucesso: Flag '{key}' é True na Blackboard.")
             return py_trees.common.Status.SUCCESS
         else:
-            logger.debug(
-                f"[{self.name}] Falhou: Flag '{key}' não é True ou não existe."
-            )
+            logger.debug(f"{self.name} Falhou: Flag '{key}' não é True ou não existe.")
             return py_trees.common.Status.FAILURE
 
 
@@ -228,15 +226,15 @@ class Is_in_prohibited_area(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
-        # Inicializações que eu vou precisar
         ball_pose = _ws.get_ball_position()
 
-        # Verifica se o robô está na área do goleiro ou se a bola está, daí ele nem tenta chegar perto
         if _pos_helper.outside_walls(
             ball_pose,
             2 * ROBOT_RADIUS or _pos_helper.is_in_goalkeeper_area(ball_pose, 0),
         ):
+            logger.debug(f"{self.name} - FAILURE")
             return py_trees.common.Status.FAILURE
+        logger.debug(f"{self.name} - SUCCESS")
         return py_trees.common.Status.SUCCESS
 
 
@@ -251,15 +249,16 @@ class Goal_visibility(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
-        # Inicializações
         obstacles_pose = _ws.get_all_robot_position()
-        kicker_id = self.kicker.robot_id.value  # Transforma de enum para int
-        kicker_pose = _ws.get_team_robot_pose(kicker_id)
         goal_center = _pos_helper.get_goal_center()
 
         # Cálculo do ângulo máximo de visibilidade do gol
-        if vis_gol.max_range_of_visibility(obstacles_pose, kicker_pose, goal_center):
+        if vis_gol.max_range_of_visibility(
+            obstacles_pose, self.kicker.state.position, goal_center
+        ):
+            logger.debug(f"{self.name} - SUCCESS")
             return py_trees.common.Status.SUCCESS
+        logger.debug(f"{self.name} - FAILURE")
         return py_trees.common.Status.FAILURE
 
 
@@ -278,11 +277,13 @@ class Goal_distance(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
-        kicker_id = self.kicker.robot_id.value
-        kicker_pose = _ws.get_team_robot_pose(kicker_id)
         goal_center = _pos_helper.get_goal_center()
 
-        distance_to_goal = kicker_pose.distance_to(Pose2D(goal_center.x, goal_center.y))
+        distance_to_goal = self.kicker.state.position.distance_to(
+            Pose2D(goal_center.x, goal_center.y)
+        )
         if distance_to_goal <= MAX_SHOOT_DISTANCE:
+            logger.debug(f"{self.name} - SUCCESS")
             return py_trees.common.Status.SUCCESS
+        logger.debug(f"{self.name} - FAILURE")
         return py_trees.common.Status.FAILURE

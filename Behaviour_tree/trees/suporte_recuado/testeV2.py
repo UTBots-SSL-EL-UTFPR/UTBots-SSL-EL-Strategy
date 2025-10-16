@@ -98,7 +98,7 @@ if __name__ == "__main__":
     stop.populate()
 
     create_scenario(stop)
-    update_delay = 0.001
+    update_delay = 0.5
     tPrint = time.time()
     tUpdate = time.time()
     while True:
