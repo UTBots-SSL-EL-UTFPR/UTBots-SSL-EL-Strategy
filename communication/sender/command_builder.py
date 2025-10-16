@@ -8,17 +8,17 @@ class CommandBuilder:
         self.packet = grSim_Packet_pb2.grSim_Packet()   # type: ignore
         self.conf = Configuration.getObject()
         self.packet.commands.isteamyellow = (self.conf.team_collor == "yellow")
-        self.ser = serial.Serial('/dev/ttyUSB0', 115200, timeout=1)  
-        self.ser.flush()
+        #self.ser = serial.Serial('/dev/ttyUSB0', 115200, timeout=1)  
+        #self.ser.flush()
 
-    def enviar_velocidades(self, id:int, u:list[float]):
-        """
-        u: lista com 4 velocidades [w1, w2, w3, w4]
-        """
-        # monta mensagem no formato: "w1,w2,w3,w4\n"
-        msg = f"{int(id)},{int(u[0])},{int(u[1])},{int(u[2])},{int(u[3])}\n"
-        self.ser.write(msg.encode())
-        print("Enviado:", msg.strip())
+    # def enviar_velocidades(self, id:int, u:list[float]):
+    #     """
+    #     u: lista com 4 velocidades [w1, w2, w3, w4]
+    #     """
+    #     # monta mensagem no formato: "w1,w2,w3,w4\n"
+    #     msg = f"{int(id)},{int(u[0])},{int(u[1])},{int(u[2])},{int(u[3])}\n"
+    #     self.ser.write(msg.encode())
+    #     print("Enviado:", msg.strip())
 
     def command_robots(
                 self, id: int, vx: float = 0.0, vy: float = 0.0, w: float = 0.0,
@@ -41,7 +41,7 @@ class CommandBuilder:
         cmd.wheel2      = wheel2
         cmd.wheel3      = wheel3
         cmd.wheel4      = wheel4
-        self.enviar_velocidades(id, [wheel1, wheel2, wheel3, wheel4])
+        #self.enviar_velocidades(id, [wheel1, wheel2, wheel3, wheel4])
 
     def replace_robots(self, x: float, y: float, dir: float, id: int, yellowTeam: bool, turnon: bool):
         

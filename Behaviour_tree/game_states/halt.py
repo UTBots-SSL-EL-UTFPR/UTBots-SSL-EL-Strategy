@@ -6,7 +6,7 @@ class HaltBehaviour(Behaviour):
 
     def on_enter(self, prev_state: str | None) -> None:
         # parar tudo: sem movimento, sem chute
-        self.permits.update({"move": False, "orient": False, "kick": False, "place_ball_robot": None})
+        self.permits.update({"move": False, "orient": False, "kick": False})
         super().on_enter(prev_state)
 
     def update(self, dt: float = 0.0) -> None:

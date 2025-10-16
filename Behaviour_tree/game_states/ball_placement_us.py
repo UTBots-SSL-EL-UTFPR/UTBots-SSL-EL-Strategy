@@ -6,7 +6,7 @@ class BallPlacementUsBehaviour(Behaviour):
 
     def on_enter(self, prev_state: str | None) -> None:
         # so um robo (futuro: definir pelo blackboard) podera tocar a bola
-        self.permits.update({"move": True, "orient": True, "kick": False, "place_ball_robot": None})
+        self.permits.update({"move": True, "orient": True, "kick": False})
         super().on_enter(prev_state)
 
     def update(self, dt: float = 0.0) -> None:

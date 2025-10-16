@@ -6,7 +6,7 @@ class RunningBehaviour(Behaviour):
 
     def on_enter(self, prev_state: str | None) -> None:
         # liberar arvore completa, libera tudo
-        self.permits.update({"move": True, "orient": True, "kick": True, "place_ball_robot": None})
+        self.permits.update({"move": True, "orient": True, "kick": True})
         super().on_enter(prev_state)
 
     def update(self, dt: float = 0.0) -> None:

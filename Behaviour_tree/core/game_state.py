@@ -68,27 +68,37 @@ class RefereeAdapter:
         if referee_msg is None:
             return GameState.UNKNOWN
 
-        # extrai nome do comando 
-        #dar atencao aqui pq nao tenho ctz de como vem esse comando ainda
+        # extrai nome do comando (enum protobuf pode vir como int)
         cmd_name = None
         try:
             cmd = getattr(referee_msg, "command", None)
-            if hasattr(cmd, "name"):
+            if hasattr(cmd, "name"):              # raro: enum como objeto
                 cmd_name = cmd.name
-            elif isinstance(cmd, str):
+            elif isinstance(cmd, str):            # raro: já veio string
                 cmd_name = cmd
+            elif isinstance(cmd, int):            # comum: enum como int
+                # 1) tenta enum aninhado Referee.Command
+                try:
+                    enum_cls = type(referee_msg).Command
+                    cmd_name = enum_cls.Name(cmd)
+                except Exception:
+                    # 2) fallback importando o módulo gerado
+                    from communication.generated import ssl_gc_referee_message_pb2 as referee_pb
+                    cmd_name = referee_pb.Referee.Command.Name(cmd)
             else:
                 cmd_name = getattr(referee_msg, "name", None)
         except Exception:
             cmd_name = None
-
         if not cmd_name:
             print("NAO ACHOU CMD_NAME")
-            return GameState.STOP  # seguro
+            return GameState.HALT  # seguro
 
         name = str(cmd_name).upper()
 
-        # comandos globais (pros 2 times é igaul)
+        #print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+        #print(name)
+
+        # Comandos globais
         if "HALT" in name:
             return GameState.HALT
         if "STOP" in name:
@@ -96,24 +106,20 @@ class RefereeAdapter:
         if "NORMAL_START" in name or "FORCE_START" in name:
             return GameState.RUNNING
 
-        # decidir US/THEM por cor
+        # Determinar se é o nosso time
         us = self._is_us_color(name)
 
-        # kickoff
+        # Kickoff (preparação)
         if "PREPARE_KICKOFF" in name:
             if us is True:
                 return GameState.READY_KICKOFF_US
             if us is False:
                 return GameState.READY_KICKOFF_THEM
             print("NAO DEU PRA INFERIR QUAL TIME SOMOS (game_state.py kickoff)")
-            return GameState.STOP  # se não der pra inferir, joga seguro
+            return GameState.STOP
 
-        # free kick (direct/indirect)
-        if (
-            "PREPARE_DIRECT_FREE" in name
-            or "PREPARE_INDIRECT_FREE" in name
-            or "PREPARE_FREE_KICK" in name
-        ):
+        # Free kick (direct/indirect)
+        if "DIRECT_FREE_" in name or "INDIRECT_FREE_" in name:
             if us is True:
                 return GameState.READY_FREEKICK_US
             if us is False:
@@ -121,8 +127,8 @@ class RefereeAdapter:
             print("NAO DEU PRA INFERIR QUAL TIME SOMOS (game_state.py freekick)")
             return GameState.STOP
 
-        # penalty
-        if "PREPARE_PENALTY" in name or ("PENALTY" in name and "PREPARE" in name):
+        # Penalty (preparação)
+        if "PREPARE_PENALTY" in name:
             if us is True:
                 return GameState.READY_PENALTY_US
             if us is False:
@@ -130,8 +136,8 @@ class RefereeAdapter:
             print("NAO DEU PRA INFERIR QUAL TIME SOMOS (game_state.py penalty)")
             return GameState.STOP
 
-        # ball placement
-        if "BALL_PLACEMENT" in name or "PLACEMENT" in name:
+        # Ball placement
+        if "BALL_PLACEMENT" in name:
             if us is True:
                 return GameState.BALL_PLACEMENT_US
             if us is False:
@@ -139,5 +145,5 @@ class RefereeAdapter:
             print("NAO DEU PRA INFERIR QUAL TIME SOMOS (game_state.py ballPlacement)")
             return GameState.STOP
 
-        # default seguro, se nao sabe onde ta, fica em stop
+        # Default seguro
         return GameState.STOP

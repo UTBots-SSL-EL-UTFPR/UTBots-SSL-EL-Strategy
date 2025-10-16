@@ -27,7 +27,7 @@ class Behaviour(ABC):
         self.bb.set("gc_state", self.state_name)
         self.bb.set("gc_can_move", bool(self.permits.get("move", False)))
         self.bb.set("gc_can_kick", bool(self.permits.get("kick", False)))
-        self.bb.set("gc_place_ball_robot", self.permits.get("place_ball_robot"))
+        #self.bb.set("gc_place_ball_robot", self.permits.get("place_ball_robot"))
 
     def on_enter(self, prev_state: str | None) -> None:
         """chamado quando este estado se torna ativo"""

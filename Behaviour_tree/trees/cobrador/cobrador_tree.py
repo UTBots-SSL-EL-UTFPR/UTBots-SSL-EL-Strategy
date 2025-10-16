@@ -7,7 +7,7 @@ from Behaviour_tree import helpers as hp
 from Behaviour_tree.core.World_State import World_State
 from Behaviour_tree.robot.bob import Bob
 
-from Behaviour_tree.trees.suporte_recuado import get_pivot_tree as pivot_tree
+from Behaviour_tree.trees.suporte_recuado import get_pivo_tree as pivot_tree
 
 
 logger = logging.getLogger(__name__)

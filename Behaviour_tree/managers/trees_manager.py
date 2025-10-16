@@ -87,7 +87,7 @@ class TreesManager(BaseManager):
             dt (float): delta de tempo desde o ultimo frame, se aplicar logica temporal
 
         """
-
+        #print(self.behaviour)
         # 1) le referee do World_State
         ref = self.ws.get_referee_data()
 
@@ -107,13 +107,15 @@ class TreesManager(BaseManager):
             # trocar estado e behaviour
             self.current_state = next_state
             self.behaviour = self._make_behaviour(next_state)
-        if self.behaviour:
-            self.behaviour.on_enter(prev_state=prev.name.lower())
-        self._log_state_change(prev=prev, nxt=next_state)
+            if self.behaviour:
+                self.behaviour.on_enter(prev_state=prev.name.lower())
+            self._log_state_change(prev=prev, nxt=next_state)
 
         # aplicar politica do estado
         if self.behaviour:
             self.behaviour.update(dt)
+
+        #print(self.current_state)
 
     # -------- Internals -------- #
     def _log_state_change(self, prev: Optional[GameState], nxt: GameState) -> None:
@@ -121,6 +123,7 @@ class TreesManager(BaseManager):
             if prev is None:
                 print(f"[TreesManager] START in state: {nxt.name}")
             else:
+                print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
                 print(f"[TreesManager] STATE CHANGE: {prev.name} -> {nxt.name}")
             self._last_logged_state = nxt
 

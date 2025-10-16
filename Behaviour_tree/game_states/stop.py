@@ -7,7 +7,7 @@ class StopBehaviour(Behaviour):
 
     def on_enter(self, prev_state: str | None) -> None:
         # permitir apenas posicionamento/orientacao leve; chute bloqueado
-        self.permits.update({"move": True, "orient": True, "kick": False, "place_ball_robot": None})
+        self.permits.update({"move": True, "orient": True, "kick": False})
         super().on_enter(prev_state)
 
     def update(self, dt: float = 0.0) -> None:

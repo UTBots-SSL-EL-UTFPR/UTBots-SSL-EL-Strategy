@@ -43,6 +43,23 @@ class Blackboard_Manager:
                 except KeyError:
                     pass
 
+    def dump(self) -> None:
+        """
+        Mostra todas as chaves e valores armazenados no blackboard global.
+        Útil para depuração e inspeção durante execução.
+        """
+        print("======= BLACKBOARD DUMP =======")
+        try:
+            storage = getattr(self._bb, "storage", getattr(self._bb, "_storage", {}))
+            if not storage:
+                print("(vazio)")
+                return
+            for k, v in storage.items():
+                print(f"{k} = {v}")
+        except Exception as e:
+            print(f"erro ao acessar storage do blackboard: {e}")
+
+
 
 if __name__ == "__main__":
     bb=Blackboard_Manager.get_instance()
