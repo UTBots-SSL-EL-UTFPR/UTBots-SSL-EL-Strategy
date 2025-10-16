@@ -11,23 +11,16 @@ from communication.receiver.vision_receiver import VisionReceiver
 from SSL_configuration.configuration import Configuration
 from utils.pose2D import Pose2D
 
-from communication.generated import ssl_vision_wrapper_pb2 as vision_pb
-from communication.parsers.referee_parser import RefereeParser
-from communication.parsers.vision_parser import VisionParser
-from communication.receiver.referee_receiver import RefereeReceiver
-from communication.receiver.vision_receiver import VisionReceiver
-from SSL_configuration.configuration import Configuration
-from utils.pose2D import Pose2D
-
-
 # =====================================================
 # Enum de IDs de robôs
 # =====================================================
+
 
 class TeamID(Enum):
     Kamiji = 0
     Argenton = 1
     SabKawa = 2
+
 
 class FoesID(Enum):
     TauraBots = 0
@@ -58,12 +51,12 @@ class World_State:
         self._robot_positions = {"blue": {}, "yellow": {}}
         self._robot_velocities = {"blue": {}, "yellow": {}}
         self._robot_orientations = {"blue": {}, "yellow": {}}
-        self._ball_position: tuple["float", "float"] = (0, 0)
+        self._ball_position: tuple["float", "float"] = (-9999, 9999)
         self.last_camera_frames = {}
 
         self._initialized = True
 
-        self._ball_velocity: tuple[float, float] = (0, 0)
+        self._ball_velocity: tuple[float, float] = (-9999, 9999)
 
     @staticmethod
     def get_object():
@@ -107,18 +100,14 @@ class World_State:
             "t_capture": t_capture,
             "t_sent": t_sent,
         }
-
-        # Robôs
-        robots_blue = {r["robot_id"]: r for r in detection.get("robots_blue", [])}
-        robots_yellow = {r["robot_id"]: r for r in detection.get("robots_yellow", [])}
-
         # Bola
         balls = detection.get("balls", [])
         if balls:
             self._ball_position = (balls[0]["x"], balls[0]["y"])
             self._ball_velocity = (balls[0].get("vx", 0.0), balls[0].get("vy", 0.0))
-
-
+        else:
+            self._ball_position = (-9999, 9999)
+            self._ball_velocity = (-9999, 9999)
         for bot in detection.get("robots_blue", []):
             rid = bot["robot_id"]
             self._robot_positions["blue"][rid] = (bot.get("x", 0.0), bot.get("y", 0.0))
@@ -148,8 +137,11 @@ class World_State:
 
     def get_ball_position(self):
         position = self._ball_position
+        if self._ball_position[0] == -9999:
+            pass
+        print(self._ball_position)
         return Pose2D(int(position[0]), int(position[1]))
-    
+
     def get_ball_velocity(self) -> Pose2D:
         """Retorna a velocidade atual da bola como um objeto Pose2D (vx, vy)."""
         velocity = self._ball_velocity

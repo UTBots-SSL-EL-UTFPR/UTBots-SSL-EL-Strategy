@@ -56,7 +56,8 @@ class Bob_State:
         self.is_ball_reachable()
 
     def is_ball_with_robot(self):
-        if self.has_ball != self.check_ball_possession():
+        got_ball = self.check_ball_possession()
+        if self.has_ball != got_ball:
             if self.has_ball:
                 print(self.robot_id)
                 event_callbacks.lost_ball_posetion(self.robot_id.name)
