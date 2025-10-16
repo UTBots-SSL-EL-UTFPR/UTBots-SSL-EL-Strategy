@@ -66,7 +66,7 @@ class CommandBuilder:
 
     def build(self) -> bytes:
         self.packet.commands.timestamp = time.time()    # preenche o campo obrigatório 'timestamp'
-        data = self.packet.SerializeToString()
+        data = self.packet.SerializeToString(self.packet)
         self.packet = grSim_Packet_pb2.grSim_Packet() # type: ignore
         self.packet.commands.isteamyellow = (self.conf.team_collor == "yellow")
 

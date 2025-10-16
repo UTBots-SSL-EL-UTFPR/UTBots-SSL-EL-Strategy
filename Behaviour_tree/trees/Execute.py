@@ -18,7 +18,7 @@ from .goalkeeper.goalkeeper_tree import get_goalkeeper_tree
 from .ofensive_sup.offensive_suport_tree import get_off_sup_tree
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.ERROR,
     format="%(asctime)s | %(name)-12s | %(levelname)-8s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
