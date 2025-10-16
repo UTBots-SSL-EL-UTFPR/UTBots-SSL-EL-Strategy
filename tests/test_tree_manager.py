@@ -20,4 +20,6 @@ if __name__ == "__main__":
     while True:
         ws.update()
         trees_manager.update()
-        bb.dump()
+        gc_state = (bb.get("gc_state") or "stop").lower()
+        print(gc_state)
+        #bb.dump()

@@ -89,11 +89,51 @@ if __name__ == "__main__":
                 bob.update()
             tUpdate = time.time()
             goalkeeper_tree.tick()
-            if wd.get_ball_position().x * FieldHelper.get_enemy_goal_center().x > 0:
-                # bola nossa
-                pivo_argenton_tree.tick()
-                offSup_kamiji_tree.tick()
+
+            """
+            ATE AQUI TAVA DO JEITO Q VC DEIXOU O EXECUTE.PY ARGENTON, 
+            DAQUI PRA FRENTE EU VOU SO DEIXAR PRONTO TODOS OS ESTADOS PRA VC
+            COLOCAR AS PLAYS, VC CONHECE ELAS MELHOR DOQ EU
+            """
+            gc_state = (_bb.get("gc_state") or "stop").lower()
+
+            # decide a play de acordo com o estado do referee q ta escrito no blackboard
+            if gc_state == "halt":
+                #a play do halt aqi
+                pass
+
+            elif gc_state == "stop":
+                #a play do stop aqui
+                pass
+
+            elif gc_state in ("ready_kickoff_us"):
+                #play de cobrar o kickoff nosso (kickoff é o ponta pe inicial no inicio do tempo)
+                pass
+
+            elif gc_state in ("ready_kickoff_them"):
+                #play dos adversarios cobrando o kickoff deles (pode ser so o nosso stop msm)
+                pass
+
+            elif gc_state in ("ready_freekick_us",):
+                #play da gente cobrando freekick
+                pass
+
+            elif gc_state in ("ready_freekick_them",):
+                #eles cobrando free kick (n sei se tem barreira feita, mas se tiver vai ser nesse estado)
+                pass
+            elif gc_state == "ready_penalty_us":
+                #penalti nosso
+                pass
+            elif gc_state == "ready_penalty_them":
+                #penalti deles
+                pass
+            elif gc_state in ("ball_placement_us", "ball_placement_them"):
+                #esse aqui nem tem na SSL-EL, mas ta no livro de regras ent deixa com pass aqui msm
+                pass
+            elif gc_state == "running":
+                #AQUI É O JOGO RODANDO NORMAL, A PLAY DE NOS JOGANDO BOLA TEM Q SER NO ESTADO RUNNING
+                pass
+
             else:
-                defensor_argenton_tree.tick()
-                pivo_kamiji_tree.tick()
-                # bola deles
+                #no else eu colocaria no stop so por seguranca
+                pass
