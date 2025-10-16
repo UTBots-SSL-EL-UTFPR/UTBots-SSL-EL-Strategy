@@ -10,9 +10,6 @@ from .PlayBase import PlayBase, py_trees
 
 
 class PreDefensePlay(PlayBase):
-    def __init__(self, *args, **kwargs) -> None:
-        super.__init__(*args, **kwargs)
-
     def populate(self):
         pivo = get_pivo_tree(PreDefensePlay.Kamiji)
         defense_aux = get_auxiliary_defender_tree(PreDefensePlay.Argenton)

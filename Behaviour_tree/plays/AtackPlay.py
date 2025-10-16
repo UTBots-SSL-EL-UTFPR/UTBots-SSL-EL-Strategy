@@ -8,9 +8,6 @@ from .PlayBase import PlayBase, py_trees
 
 
 class AtackPlay(PlayBase):
-    def __init__(self, *args, **kwargs) -> None:
-        super.__init__(*args, **kwargs)
-
     def populate(self):
         pivo = get_pivo_tree(AtackPlay.Kamiji)
         off_sup = get_off_sup_tree(AtackPlay.Argenton)

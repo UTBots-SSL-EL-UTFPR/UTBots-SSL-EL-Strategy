@@ -73,7 +73,7 @@ def prints_e_logs(robot: Bob, others: list[Bob]):
     print("=" * 50)
 
 
-# EXECUTAR - # python3.10 -m Behaviour_tree.trees.ofensive_sup.test_off_sup
+# EXECUTAR - python3.10 -m Behaviour_tree.trees.suporte_recuado.testeV2
 if __name__ == "__main__":
     bob_state = BobManager.get_object()
     wd = World_State.get_object()
@@ -87,13 +87,24 @@ if __name__ == "__main__":
     penaltyteamplay = PenaltyTeamPlay.PenaltyTaeamPlay()
     predefense = PreDefense.PreDefensePlay()
     stop = Stop.StopPlay()
+
+    atackplay.populate()
+    cobrarfalta.populate()
+    defenseplay.populate()
+    halt.populate()
+    penaltydefenseplay.populate()
+    penaltyteamplay.populate()
+    predefense.populate()
+    stop.populate()
+
     create_scenario(stop)
     update_delay = 0.001
-    print_delay = 0.5
     tPrint = time.time()
     tUpdate = time.time()
     while True:
+        atackplay.update_robots()
+        wd.update()
+
         if time.time() >= update_delay + tUpdate:
-            wd.update()
             atackplay.update()
             tUpdate = time.time()

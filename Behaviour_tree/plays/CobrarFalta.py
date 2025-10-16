@@ -10,9 +10,6 @@ from .PlayBase import PlayBase, py_trees
 
 
 class CobrarFalta(PlayBase):
-    def __init__(self, *args, **kwargs) -> None:
-        super.__init__(*args, **kwargs)
-
     def populate(self):
         wd = World_State.get_object()
         ball_X = wd.get_ball_position().x

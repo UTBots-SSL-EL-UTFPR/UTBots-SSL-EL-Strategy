@@ -7,9 +7,6 @@ from .PlayBase import PlayBase, py_trees
 
 
 class PenaltiDefensePlay(PlayBase):
-    def __init__(self, *args, **kwargs) -> None:
-        super.__init__(*args, **kwargs)
-
     def populate(self):
         fora1 = get_expulso_tree(PenaltiDefensePlay.Kamiji)
         fora2 = get_expulso_tree(PenaltiDefensePlay.Argenton)

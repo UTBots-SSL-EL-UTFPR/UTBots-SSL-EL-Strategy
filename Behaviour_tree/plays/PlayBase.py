@@ -15,8 +15,7 @@ class PlayBase(ABC):
     foesManager = FoesManager()
 
     def __init__(self) -> None:
-        self.trees: List[py_trees.trees.BehaviourTree]
-        super().__init__()
+        self.trees: List[py_trees.trees.BehaviourTree] = []
 
     @abstractmethod
     def populate():
@@ -25,6 +24,13 @@ class PlayBase(ABC):
     def update(self):
         for tree in self.trees:
             tree.tick()
+
+    @classmethod
+    def update_robots(cls):
+        cls.Kamiji.update()
+        cls.Argenton.update()
+        cls.SabKawa.update()
+        cls.foesManager.update()
 
     def reset(self):
         self.Kamiji.state.reset()

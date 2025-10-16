@@ -6,9 +6,6 @@ from .PlayBase import PlayBase, py_trees
 
 
 class StopPlay(PlayBase):
-    def __init__(self, *args, **kwargs) -> None:
-        super.__init__(*args, **kwargs)
-
     def populate(self):
         halt = get_stop_tree(StopPlay.Kamiji)
         galt2 = get_stop_tree(StopPlay.Argenton)

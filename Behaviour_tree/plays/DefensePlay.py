@@ -7,9 +7,6 @@ from .PlayBase import PlayBase, py_trees
 
 
 class DefensePlay(PlayBase):
-    def __init__(self, *args, **kwargs) -> None:
-        super.__init__(*args, **kwargs)
-
     def populate(self):
         defensor = defender_tree.get_defender_tree(DefensePlay.Kamiji)
         defensor_aux = auxiliary_defender_tree.get_auxiliary_defender_tree(

@@ -68,6 +68,7 @@ class BlackboardKeys:
             PATH_BLOCKED = "path_blocked"
             IS_STUCK = "is_stuck"
             LOST_PATH = "lost_path"
+
         class Motion(StringEnum):
             navigation = "navigation_flag"
 
@@ -193,6 +194,7 @@ def new_quadrant(robot_id, new_quadrant):
 
 def new_zone(robot_id, new_zone):
     _bb.set(f"{robot_id}{BlackboardKeys.Values.Positions.ZONE}", new_zone)
+
 
 def set_ball_in_defensive_half(value: bool):
     """Callback para definir se a bola está no campo de defesa."""

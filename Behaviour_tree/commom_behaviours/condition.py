@@ -130,21 +130,6 @@ class BolaSegura(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
-        if _bb.get(f"{BlackboardKeys.Flags.TeamContext.VALID_LINE}"):
-            return py_trees.common.Status.RUNNING
-        return py_trees.common.Status.FAILURE
-
-
-class BolaSegura(py_trees.behaviour.Behaviour):
-    def __init__(self, robot: Bob, name: str = "BolaSegura"):
-        self._ws = World_State.get_object()
-        self.robot = robot
-        super().__init__(name)
-
-    def setup(self, **kwargs):
-        return super().setup(**kwargs)
-
-    def update(self) -> py_trees.common.Status:
         if _bb.get(BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL):
             logger.debug(f"{self.name} - FAILURE FOES com bola")
             return py_trees.common.Status.FAILURE
