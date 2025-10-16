@@ -11,11 +11,11 @@ class DefensePlay(PlayBase):
         super.__init__(*args, **kwargs)
 
     def populate(self):
-        defensor = defender_tree.get_defender_tree(self.Kamiji)
+        defensor = defender_tree.get_defender_tree(DefensePlay.Kamiji)
         defensor_aux = auxiliary_defender_tree.get_auxiliary_defender_tree(
-            self.Argenton
+            DefensePlay.Argenton
         )
-        goakeeper = goalkeeper_tree.get_goalkeeper_tree(self.SabKawa)
+        goakeeper = goalkeeper_tree.get_goalkeeper_tree(DefensePlay.SabKawa)
         self.trees.append(defensor)
         self.trees.append(defensor_aux)
         self.trees.append(goakeeper)

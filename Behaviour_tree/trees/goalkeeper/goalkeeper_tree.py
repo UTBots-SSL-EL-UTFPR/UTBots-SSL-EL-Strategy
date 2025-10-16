@@ -35,9 +35,6 @@ def get_goalkeeper_tree(robot: Bob) -> py_trees.trees.BehaviourTree:
         memory=False,
         children=[bola_segura, recuperar_bola, movimento_unico],
     )
-
-    # caso de defesa comum e suas folhas======================================
-    foesHasBall = FoesHaveBall()
     goalkeeperCommonPosition = GoalkeeperCommonPosition(robot)
 
     defesa_comum = py_trees.composites.Sequence(

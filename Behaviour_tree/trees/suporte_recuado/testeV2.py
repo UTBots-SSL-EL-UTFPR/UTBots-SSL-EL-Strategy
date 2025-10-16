@@ -20,12 +20,6 @@ from Behaviour_tree.robot.bob import Bob
 from Behaviour_tree.robot.FoesManager import FoesManager
 from utils.pose2D import Pose2D
 
-from ..helpers.field_helper import FieldHelper
-from .defender.defender_tree import get_defender_tree
-from .goalkeeper.goalkeeper_tree import get_goalkeeper_tree
-from .ofensive_sup.offensive_suport_tree import get_off_sup_tree
-from .suporte_recuado.suporte_recuado import get_pivo_tree
-
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s | %(name)-12s | %(levelname)-8s | %(message)s",
@@ -61,17 +55,29 @@ def create_scenario(stop: Stop.StopPlay):
     return
 
 
-# EXECUTAR - # python3.10 -m Behaviour_tree.trees.ofensive_sup.test_off_sup
+def prints_e_logs(robot: Bob, others: list[Bob]):
 
+    team_has_ball = _bb.get(BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL)
+    logger.info(f"time tem a bola? -- {team_has_ball}")
+    print("+++ ----------------------------- +++")
+
+    logger.info(f"ID -- {robot.robot_id.value}")
+    logger.info(f"POSITION -- {robot.state.position}")
+
+    logger.info(f"TARGET -- {robot.state.target_position}")
+    logger.info(f"-- {robot.state.current_command}")
+    logger.info(
+        f"{_bb.get(BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL)} team has ball"
+    )
+
+    print("=" * 50)
+
+
+# EXECUTAR - # python3.10 -m Behaviour_tree.trees.ofensive_sup.test_off_sup
 if __name__ == "__main__":
     bob_state = BobManager.get_object()
     wd = World_State.get_object()
     _bb = Blackboard_Manager.get_instance()
-
-    update_delay = 0.001
-    print_delay = 0.5
-    tPrint = time.time()
-    tUpdate = time.time()
 
     atackplay = AtackPlay.AtackPlay()
     cobrarfalta = CobrarFalta.CobrarFalta()
@@ -81,40 +87,13 @@ if __name__ == "__main__":
     penaltyteamplay = PenaltyTeamPlay.PenaltyTaeamPlay()
     predefense = PreDefense.PreDefensePlay()
     stop = Stop.StopPlay()
-
+    create_scenario(stop)
+    update_delay = 0.001
+    print_delay = 0.5
+    tPrint = time.time()
+    tUpdate = time.time()
     while True:
         if time.time() >= update_delay + tUpdate:
             wd.update()
+            atackplay.update()
             tUpdate = time.time()
-
-            gc_state = (_bb.get("gc_state") or "stop").lower()
-
-            if gc_state == "halt":
-                halt.update()
-
-            elif gc_state == "stop":
-                stop.update()
-
-            elif gc_state in ("ready_kickoff_us"):
-                cobrarfalta.update()
-
-            elif gc_state in ("ready_kickoff_them"):
-                defenseplay.update()
-
-            elif gc_state in ("ready_freekick_us",):
-                cobrarfalta.update()
-
-            elif gc_state in ("ready_freekick_them",):
-                defenseplay.update()
-            elif gc_state == "ready_penalty_us":
-                penaltyteamplay.update()
-            elif gc_state == "ready_penalty_them":
-                penaltydefenseplay.update()
-            elif gc_state in ("ball_placement_us", "ball_placement_them"):
-                pass
-            elif gc_state == "running":
-                atackplay.update
-
-            else:
-                # no else eu colocaria no stop so por seguranca
-                pass

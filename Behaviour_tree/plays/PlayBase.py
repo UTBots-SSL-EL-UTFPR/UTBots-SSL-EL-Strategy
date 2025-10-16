@@ -9,12 +9,14 @@ from Behaviour_tree.robot.FoesManager import FoesManager
 
 class PlayBase(ABC):
 
+    Kamiji = Bob(TeamID.Kamiji)
+    Argenton = Bob(TeamID.Argenton)
+    SabKawa = Bob(TeamID.SabKawa)
+    foesManager = FoesManager()
+
     def __init__(self) -> None:
         self.trees: List[py_trees.trees.BehaviourTree]
-        self.Kamiji = Bob(TeamID.Kamiji)
-        self.Argenton = Bob(TeamID.Argenton)
-        self.SabKawa = Bob(TeamID.SabKawa)
-        self.foesManager = FoesManager()
+        super().__init__()
 
     @abstractmethod
     def populate():
