@@ -983,10 +983,9 @@ def calculate_unified_wall_parameters(robot_id: int, wall_type: str = "main") ->
     return result
 
 
-def _calculate_main_wall_position(ball, gk_pos, chosen_post, goal_center, primary_foe, 
-                                 base_dist, vis_angle, robot_id) -> dict:
+def _calculate_main_wall_position(ball, gk_pos, chosen_post, goal_center, 
+                                 base_dist, vis_angle) -> dict:
     """Calculate position parameters for main wall (bisector strategy)."""
-    import py_trees
     from Behaviour_tree.commom_behaviours.sub_trees.wall_subtree import MIN_WALL_DIST, MAX_WALL_DIST
     
     gk_bob = find_goalkeeper()
@@ -1040,7 +1039,7 @@ def _calculate_main_wall_position(ball, gk_pos, chosen_post, goal_center, primar
     }
 
 
-def _calculate_aux_wall_position(ball, gk_pos, post_top, post_bottom, goal_center, 
+def _calculate_aux_wall_position(ball, gk_pos, post_top, post_bottom, 
                                primary_foe, base_dist, robot_id) -> dict:
     """Calculate position parameters for auxiliary wall (side evaluation strategy)."""
     
