@@ -16,7 +16,6 @@ class Bob_State:
         self.world_state = World_State.get_object()
         self.configuration = Configuration.getObject()
         self.pos_helper = PositioningHelper.get_object()
-        self.bb = event_callbacks.Blackboard_Manager.get_instance()
 
         self.position: Pose2D = Pose2D(3333, 3333)
         self.velocity: Pose2D = Pose2D()
@@ -55,7 +54,6 @@ class Bob_State:
         self.target_reached()
         self.is_visible_from_ball()
         self.is_ball_reachable()
-        self.valid_line()
 
     def is_ball_with_robot(self):
         if self.has_ball != self.check_ball_possession():
@@ -94,8 +92,8 @@ class Bob_State:
         """
         if not self.path:
             return
-        if self.path_index < len(self.path):
-            self.target_position = self.path[self.path_index]
+
+        self.target_position = self.path[self.path_index]
         if self.target_position.is_in_range(
             self.position, self.configuration.threshould_arrived_target
         ):
@@ -123,15 +121,6 @@ class Bob_State:
             self.world_state.get_ball_position()
         )
         event_callbacks.on_ball_reachable(self.robot_id.name, reachable)
-
-    def valid_line(self):
-        end_pos = self.bb.get("pass_target_pos")
-        print(end_pos)
-        if end_pos is None:
-            print("ERRO, END_POS NULO NO BOB_STATE")
-            return 
-        if self.pos_helper.is_path_clear(self.position,end_pos,self.world_state.get_all_foes_position()):
-            event_callbacks.on_valid_line(self.robot_id.name)
 
     # ---------------------------------------------------------------------------------------#
     #                                         Setters                                       #
