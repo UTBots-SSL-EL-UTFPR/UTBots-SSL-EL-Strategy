@@ -257,7 +257,6 @@ class Goal_visibility(py_trees.behaviour.Behaviour):
         obstacles_pose = _ws.get_all_robot_position()
         goal_center = _pos_helper.get_goal_center()
 
-        # Cálculo do ângulo máximo de visibilidade do gol
         if vis_gol.max_range_of_visibility(
             obstacles_pose, self.kicker.state.position, goal_center
         ):

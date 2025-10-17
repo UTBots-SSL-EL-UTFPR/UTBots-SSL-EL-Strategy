@@ -22,6 +22,7 @@ class PlayBase(ABC):
         pass
 
     def update(self):
+        PlayBase.update_robots()
         for tree in self.trees:
             tree.tick()
 

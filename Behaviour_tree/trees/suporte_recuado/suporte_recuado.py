@@ -104,6 +104,7 @@ class PivoDef(py_trees.behaviour.Behaviour):
     def initialise(self) -> None:
         current_time = time.time()
         new_pos = StrategyHelper.calculate_defense_support_pos()
+        print(f"{new_pos} ------ {self.robot.state.position}")
         new_path = StrategyHelper.get_Robot_path(
             new_pos, self.robot.state.position, None
         )

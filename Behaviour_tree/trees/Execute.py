@@ -61,7 +61,7 @@ def create_scenario(stop: Stop.StopPlay):
     return
 
 
-# EXECUTAR - # python3.10 -m Behaviour_tree.trees.ofensive_sup.test_off_sup
+# EXECUTAR - # python3.10 -m Behaviour_tree.trees.Execute
 
 if __name__ == "__main__":
     bob_state = BobManager.get_object()
@@ -69,7 +69,6 @@ if __name__ == "__main__":
     _bb = Blackboard_Manager.get_instance()
 
     update_delay = 0.001
-    print_delay = 0.5
     tPrint = time.time()
     tUpdate = time.time()
 
@@ -81,40 +80,40 @@ if __name__ == "__main__":
     penaltyteamplay = PenaltyTeamPlay.PenaltyTaeamPlay()
     predefense = PreDefense.PreDefensePlay()
     stop = Stop.StopPlay()
-
+    create_scenario(stop)
+    atackplay.populate()
     while True:
         if time.time() >= update_delay + tUpdate:
             wd.update()
             tUpdate = time.time()
+            # gc_state = (_bb.get("gc_state") or "stop").lower()
+            atackplay.update()
 
-            gc_state = (_bb.get("gc_state") or "stop").lower()
 
-            if gc_state == "halt":
-                halt.update()
+# if gc_state == "halt":
+#     halt.update()
 
-            elif gc_state == "stop":
-                stop.update()
+# elif gc_state == "stop":
+#     stop.update()
 
-            elif gc_state in ("ready_kickoff_us"):
-                cobrarfalta.update()
+# elif gc_state in ("ready_kickoff_us"):
+#     cobrarfalta.update()
 
-            elif gc_state in ("ready_kickoff_them"):
-                defenseplay.update()
+# elif gc_state in ("ready_kickoff_them"):
+#     defenseplay.update()
 
-            elif gc_state in ("ready_freekick_us",):
-                cobrarfalta.update()
+# elif gc_state in ("ready_freekick_us",):
+#     cobrarfalta.update()
 
-            elif gc_state in ("ready_freekick_them",):
-                defenseplay.update()
-            elif gc_state == "ready_penalty_us":
-                penaltyteamplay.update()
-            elif gc_state == "ready_penalty_them":
-                penaltydefenseplay.update()
-            elif gc_state in ("ball_placement_us", "ball_placement_them"):
-                pass
-            elif gc_state == "running":
-                atackplay.update
-
-            else:
-                # no else eu colocaria no stop so por seguranca
-                pass
+# elif gc_state in ("ready_freekick_them",):
+#     defenseplay.update()
+# elif gc_state == "ready_penalty_us":
+#     penaltyteamplay.update()
+# elif gc_state == "ready_penalty_them":
+#     penaltydefenseplay.update()
+# elif gc_state in ("ball_placement_us", "ball_placement_them"):
+#     pass
+# elif gc_state == "running":
+# else:
+#     # no else eu colocaria no stop so por seguranca
+#     pass

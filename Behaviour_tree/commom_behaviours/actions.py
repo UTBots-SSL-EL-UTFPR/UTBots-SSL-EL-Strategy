@@ -29,8 +29,10 @@ import py_trees as pt
 
 import Behaviour_tree.helpers as hp
 import Behaviour_tree.helpers.visiblidade_gol as vis_gol
+from Behaviour_tree.core.event_callbacks import target_reset
 from Behaviour_tree.helpers.motion_helper import MotionHelper
 from Behaviour_tree.helpers.positioning_helper import PositioningHelper
+from Behaviour_tree.helpers.strategy_helper import StrategyHelper
 from Behaviour_tree.robot.bob import Bob
 from utils.defines import BALL_DISTANCE_FOR_KICK
 from utils.pose2D import Pose2D, RoleType
@@ -392,7 +394,6 @@ class Choose_who_to_pass(py_trees.behaviour.Behaviour):
             return py_trees.common.Status.FAILURE
 
 
-    
 class Calculate_linear_target_pass(pt.behaviour.Behaviour):
     def __init__(self, kicker: Bob, name: str = "Calculate_kick_target"):
         super().__init__(name)
@@ -413,31 +414,21 @@ class Calculate_linear_target_pass(pt.behaviour.Behaviour):
         if self.kicker is None or self.kicker.state is None:
             return pt.common.Status.FAILURE
 
-        # Inicializações que eu vou precisar
         kicker_pose = self.kicker.state.position
         target_pose = self._bb.get("pass_target_pos")
-        obstacles_pose = _ws.get_all_robot_position()
-        obstacles_pose.remove(kicker_pose)
         ball_pose = _ws.get_ball_position()
 
-        # Cálculo do ângulo
-        desired_angle = _pos_helper.get_passer_orientation(
-            kicker_pose, target_pose
-        )
+        desired_angle = _pos_helper.get_passer_orientation(kicker_pose, target_pose)
 
-        # Cálculo o ponto alvo de alinhamento
-        x_target = ball_pose.x - BALL_DISTANCE_FOR_KICK * math.cos(desired_angle)
-        y_target = ball_pose.y - BALL_DISTANCE_FOR_KICK * math.sin(desired_angle)
+        x_target = int(ball_pose.x - BALL_DISTANCE_FOR_KICK * math.cos(desired_angle))
+        y_target = int(ball_pose.y - BALL_DISTANCE_FOR_KICK * math.sin(desired_angle))
 
-        # Settando o target e a trajetória
-        self.kicker.state.set_target_position(
-            (Pose2D)(x_target, y_target, self.kicker.state.position.theta)
-        )
-        self.kicker.state.path = MotionHelper.find_shortest_path(
-            kicker_pose, self.kicker.state.target_position, obstacles_pose, ball_pose
-        )
+        target = Pose2D(x_target, y_target, self.kicker.state.position.theta)
+        target_reset(self.kicker.robot_id.name)
+        self.kicker.set_new_target(target)
 
         return pt.common.Status.SUCCESS
+
 
 class Calculate_angular_target_pass(pt.behaviour.Behaviour):
     def __init__(self, kicker: Bob, name: str = "Calculate_angular_target"):
@@ -457,21 +448,16 @@ class Calculate_angular_target_pass(pt.behaviour.Behaviour):
         if self.kicker is None or self.kicker.state is None:
             return pt.common.Status.FAILURE
 
-        # Inicializações que eu vou precisar
         kicker_pose = self.kicker.state.position
         target_pose = self.bb.get("pass_target_pos")
-        
-        
-        # Cálculo do ângulo
-        desired_angle = _pos_helper.get_passer_orientation(
-            kicker_pose, target_pose
-        )
 
-        # Settando o target
-        self.bb.set(f"{self.kicker.state.target_position}", None)
-        self.kicker.set_new_target(Pose2D(kicker_pose.x, kicker_pose.y, desired_angle))
+        desired_angle = _pos_helper.get_passer_orientation(kicker_pose, target_pose)
+
+        target = Pose2D(kicker_pose.x, kicker_pose.y, desired_angle)
+        self.kicker.set_new_target(target)
 
         return pt.common.Status.SUCCESS
+
 
 class Angular_align_pass(pt.behaviour.Behaviour):
     def __init__(self, robot: Bob, name: str = "Angular_align", tolerance=0.10):
@@ -493,19 +479,10 @@ class Angular_align_pass(pt.behaviour.Behaviour):
         if self.robot is None or self.robot.state is None:
             return pt.common.Status.FAILURE
 
-        # Inicializações que eu vou precisar
-        robot_id = self.robot.robot_id.value  # Transforma de enum para int
-        robot_pose = _ws.get_team_robot_pose(robot_id)
+        robot_pose = self.robot.state.position
         target_pos = self._bb.get("pass_target_pos")
-        obstacles_pose = _ws.get_all_robot_position()
-        obstacles_pose.remove(robot_pose)
+        desired_angle = _pos_helper.get_passer_orientation(robot_pose, target_pos)
 
-        # Cálculo do ângulo
-        desired_angle = _pos_helper.get_passer_orientation(
-            robot_pose, target_pos
-        )
-
-        # Verifica se o movimento foi feito
         if hp.PositioningHelper.is_aligned(
             robot_pose,
             desired_angle,
@@ -513,29 +490,9 @@ class Angular_align_pass(pt.behaviour.Behaviour):
         ):
             return pt.common.Status.SUCCESS
 
-        # Retorna failure se o robo estiver travado em um mesmo movimento há muito tempo
-
-        # Realiza o movimento
-        rotate_cmd = self.robot.rotate()
-
-        if self._bb.get(
-            f"{self.robot.robot_id.name}{BlackboardKeys.Flags.Navigation.IS_STUCK}"
-        ):
-            logger.debug(
-                f"{self.name} - {self.robot.robot_id.name} - FAILURE  ROBOT STUCK"
-            )
-            return pt.common.Status.FAILURE
-
-        if not rotate_cmd:
-            return pt.common.Status.FAILURE
-        else:
-            return pt.common.Status.RUNNING
-
-    def terminate(self, new_status: pt.common.Status):
-        pass
-    
-    
-
+        self.robot.rotate()
+        logger.debug(f"{self.name} - RUNNING")
+        return pt.common.Status.RUNNING
 
 
 class ExecutePass(py_trees.behaviour.Behaviour):
@@ -579,9 +536,6 @@ class ExecutePass(py_trees.behaviour.Behaviour):
             logging.error(f"Erro ao executar passe: {e}")
             return pt.common.Status.FAILURE
 
-    def terminate(self, new_status: pt.common.Status):
-        pass
-
 
 # =+==============================++++++==================++++++=================+++++=============#
 
@@ -617,27 +571,18 @@ class Calculate_linear_target(pt.behaviour.Behaviour):
         obstacles_pose = obstacles_pose = _ws.get_all_obstacles_position(kicker_pose)
         ball_pose = _ws.get_ball_position()
 
-        # Cálculo do ângulo
         desired_angle = _pos_helper.middle_goal_visibility_range(
             kicker_pose, goal_pose, obstacles_pose
         )
 
-        # Cálculo o ponto alvo de alinhamento
         x_target = int(ball_pose.x - BALL_DISTANCE_FOR_KICK * math.cos(desired_angle))
         y_target = int(ball_pose.y - BALL_DISTANCE_FOR_KICK * math.sin(desired_angle))
+        target = Pose2D(x_target, y_target, self.kicker.state.position.theta)
 
-        # Settando o target e a trajetória
-        self.bb.set(f"{self.kicker.state.target_position}", None)
-        self.kicker.set_new_target(
-            (Pose2D)(x_target, y_target, self.kicker.state.position.theta)
-        )
-        self.kicker.state.path = MotionHelper.find_shortest_path(
-            kicker_pose, target, obstacles_pose, ball_pose
-        )
+        self.kicker.set_new_target(target)
         return pt.common.Status.SUCCESS
 
 
-# Calcula o angulo que o robo deve estar para chutar o gol (cálculo do ângulo específico para o chute no gol)
 class Calculate_angular_target(pt.behaviour.Behaviour):
     def __init__(self, kicker: Bob, name: str = "Calculate_angular_target"):
         super().__init__(name)
@@ -656,25 +601,20 @@ class Calculate_angular_target(pt.behaviour.Behaviour):
         if self.kicker is None or self.kicker.state is None:
             return pt.common.Status.FAILURE
 
-        # Inicializações que eu vou precisar
         kicker_pose = self.kicker.state.position
         goal_pose = _pos_helper.get_goal_center()
         obstacles_pose = _ws.get_all_obstacles_position(kicker_pose)
 
-        # Cálculo do ângulo
         desired_angle = _pos_helper.middle_goal_visibility_range(
             kicker_pose, goal_pose, obstacles_pose
         )
 
-        # Settando o target
         self.bb.set(f"{self.kicker.state.target_position}", None)
         self.kicker.set_new_target(Pose2D(kicker_pose.x, kicker_pose.y, desired_angle))
-      
-        
+
         return pt.common.Status.SUCCESS
 
 
-# Faz o alinhamento angular com o gol (pode ser usado por qualquer bob que quer girar para um target já settado)
 class Angular_align(pt.behaviour.Behaviour):
     def __init__(self, robot: Bob, name: str = "Angular_align", tolerance=0.10):
         super().__init__(name)
@@ -695,17 +635,14 @@ class Angular_align(pt.behaviour.Behaviour):
         if self.robot is None or self.robot.state is None:
             return pt.common.Status.FAILURE
 
-        # Inicializações que eu vou precisar
         robot_pose = self.robot.state.position
         goal_pose = _pos_helper.get_goal_center()
         obstacles_pose = _ws.get_all_obstacles_position(robot_pose)
 
-        # Cálculo do ângulo
         desired_angle = _pos_helper.middle_goal_visibility_range(
             robot_pose, goal_pose, obstacles_pose
         )
 
-        # Verifica se o movimento foi feito
         if hp.PositioningHelper.is_aligned(
             robot_pose,
             desired_angle,
@@ -713,9 +650,6 @@ class Angular_align(pt.behaviour.Behaviour):
         ):
             return pt.common.Status.SUCCESS
 
-        # Retorna failure se o robo estiver travado em um mesmo movimento há muito tempo
-
-        # Realiza o movimento
         rotate_cmd = self.robot.rotate()
 
         if self._bb.get(
@@ -730,9 +664,6 @@ class Angular_align(pt.behaviour.Behaviour):
             return pt.common.Status.FAILURE
         else:
             return pt.common.Status.RUNNING
-
-    def terminate(self, new_status: pt.common.Status):
-        self.bb.set(f"{self.kicker.state.target_position}", None)
 
 
 class Shoot_to_goal(pt.behaviour.Behaviour):
