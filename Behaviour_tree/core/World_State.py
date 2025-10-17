@@ -1,5 +1,6 @@
 from enum import Enum
 from time import time
+from typing import List
 
 from Behaviour_tree.core.field_state import FieldState
 from communication.generated import ssl_gc_referee_message_pb2 as referee_pb
@@ -57,6 +58,8 @@ class World_State:
         self._initialized = True
 
         self._ball_velocity: tuple[float, float] = (-9999, 9999)
+        self.last_ball = self._ball_position
+
 
     @staticmethod
     def get_object():
@@ -105,6 +108,8 @@ class World_State:
         if balls:
             self._ball_position = (balls[0]["x"], balls[0]["y"])
             self._ball_velocity = (balls[0].get("vx", 0.0), balls[0].get("vy", 0.0))
+            self.last_ball = self._ball_position
+
         else:
             self._ball_position = (-9999, 9999)
             self._ball_velocity = (-9999, 9999)
@@ -136,10 +141,11 @@ class World_State:
         return self.vision_data
 
     def get_ball_position(self):
-        position = self._ball_position
         if self._ball_position[0] == -9999:
-            pass
-        print(self._ball_position)
+            position = self.last_ball
+        else:
+            position = self._ball_position
+
         return Pose2D(int(position[0]), int(position[1]))
 
     def get_ball_velocity(self) -> Pose2D:
@@ -210,4 +216,11 @@ class World_State:
         robots: list[Pose2D] = []
         robots.extend(self.get_all_foes_position())
         robots.extend(self.get_all_team_position())
+        return robots
+
+    def get_all_obstacles_position(self, BobPose: Pose2D):
+        robots: List[Pose2D] = self.get_all_robot_position()
+        for index, robot in enumerate(robots):
+            if robot == BobPose:
+                robots.pop(index)
         return robots

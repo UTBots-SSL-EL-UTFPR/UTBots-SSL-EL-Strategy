@@ -95,8 +95,10 @@ class Bob:
         """
         Move o bob de sua pose2d atual ate outra pose2d com precisao de posicao e angulo
         """
+        if self.state.target_position is None or self.state.position is None:
+            return
         vx_s, vy_s, w = self.compute_world_velocity(
-            self.state.position, self.state.target_position, mode="precision_movement"
+            self.state.position, self.state.target_position, mode="precision_movement"  # type: ignore
         )
 
         q = np.array([[w], [vx_s], [vy_s]], dtype=float)
@@ -121,10 +123,10 @@ class Bob:
         """
         Move o bob de sua pose2d atual ate outra pose2d com velocidade sem se importar com o angulo
         """
-        if self.state.target_position is None:
+        if self.state.target_position is None or self.state.position is None:
             return
         vx_s, vy_s, w = self.compute_world_velocity(
-            self.state.position, self.state.target_position, mode="maintain_orientation"
+            self.state.position, self.state.target_position, mode="maintain_orientation"  # type: ignore
         )
         q = np.array([[w], [vx_s], [vy_s]], dtype=float)
 
@@ -150,8 +152,11 @@ class Bob:
         """
         Apenas rotaciona o bob de sua pose2d atual ate outra pose2d 
         """
+        if self.state.position is None or self.state.target_position is None:
+            return
+
         vx_s, vy_s, w = self.compute_world_velocity(
-            self.state.position, self.state.target_position, mode="rotation_only"
+            self.state.position, self.state.target_position, mode="rotation_only"  # type: ignore
         )
         q = np.array([[w], [vx_s], [vy_s]], dtype=float)
 
@@ -221,7 +226,8 @@ class Bob:
         - rotation_only: so rotaciona.
         - precision_movement: translada e rotaciona com precisao.
         """
-
+        if goal is None or current is None:
+            return
         # erro de posicao para o controle P
         dx = goal.x - current.x
         dy = goal.y - current.y

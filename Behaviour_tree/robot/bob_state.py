@@ -59,7 +59,6 @@ class Bob_State:
         got_ball = self.check_ball_possession()
         if self.has_ball != got_ball:
             if self.has_ball:
-                print(self.robot_id)
                 event_callbacks.lost_ball_posetion(self.robot_id.name)
             else:
                 self.ball_visible = True
