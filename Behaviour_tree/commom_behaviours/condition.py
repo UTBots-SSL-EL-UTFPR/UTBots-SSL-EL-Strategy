@@ -182,7 +182,7 @@ class BallVisible(py_trees.behaviour.Behaviour):
 
     def setup(self, **kwargs: Any) -> None:
         if self.robot:
-            print("setup")
+            logger.debug(f" {self.name} - setup")
 
     def update(self) -> Status:
         if not self.robot or not self.robot.state:
@@ -196,8 +196,6 @@ class BallVisible(py_trees.behaviour.Behaviour):
 
         if isinstance(pos, Pose2D):
             self.robot.adicionar_ponto_trajetoria(pos)
-        else:
-            print("blackboard com valor nulo no lugar de pos2d par mov desmarque")
         return py_trees.common.Status.FAILURE
 
 

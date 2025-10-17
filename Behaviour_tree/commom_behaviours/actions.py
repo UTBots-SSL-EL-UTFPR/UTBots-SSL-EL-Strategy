@@ -461,7 +461,7 @@ class Align(pt.behaviour.Behaviour):
             return pt.common.Status.FAILURE
 
         self.attacker.precision_movement()
-        
+
         if self.bb.get(BlackboardKeys.Flags.Navigation.TARGET_REACHED):
             return pt.common.Status.SUCCESS
         else:
@@ -499,9 +499,8 @@ class ExecutePass(py_trees.behaviour.Behaviour):
 
         # Envia comando de chute
         try:
-            self.robot.kick_ball(self.robot)
+            self.robot.kick_ball()
             logging.info(f"{self.robot.robot_id} executou passe para {target_pos}")
-            # Limpa o alvo de passe no Blackboard
             self.bb.set("pass_target_pos", None)
             self.bb.set("pass_target_id", None)
 
@@ -545,8 +544,7 @@ class Calculate_linear_target(pt.behaviour.Behaviour):
         # Inicializações que eu vou precisar
         kicker_pose = self.kicker.state.position
         goal_pose = _pos_helper.get_goal_center()
-        obstacles_pose = _ws.get_all_robot_position()
-        obstacles_pose.remove(kicker_pose)
+        obstacles_pose = obstacles_pose = _ws.get_all_obstacles_position(kicker_pose)
         ball_pose = _ws.get_ball_position()
 
         # Cálculo do ângulo
@@ -555,17 +553,17 @@ class Calculate_linear_target(pt.behaviour.Behaviour):
         )
 
         # Cálculo o ponto alvo de alinhamento
-        x_target = ball_pose.x - BALL_DISTANCE_FOR_KICK * math.cos(desired_angle)
-        y_target = ball_pose.y - BALL_DISTANCE_FOR_KICK * math.sin(desired_angle)
+        x_target = int(ball_pose.x - BALL_DISTANCE_FOR_KICK * math.cos(desired_angle))
+        y_target = int(ball_pose.y - BALL_DISTANCE_FOR_KICK * math.sin(desired_angle))
 
         # Settando o target e a trajetória
-        self.kicker.state.set_target_position(
-            (Pose2D)(x_target, y_target, self.kicker.state.position.theta)
-        )
-        self.kicker.state.path = MotionHelper.find_shortest_path(
-            kicker_pose, self.kicker.state.target_position, obstacles_pose, ball_pose
-        )
+        target = Pose2D(x_target, y_target, self.kicker.state.position.theta)
 
+        self.kicker.set_new_target(target)
+
+        self.kicker.state.path = MotionHelper.find_shortest_path(
+            kicker_pose, target, obstacles_pose, ball_pose
+        )
         return pt.common.Status.SUCCESS
 
 
@@ -591,8 +589,7 @@ class Calculate_angular_target(pt.behaviour.Behaviour):
         # Inicializações que eu vou precisar
         kicker_pose = self.kicker.state.position
         goal_pose = _pos_helper.get_goal_center()
-        obstacles_pose = _ws.get_all_robot_position()
-        obstacles_pose.remove(kicker_pose)
+        obstacles_pose = _ws.get_all_obstacles_position(kicker_pose)
 
         # Cálculo do ângulo
         desired_angle = _pos_helper.middle_goal_visibility_range(
@@ -600,7 +597,7 @@ class Calculate_angular_target(pt.behaviour.Behaviour):
         )
 
         # Settando o target
-        self.kicker.state.set_target_position(
+        self.kicker.set_new_target(
             (Pose2D)(kicker_pose.x, kicker_pose.y, desired_angle)
         )
 
@@ -629,11 +626,9 @@ class Angular_align(pt.behaviour.Behaviour):
             return pt.common.Status.FAILURE
 
         # Inicializações que eu vou precisar
-        robot_id = self.robot.robot_id.value  # Transforma de enum para int
-        robot_pose = _ws.get_team_robot_pose(robot_id)
+        robot_pose = self.robot.state.position
         goal_pose = _pos_helper.get_goal_center()
-        obstacles_pose = _ws.get_all_robot_position()
-        obstacles_pose.remove(robot_pose)
+        obstacles_pose = _ws.get_all_obstacles_position(robot_pose)
 
         # Cálculo do ângulo
         desired_angle = _pos_helper.middle_goal_visibility_range(

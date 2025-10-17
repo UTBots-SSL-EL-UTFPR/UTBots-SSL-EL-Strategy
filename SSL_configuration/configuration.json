@@ -48,7 +48,7 @@
         {
             "Ports":
             {
-                "vision":10006,
+                "vision":10020,
                 "referee": 10003
             },
             "IP_Addrs":
