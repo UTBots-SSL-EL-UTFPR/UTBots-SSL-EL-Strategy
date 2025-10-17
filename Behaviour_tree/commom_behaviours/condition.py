@@ -102,6 +102,8 @@ class ValidLine(py_trees.behaviour.Behaviour):
     def __init__(self, bob: Bob, name: str = "Valid_Line"):
         super().__init__(name)
         self.robot = bob
+        self._bb = Blackboard_Manager.get_instance()
+        self.pos_helper = _pos_helper.get_object()
 
     def setup(self, **kwargs):
         logger.debug(f"--> SETUP EXECUTADO: {self.name}")
@@ -109,12 +111,17 @@ class ValidLine(py_trees.behaviour.Behaviour):
 
     def update(self) -> py_trees.common.Status:
 
-        key = f"{self.robot.robot_id.name}{BlackboardKeys.Flags.TeamContext.VALID_LINE}"
-        if _bb.get(key):
-            logger.debug(f"{self.name} Sucesso: Flag '{key}' é True na Blackboard.")
+        receiver_pos = self._bb.get("pass_target_pos")
+
+        if receiver_pos is None:
+            logger.debug(f"[{self.name}] Falhou: Posição do receptor (pass_target_pos) é Nula.")
+            return py_trees.common.Status.FAILURE
+
+        if self.pos_helper.is_path_clear(self.robot.state.position, receiver_pos, self.robot.state.world_state.get_all_foes_position()):
+            logger.debug(f"[{self.name}] Sucesso: Linha de passe válida.")
             return py_trees.common.Status.SUCCESS
         else:
-            logger.debug(f"{self.name} Falhou: Flag '{key}' não é True ou não existe.")
+            logger.debug(f"[{self.name}] Falhou: Linha de passe inválida.")
             return py_trees.common.Status.FAILURE
 
 

@@ -829,7 +829,6 @@ class PositioningHelper:
     def is_aligned (
         attacker_pose: Pose2D, 
         desired_angle: float,
-        goal_pose: Pose2D,
         tolerance: float = 0.10
     ) -> bool : 
         if abs(attacker_pose.theta - desired_angle) <= tolerance:
