@@ -12,7 +12,7 @@ from utils.pose2D import Pose2D
 from .dribble_to_goal_tree import get_follow_and_dribble_tree
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s | %(name)-12s | %(levelname)-8s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
@@ -42,7 +42,7 @@ def main():
     ws = World_State.get_object()
     _bb = Blackboard_Manager.get_instance()
 
-    kamiji, defender, goalkeeper = _make_bobs()
+    defender,kamiji,  goalkeeper = _make_bobs()
     tree = get_follow_and_dribble_tree(kamiji)
 
     _warmup_world_state(1.0)

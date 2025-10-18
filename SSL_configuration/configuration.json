@@ -40,7 +40,7 @@
     },
     "Motion":
     {
-        "threshould_arrived_target" : 50
+        "threshould_arrived_target" : 10
     },
     "Communication":
     {
@@ -48,12 +48,12 @@
         {
             "Ports":
             {
-                "vision":10020,
+                "vision":10006,
                 "referee": 10003
             },
             "IP_Addrs":
             {
-                "interface_ip_referee": "172.17.0.1",
+                "interface_ip_referee": "0.0.0.0",
                 "interface_ip_vision": "0.0.0.0",
                 "vision_receiver_ip": "224.5.23.2",
                 "referee_receiver_ip": "224.5.23.1"

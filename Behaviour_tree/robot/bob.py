@@ -26,14 +26,13 @@ LOWER = 0
 UPPER = 1
 THETA_SIGN = +1.0
 THETA_OFFSET = math.pi
-N_RODAS = 4
+N_RODAS = 3
 WHEELS_ANGLES = [
     math.radians(-30),
-    math.radians(45),
-    math.radians(135),
-    math.radians(-150),
+    math.radians(0),
+    math.radians(30),
 ]
-GAMMA = [0, 0, 0, 0]
+GAMMA = [0, 0, 0]
 ROBOT_RADIUS = 0.09
 WHEEL_RADIUS = 0.027
 FREE_DISTANCE = 1
@@ -124,6 +123,7 @@ class Bob:
         Move o bob de sua pose2d atual ate outra pose2d com velocidade sem se importar com o angulo
         """
         if self.state.target_position is None or self.state.position is None:
+            print("sem target position \n")
             return
         vx_s, vy_s, w = self.compute_world_velocity(
             self.state.position, self.state.target_position, mode="maintain_orientation"  # type: ignore
@@ -141,7 +141,6 @@ class Bob:
             wheel1=-u[0].item(),
             wheel2=-u[1].item(),
             wheel3=-u[2].item(),
-            wheel4=-u[3].item(),
         )
         self.cmd = self.cmd_builder.build()
         self.cmd_sender.send(self.cmd)

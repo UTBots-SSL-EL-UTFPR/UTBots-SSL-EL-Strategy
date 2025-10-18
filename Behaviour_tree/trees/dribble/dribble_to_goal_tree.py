@@ -37,22 +37,22 @@ def get_follow_and_dribble_tree(robot: Bob) -> pt.trees.BehaviourTree:
 
     recover = act.RecuperarBola(robot)
 
-    with_ball_seq = pt.composites.Sequence(
-        name="WithBall_DribbleToGoal",
-        memory=False,
-        children=[has_ball, plan_dribble, move],
-    )
+    # with_ball_seq = pt.composites.Sequence(
+    #     name="WithBall_DribbleToGoal",
+    #     memory=False,
+    #     children=[has_ball],
+    # )
 
-    recover_seq = pt.composites.Sequence(
-        name="RecoverBall_ThenMove",
-        memory=False,
-        children=[recover, move],
-    )
+    # recover_seq = pt.composites.Sequence(
+    #     name="RecoverBall_ThenMove",
+    #     memory=False,
+    #     children=[recover, plan_dribble],
+    # )
 
     root = pt.composites.Selector(
         name="FollowBallAndDribbleToGoal",
         memory=False,
-        children=[with_ball_seq, recover_seq],
+        children=[ move, plan_dribble],
     )
 
     tree = pt.trees.BehaviourTree(root)
@@ -72,8 +72,10 @@ class PlanDribbleToEnemyGoal(pt.behaviour.Behaviour):
     def update(self) -> pt.common.Status:
         if self.robot is None or self.robot.state is None:
             return pt.common.Status.FAILURE
+        
 
         enemy_goal = FieldHelper.get_enemy_goal_center()
-        target = Pose2D(enemy_goal.x, enemy_goal.y, self.robot.state.position.theta)
+        ball = self.robot.state.world_state._ball_position
+        target = Pose2D(ball[0], ball[1], self.robot.state.position.theta)
         self.robot.set_new_target(target)
         return pt.common.Status.SUCCESS
