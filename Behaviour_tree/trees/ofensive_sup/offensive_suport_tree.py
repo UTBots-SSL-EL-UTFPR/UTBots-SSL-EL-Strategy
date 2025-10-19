@@ -67,7 +67,7 @@ class OffSupRepos(py_trees.behaviour.Behaviour):
             logger.debug(new_path)
 
         else:
-            self.robot.set_new_target(self.last_target)
+            self.robot.set_new_target_position(self.last_target)
             logger.debug(self.last_target)
 
         self.robot.state.current_command = self.name

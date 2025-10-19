@@ -64,7 +64,7 @@ class GoalkeeperCommonPosition(py_trees.behaviour.Behaviour):
         if position is None:
             return py_trees.common.Status.FAILURE
 
-        self.robot.set_new_target(position)
+        self.robot.set_new_target_position(position)
         self.robot.fast_movement()
 
         return py_trees.common.Status.SUCCESS

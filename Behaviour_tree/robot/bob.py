@@ -1,12 +1,11 @@
-# bob.py
-
 import math
 import time
 
 import numpy as np
 
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
-from utils import utilsp
+from Behaviour_tree.helpers.motion_helper import MotionHelper
+from utils import defines
 from utils.pose2D import Pose2D
 
 from ..core.blackboard import Blackboard_Manager
@@ -17,36 +16,8 @@ from .foes import FoesState
 
 positions = BlackboardKeys.Values.Positions
 
-# from Behaviour_tree.helpers.positioning_helper import visibilidade_gol TODO @DANILO sla oq q c ta importando aq, mas c tem q trazer a classe toda
 from communication.sender.command_builder import CommandBuilder
 from communication.sender.command_sender_sim import CommandSenderSim
-
-# --------------------------------------------DEFINES--------------------------------------------#
-LOWER = 0
-UPPER = 1
-THETA_SIGN = +1.0
-THETA_OFFSET = math.pi
-N_RODAS = 4
-WHEELS_ANGLES = [
-    math.radians(-30),
-    math.radians(45),
-    math.radians(135),
-    math.radians(-150),
-]
-GAMMA = [0, 0, 0, 0]
-ROBOT_RADIUS = 0.09
-WHEEL_RADIUS = 0.027
-FREE_DISTANCE = 1
-
-VMAX = 1
-WMAX = 2.5
-
-SCALE = 1000.0
-K_POS = 1.2
-K_ANG = 0.3
-
-KD_POS = 0.25
-KD_ANG = 0.3
 
 
 class Bob:
@@ -61,6 +32,7 @@ class Bob:
         self.cmd_builder = CommandBuilder()
         self.cmd_sender = CommandSenderSim()
         self.cmd: bytes | None = None
+
         self._trans_state = {
             "prev_ex": 0.0,
             "prev_ey": 0.0,
@@ -71,8 +43,9 @@ class Bob:
             "prev_time": None,
         }
 
-    def move(self, vel_x: float, vel_y: float) -> bool:
-        return True
+    # ===================================================#
+    # ==== GERENCIAMENTO DE ESTADO E TRAJETÓRIA      ====#
+    # ===================================================#
 
     def update(self):
         if self.state:
@@ -89,81 +62,96 @@ class Bob:
         self.state.path = path
         self.state.path_index = 0
 
-    def set_new_target(self, target_position: Pose2D):
+    def set_new_target_position(self, target_position: Pose2D):
         self.state.path.clear()
         self.state.path_index = 0
         self.adicionar_ponto_trajetoria(target_position)
 
-    def precision_movement(self):  # usa o movimento de precisao
+    def set_new_target_angle(self, theta: float):
+        self.state.target_theta = theta
+        new_pos = self.state.position
+        new_pos.theta = theta
+        self.set_new_target_position(new_pos)
+
+    # ===================================================#
+    # ==== COMPORTAMENTOS DE ALTO NÍVEL (AÇÕES)      ====#
+    # ===================================================#
+
+    def shoot_to_goal(self, goal_position: Pose2D):
         if self.state is None:
-            return
-        """
-        Move o bob de sua pose2d atual ate outra pose2d com precisao de posicao e angulo
-        """
-        vx_s, vy_s, w = self.compute_world_velocity(
-            self.state.position, self.state.target_position, mode="precision_movement"
-        )
-        q = np.array([[w], [vx_s], [vy_s]], dtype=float)
+            return False
+        if not self._has_ball:
+            return False
+        my_pos = self.state.get_position()
+        dx = goal_position.x - my_pos.x
+        dy = goal_position.y - my_pos.y
+        self.state.target_theta = math.atan2(dy, dx)
+        self.rotate()
+        self.kick_ball()
 
-        # velocidade individual de cada roda
-        u = self.motorVel(q, self.state.position.theta)
-        u = np.clip(u, -120.0, 120.0)
+    def pass_to_teammate(self, teammate_pos: Pose2D):
+        if self.state is None:
+            return False
+        my_pos = self.state.get_position()
+        dx = teammate_pos.x - my_pos.x
+        dy = teammate_pos.y - my_pos.y
+        self.state.target_theta = math.atan2(dy, dx)
+        self.rotate()
+        self.kick_ball()
 
-        # envia um pacote
-        self.cmd_builder.command_robots(
-            id=self.robot_id.value,
-            wheelsspeed=True,
-            wheel1=-u[0].item(),
-            wheel2=-u[1].item(),
-            wheel3=-u[2].item(),
-            wheel4=-u[3].item(),
-        )
-        self.cmd = self.cmd_builder.build()
-        self.cmd_sender.send(self.cmd)
+    # ===================================================#
+    # ==== PRIMITIVAS DE MOVIMENTO (COMO SE MOVER)   ====#
+    # ===================================================#
+
+    def precision_movement(self):
+        self._execute_movement(mode="precision_movement")
 
     def fast_movement(self):
         """
         Move o bob de sua pose2d atual ate outra pose2d com velocidade sem se importar com o angulo
         """
-        if self.state.target_position is None:
-            return
-        vx_s, vy_s, w = self.compute_world_velocity(
-            self.state.position, self.state.target_position, mode="maintain_orientation"
-        )
-        q = np.array([[w], [vx_s], [vy_s]], dtype=float)
-
-        # velocidade individual de cada roda
-        u = self.motorVel(q, self.state.position.theta)
-        u = np.clip(u, -120.0, 120.0)
-
-        # envia um pacote
-        self.cmd_builder.command_robots(
-            id=self.robot_id.value,
-            wheelsspeed=True,
-            wheel1=-u[0].item(),
-            wheel2=-u[1].item(),
-            wheel3=-u[2].item(),
-            wheel4=-u[3].item(),
-        )
-        self.cmd = self.cmd_builder.build()
-        self.cmd_sender.send(self.cmd)
+        self._execute_movement(mode="maintain_orientation")
 
     def rotate(self):
-        if self.state is None:
+        """
+        Apenas rotaciona o bob de sua pose2d atual ate outra pose2d
+        """
+        self._execute_movement(mode="rotation_only")
+
+    def kick_ball(self, ballSpeed: float = 3.0):
+        """
+        a bola tem q estar encostada no chutador na frente do robo, o chutador
+        no simulador nao se projeta pra frente, ele so pisca em vermelho como
+        indicativo visual de q foi acionado.
+        """
+        if not self._has_ball:
             return
+        self.cmd_builder.command_robots(id=self.robot_id.value, kick_x=ballSpeed)
+
+        self.cmd = self.cmd_builder.build()
+        self.cmd_sender.send(self.cmd)
+
+    def _execute_movement(self, mode: str):
         """
-        Apenas rotaciona o bob de sua pose2d atual ate outra pose2d 
+        Função auxiliar interna para executar qualquer tipo de movimento.
+
+        Ela pega o 'mode', calcula as velocidades do robô,
+        converte para velocidades de roda e envia o comando.
         """
+        if self.state is None or self.state.target_position is None:
+            return
+
         vx_s, vy_s, w = self.compute_world_velocity(
-            self.state.position, self.state.target_position, mode="rotation_only"
+            self.state.position, self.state.target_position, mode=mode
         )
+
         q = np.array([[w], [vx_s], [vy_s]], dtype=float)
+        u = MotionHelper.motorVel(q, self.state.position.theta)
 
-        # velocidade individual de cada roda
-        u = self.motorVel(q, self.state.position.theta)
-        u = np.clip(u, -120.0, 120.0)
+        u = np.clip(
+            u, -defines.KINEMATIC_MAX_WHEEL_SPEED, defines.KINEMATIC_MAX_WHEEL_SPEED
+        )
 
-        # envia um pacote
         self.cmd_builder.command_robots(
             id=self.robot_id.value,
             wheelsspeed=True,
@@ -175,103 +163,115 @@ class Bob:
         self.cmd = self.cmd_builder.build()
         self.cmd_sender.send(self.cmd)
 
-    def kick_ball(self, ballSpeed: float = 3.0) -> bool:
-
-        # 3 m/s é a velocidade maxima permitida para a bola no EL, não utilize valores maiores!!!!!
-
+    def compute_world_velocity(self, current: Pose2D, goal: Pose2D | None, mode: str):
         """
-        a bola tem q estar encostada no chutador na frente do robo, o chutador 
-        no simulador nao se projeta pra frente, ele so pisca em vermelho como 
-        indicativo visual de q foi acionado.
+        Retorna (vx_s, vy_s, w) em {s}.
+        - Para 'precision_movement' e 'maintain_orientation', usa o 'goal' (Pose2D).
+        - Para 'rotation_only', usa 'self.state.target_theta' (float).
         """
 
-        if self.state is None:
-            return False
-        if not self._has_ball:
-            return False
-        
-        self.cmd_builder.command_robots(
-            id = self.robot_id.value,
-            kick_x = ballSpeed
+        # ================= 1. CÁLCULO DE ERROS E ALVO =================
+
+        target_angle_to_use: float = 0.0
+        if mode == "rotation_only":
+
+            if self.state.target_theta is None:
+                return 0.0, 0.0, 0.0
+
+            target_angle_to_use = self.state.target_theta
+
+            dx, dy, ex, ey, dist = 0.0, 0.0, 0.0, 0.0, 0.0
+
+        else:
+            if goal is None:
+                return 0.0, 0.0, 0.0
+
+            target_angle_to_use = goal.theta
+
+            dx = goal.x - current.x
+            dy = goal.y - current.y
+            ex = dx / defines.SCALE
+            ey = dy / defines.SCALE
+            dist = math.hypot(ex, ey)
+
+        # --- Medição de Ângulo (Comum a todos) ---
+        theta_meas = defines.KINEMATIC_THETA_SIGN * (
+            current.theta + defines.KINEMATIC_THETA_OFFSET
         )
 
-        self.cmd = self.cmd_builder.build()
-        self.cmd_sender.send(self.cmd)
-        return True
+        # ================= 2. DELEGA CÁLCULOS =================
 
-    def compute_world_velocity(
-        self,
-        current,  # Pose2D(x,y,theta) atual em {s}
-        goal,  # Pose2D(x,y,theta) alvo em {s}
-        mode,  # 3 opções diferentes de movimento "maintain_orientation" "precision_movement" "rotation_only"
-        # ganhos e limites
-        k_pos: float = 0.7,  # 1/s ganho linear
-        k_ang: float = 0.4,  # 1/s ganho angular (para face_target e etapa 2)
-        vmax: float = 0.5,  # m/s saturação linear
-        wmax: float = 2.5,  # rad/s saturação angular
-        kd_ang: float = 0.2,
-        # zonas e tolerâncias, eh ajutavel
-        pos_tol: float = 0.03,  # m tolerância de posição (chegada de posição)
-        ang_tol: float = math.radians(
-            0.5
-        ),  # rad tolerância angular (chegada de orientação)
-        # deadbands, ajustavel tmb
-        v_min: float = 0.20,  # [m/s] piso de velocidade (vencer atrito)
-        yaw_deadband: float = math.radians(
-            1.0
-        ),  # [rad] ignora correções muito pequenas
-    ):
-        """
-        Retorna (vx_s, vy_s, w) em {s} seguindo uma das 3 opcoes:
-        - maintain_orientation: translada ignorando orientação (w = 0).
-        - rotation_only: so rotaciona.
-        - precision_movement: translada e rotaciona com precisao.
-        """
+        vx_s, vy_s = self._compute_translational_velocity(mode, dx, dy, ex, ey, dist)
 
-        # erro de posicao para o controle P
-        dx = goal.x - current.x
-        dy = goal.y - current.y
-        dist = math.hypot(dx, dy)
+        # Passa o ângulo de alvo correto (seja de target_theta ou goal.theta)
+        w, ang_err = self._compute_angular_velocity(
+            mode, dist, target_angle_to_use, theta_meas
+        )
 
-        # Ganhos derivativos
-        kd_pos = KD_POS
-        kd_ang = KD_ANG
+        # ================= 3. CONDIÇÃO DE CHEGADA E PARADA (Inalterada) =================
+        pos_tol = defines.CONTROL_POS_TOL
+        ang_tol = defines.CONTROL_ANG_TOL
 
-        # ================= ERROS EM METROS (x,y) E RAD (theta) =================
-        ex = (goal.x - current.x) / SCALE  # m
-        ey = (goal.y - current.y) / SCALE  # m
-        dist = math.hypot(ex, ey)  # m
+        chegou_pos = dist < pos_tol
+        chegou_ang = abs(ang_err) < ang_tol
 
-        # ================= PD TRANSLACIONAL (em METROS) =================
-        # dt translacional
+        # --- Lógica de Parada por Modo (Inalterada) ---
         if mode == "precision_movement":
+            if chegou_pos and chegou_ang:
+                return 0.0, 0.0, 0.0
+            if chegou_pos:
+                vx_s, vy_s = 0.0, 0.0
+            if chegou_ang:
+                w = 0.0
 
+        elif mode == "rotation_only":
+            vx_s, vy_s = 0.0, 0.0
+            if chegou_ang:
+                w = 0.0
+
+        elif mode == "maintain_orientation":
+            w = 0.0
+            if chegou_pos:
+                vx_s, vy_s = 0.0, 0.0
+
+        return vx_s, vy_s, w
+
+    def _compute_translational_velocity(self, mode, dx, dy, ex, ey, dist):
+        """
+        Calcula e retorna as velocidades translacionais (vx_s, vy_s)
+        com base no modo de movimento.
+        (ESTA FUNÇÃO ESTÁ INALTERADA)
+        """
+        # --- Carrega constantes globais ---
+        k_pos = defines.CONTROL_K_POS
+        vmax = defines.CONTROL_V_MAX
+        v_min = defines.CONTROL_V_MIN
+        pos_tol = defines.CONTROL_POS_TOL
+        kd_pos = defines.GLOBAL_KD_POS
+
+        vx_s, vy_s = 0.0, 0.0
+
+        if mode == "precision_movement":
             now_lin = time.monotonic()
             st_lin = self._trans_state
             if st_lin["prev_time"] is None:
-                dt_lin = 0.02  # ~50 Hz inicial (CONSIDERANDO Q VAMOS MANTER COM 50HZ MSM, SE MUDAR ISSO, TEM Q MUDAR AQUI TMB)
+                dt_lin = defines.CONTROL_DEFAULT_DT
             else:
-                dt_lin = max(1e-6, now_lin - st_lin["prev_time"])
+                dt_lin = max(defines.CONTROL_DT_EPSILON, now_lin - st_lin["prev_time"])
             st_lin["prev_time"] = now_lin
 
             if dist < pos_tol:
-                vx_s = 0.0
-                vy_s = 0.0
-                # sincroniza estado para evitar pico ao sair da tolerancia
                 st_lin["prev_ex"] = ex
                 st_lin["prev_ey"] = ey
             else:
-                # derivada do erro (m/s)
                 d_ex = (ex - st_lin["prev_ex"]) / dt_lin
                 d_ey = (ey - st_lin["prev_ey"]) / dt_lin
                 st_lin["prev_ex"] = ex
                 st_lin["prev_ey"] = ey
 
-                # P + D translacional (m/s)
                 vx_s = k_pos * ex + kd_pos * d_ex
                 vy_s = k_pos * ey + kd_pos * d_ey
 
-                # saturação e piso (m/s)
                 v = math.hypot(vx_s, vy_s)
                 if v > vmax:
                     s = vmax / v
@@ -282,16 +282,12 @@ class Bob:
                     s = v_min / v
                     vx_s *= s
                     vy_s *= s
+
         elif mode == "maintain_orientation":
-            if dist < pos_tol:
-                vx_s = 0.0
-                vy_s = 0.0
-            else:
-                # controle proporcional em {s}
+            if dist >= pos_tol:
                 vx_s = k_pos * dx
                 vy_s = k_pos * dy
 
-                # saturação e piso, ajustavel tmb, eh so pra garantir uma velocidade minima e maxima do robo
                 v = math.hypot(vx_s, vy_s)
                 if v > vmax:
                     vx_s *= vmax / v
@@ -301,160 +297,44 @@ class Bob:
                     vx_s *= v_min / v
                     vy_s *= v_min / v
 
-        else:
-            vx_s = 0.0
-            vy_s = 0.0
+        return vx_s, vy_s
 
-        # ================= PD ANGULAR (em RAD) =================
+    def _compute_angular_velocity(self, mode, dist, goal_theta, theta_meas):
+        """
+        Calcula e retorna a velocidade angular (w) e o erro angular (ang_err)
+        com base no modo de movimento.
+        (ESTA FUNÇÃO ESTÁ INALTERADA - ela recebe o 'goal_theta' correto)
+        """
+        # --- Carrega constantes globais ---
+        k_ang = defines.CONTROL_K_ANG
+        kd_ang = defines.CONTROL_KD_ANG_FUNC
+        wmax = defines.CONTROL_W_MAX
+        yaw_deadband = defines.CONTROL_YAW_DEADBAND
+
         w = 0.0
-        theta_meas = THETA_SIGN * (current.theta + THETA_OFFSET)
 
-        # dt angular
+        if mode == "maintain_orientation":
+            st_yaw = self._yaw_state
+            st_yaw["prev_err"] = 0.0
+            return 0.0, 0.0
+
         now_yaw = time.monotonic()
         st_yaw = self._yaw_state
         if st_yaw["prev_time"] is None:
-            dt_yaw = 0.02
+            dt_yaw = defines.CONTROL_DEFAULT_DT
         else:
-            dt_yaw = max(1e-6, now_yaw - st_yaw["prev_time"])
+            dt_yaw = max(defines.CONTROL_DT_EPSILON, now_yaw - st_yaw["prev_time"])
         st_yaw["prev_time"] = now_yaw
 
-        if mode == "maintain_orientation":
-            w = 0.0
-            st_yaw["prev_err"] = 0.0
+        ang_err = Pose2D.normalize_angle_to_pi(goal_theta - theta_meas)
 
-        elif mode == "precision_movement" and dist <= 0.2:
-            ang_err = Pose2D.normalize_angle_to_pi(goal.theta - theta_meas)
+        if abs(ang_err) < yaw_deadband:
+            st_yaw["prev_err"] = ang_err
+            return 0.0, ang_err
 
-            if abs(ang_err) < yaw_deadband:
-                w = 0.0
-                st_yaw["prev_err"] = ang_err
-            else:
-                d_ang_err = (ang_err - st_yaw["prev_err"]) / dt_yaw  # rad/s
-                st_yaw["prev_err"] = ang_err
+        d_ang_err = (ang_err - st_yaw["prev_err"]) / dt_yaw
+        st_yaw["prev_err"] = ang_err
 
-                w = k_ang * ang_err + kd_ang * d_ang_err
-                w = max(-wmax, min(wmax, w))
-        else:
-            ang_err = Pose2D.normalize_angle_to_pi(goal.theta - theta_meas)
-
-            if abs(ang_err) < yaw_deadband:
-                w = 0.0
-                st_yaw["prev_err"] = ang_err
-            else:
-                d_ang_err = (ang_err - st_yaw["prev_err"]) / dt_yaw  # rad/s
-                st_yaw["prev_err"] = ang_err
-
-                w = k_ang * ang_err + kd_ang * d_ang_err
-                w = max(-wmax, min(wmax, w))
-
-        # ================= CONDIÇÃO DE CHEGADA GLOBAL =================
-        if dist < pos_tol:
-            if mode == "precision_movement" or mode == "rotation_only":
-                ang_err = Pose2D.normalize_angle_to_pi(goal.theta - theta_meas)
-            else:
-                ang_err = 0.0
-
-            if abs(ang_err) < ang_tol:
-                vx_s = 0.0
-                vy_s = 0.0
-                w = 0.0
-
-        return vx_s, vy_s, w
-
-    def motorVel(self, q, phi):
-        """
-        Aqui é o modelo cinematico da gracia.
-        {w} = referencial da roda
-        {b} = referencial do robô
-        {s} = referencial do mundo
-
-        phi é o angulo atual do robo em relação a {s}
-
-        essa funcao tem q receber um vetor com as velocidades em {s}:
-            q = np.array([[w], [vx_s], [vy_s]], dtype=float)
-        com isso, ela monta a matriz de transformação H e resolve:
-            u = H @ q
-        depois satura em [-u_max, u_max].
-
-        retorna um vetor com as velocidades das rodas
-
-        """
-
-        h = np.zeros((N_RODAS, 3))
-        for i in range(N_RODAS):
-            Bi = WHEELS_ANGLES[i]  # Ângulo entre {w} e {b}
-            gammai = GAMMA[i]
-            hi = np.array(
-                [ROBOT_RADIUS, np.cos(Bi + phi + gammai), np.sin(Bi + phi + gammai)]
-            )
-            hi /= WHEEL_RADIUS * np.cos(gammai)  # Operações compactadas
-            h[i][0] = hi[0]
-            h[i][1] = hi[1]
-            h[i][2] = hi[2]
-        u = h @ q
-        u = np.clip(u, -120.0, 120.0)
-
-        return u
-
-    # ===================================================#
-    # ==== metodos auxiliares para os metodos do BOB ====#
-
-    def go_to_ball(self, ball_position: Pose2D) -> bool:
-        return self.move(ball_position.x, ball_position.y)
-
-    def shoot_to_goal(self, goal_position: Pose2D) -> bool:
-        if self.state is None:
-            return False
-        if not self._has_ball:
-            return False
-        my_pos = self.state.get_position()
-        dx = goal_position.x - my_pos.x
-        dy = goal_position.y - my_pos.y
-        self.state.target_theta = math.atan2(dy, dx)
-        self.rotate()
-        return self.kick_ball()
-
-    def mark_opponent(self, opponent_pos: Pose2D, own_goal: Pose2D) -> bool:
-        # Posição entre oponente e o gol (interceptação simples)
-        intercept_x = (opponent_pos.x + own_goal.x) / 2
-        intercept_y = (opponent_pos.y + own_goal.y) / 2
-        return self.move(intercept_x, intercept_y)
-
-    def pass_to_teammate(self, teammate_pos: Pose2D) -> bool:
-        if self.state is None:
-            return False
-        my_pos = self.state.get_position()
-        dx = teammate_pos.x - my_pos.x
-        dy = teammate_pos.y - my_pos.y
-        self.state.target_theta = math.atan2(dy, dx)
-        self.rotate()
-        return self.kick_ball()
-
-    def dribble_towards(self, target_pos: Pose2D) -> bool:
-        if not self._has_ball:
-            return False
-        return self.move(target_pos.x, target_pos.y)
-
-    def is_visible(self):
-        # TODO
-        pass
-
-    def valid_range(
-        self,
-        position1: tuple[float, float],
-        position2: tuple[float, float],
-        limit: tuple[float, float],
-    ):
-        distance = utilsp.get_distance(position1, position2)
-        if distance > limit[LOWER] and distance < limit[UPPER]:
-            return True
-        return False
-
-    def distance_nearest_foe(self):
-        if self.state is None:
-            return False
-        distances = []
-        for foe in self.foes:
-            distances.append(self.state.position.distance_to(foe.position))
-        self.nearest_foe = utilsp.min(distances)
-        return self.nearest_foe
+        w = k_ang * ang_err + kd_ang * d_ang_err
+        w = max(-wmax, min(wmax, w))
+        return w, ang_err

@@ -98,16 +98,11 @@ class World_State:
             "t_sent": t_sent,
         }
 
-        # Robôs
-        robots_blue = {r["robot_id"]: r for r in detection.get("robots_blue", [])}
-        robots_yellow = {r["robot_id"]: r for r in detection.get("robots_yellow", [])}
-
         # Bola
         balls = detection.get("balls", [])
         if balls:
             self._ball_position = (balls[0]["x"], balls[0]["y"])
             self._ball_velocity = (balls[0].get("vx", 0.0), balls[0].get("vy", 0.0))
-
 
         for bot in detection.get("robots_blue", []):
             rid = bot["robot_id"]
@@ -139,7 +134,7 @@ class World_State:
     def get_ball_position(self):
         position = self._ball_position
         return Pose2D(int(position[0]), int(position[1]))
-    
+
     def get_ball_velocity(self) -> Pose2D:
         """Retorna a velocidade atual da bola como um objeto Pose2D (vx, vy)."""
         velocity = self._ball_velocity
@@ -154,6 +149,7 @@ class World_State:
             return None
         x, y = self._robot_positions[team_color][robot_id]
         theta = self._robot_orientations[team_color][robot_id]
+        print(theta)
         return Pose2D(int(x), int(y), theta)
 
     def get_team_robot_velocity(self, robot_id: int) -> Pose2D | None:

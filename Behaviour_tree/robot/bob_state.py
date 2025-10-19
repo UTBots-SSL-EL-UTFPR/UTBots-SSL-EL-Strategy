@@ -15,7 +15,6 @@ class Bob_State:
 
         self.world_state = World_State.get_object()
         self.configuration = Configuration.getObject()
-        self.pos_helper = PositioningHelper.get_object()
 
         self.position: Pose2D = Pose2D(3333, 3333)
         self.velocity: Pose2D = Pose2D()
@@ -23,7 +22,7 @@ class Bob_State:
         self.path: list[Pose2D] = []
         self.path_index = 0
         self.target_position: Pose2D | None = Pose2D()
-        self.target_theta: float = 0
+        self.target_theta: float | None = 0
         self.active_function = None
         self.current_command: str = "None"
         self.role: RoleType | None = None
@@ -49,11 +48,15 @@ class Bob_State:
     # ---------------------------------------------------------------------------------------#
 
     def update(self):
+        new = self.world_state.get_team_robot_pose(self.robot_id.value)
+        if new:
+            self.position = new
+
         self.is_ball_with_robot()
-        self.is_robot_stuck()
         self.target_reached()
         self.is_visible_from_ball()
         self.is_ball_reachable()
+        self.angle_reached()
 
     def is_ball_with_robot(self):
         if self.has_ball != self.check_ball_possession():
@@ -65,24 +68,12 @@ class Bob_State:
                 event_callbacks.team_got_ball_posetion(self.robot_id.name)
             self.has_ball = not self.has_ball
 
-    def is_robot_stuck(self):
-        new_pos = self.world_state.get_team_robot_pose(self.robot_id.value)
-        if new_pos is None:
-            return
-
-        if self.position == new_pos:
-            self.position_rept += 1
-        else:
-            self.position_rept = 0
-            if new_pos.quadrant != self.position.quadrant:
-                event_callbacks.new_quadrant(self.robot_id.name, new_pos.quadrant)
-                if new_pos.quadrant != self.position.zone:
-                    event_callbacks.new_zone(self.robot_id.name, new_pos.zone)
-            self.position = new_pos
-
-        if self.position_rept >= 500:
-            self.position_rept = 0
-            event_callbacks.on_robot_stuck(self.robot_id.name)
+    def angle_reached(self):
+        if self.target_theta:
+            print(f"{self.position.theta} -+- {self.target_theta}")
+            if abs(self.target_theta - self.position.theta) <= 0.1:
+                self.target_theta = None
+                print("dkasjdasjdioasdj")
 
     def target_reached(self):
         """
@@ -90,7 +81,7 @@ class Bob_State:
         Se o alvo for o último do percurso, limpa o caminho e sinaliza o evento.
         Caso contrário, avança para o próximo alvo do caminho.
         """
-        if not self.path:
+        if not self.path or self.target_theta:
             return
 
         self.target_position = self.path[self.path_index]

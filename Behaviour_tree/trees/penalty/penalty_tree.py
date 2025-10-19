@@ -1,12 +1,14 @@
 """
 Penalty tree: verifica cenário de pênalti (stub), posiciona entre bola e gol, escolhe lado e chuta.
 """
+
 from __future__ import annotations
 
 import py_trees as pt
-from Behaviour_tree.core.World_State import World_State
-from Behaviour_tree.core.blackboard import Blackboard_Manager
+
 from Behaviour_tree.bob_manager import BobManager
+from Behaviour_tree.core.blackboard import Blackboard_Manager
+from Behaviour_tree.core.World_State import World_State
 from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
 
@@ -27,6 +29,7 @@ def get_penalty_tree(robot: Bob) -> pt.behaviour.Behaviour:
 
 class IsPenalty(pt.behaviour.Behaviour):
     """Stub: checagem de pênalti (deixe em branco por enquanto)."""
+
     def __init__(self, robot: Bob, name: str = "IsPenalty"):
         super().__init__(name)
         self.robot = robot
@@ -40,6 +43,7 @@ class IsPenalty(pt.behaviour.Behaviour):
 
 class PositionBetweenBallAndGoal(pt.behaviour.Behaviour):
     """Posiciona o robô entre a bola e o gol adversário."""
+
     def __init__(self, robot: Bob, name: str = "PositionBetweenBallAndGoal"):
         super().__init__(name)
         self.robot = robot
@@ -55,13 +59,14 @@ class PositionBetweenBallAndGoal(pt.behaviour.Behaviour):
 
         # Posiciona num ponto alinhado bola->gol, a uma pequena margem da bola para chutar
         target = Pose2D.align_two(ball, goal_center, margin=200, is_left_team=True)
-        self.robot.set_new_target(target)
+        self.robot.set_new_target_position(target)
         self.robot.fast_movement()
         return pt.common.Status.SUCCESS
 
 
 class ChooseSideAndShoot(pt.behaviour.Behaviour):
     """Escolhe um lado do gol e chuta."""
+
     def __init__(self, robot: Bob, name: str = "ChooseSideAndShoot"):
         super().__init__(name)
         self.robot = robot
@@ -80,7 +85,7 @@ class ChooseSideAndShoot(pt.behaviour.Behaviour):
         target = left_post if ball.y < 0 else right_post
 
         # Orienta e chuta
-        self.robot.set_new_target(target)
+        self.robot.set_new_target_position(target)
         self.robot.fast_movement()
         self.robot.kick()
         return pt.common.Status.SUCCESS

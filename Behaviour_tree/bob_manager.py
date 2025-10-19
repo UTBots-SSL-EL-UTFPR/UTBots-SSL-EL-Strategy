@@ -10,7 +10,7 @@ from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from Behaviour_tree.trees.tree import Tree
 from SSL_configuration.configuration import Configuration
 from utils.defines import FIELD_INVERTED_SIDE  # BOB_RADIUS,
-from utils.defines import BALL_RADIUS, MIN_PASS_DISTANCE, ROBOT_RADIUS
+from utils.defines import LOGIC_BALL_RADIUS, LOGIC_ROBOT_RADIUS, MIN_PASS_DISTANCE
 from utils.pose2D import Pose2D, QuadrantType, RoleType, ZoneType
 
 from .core.World_State import FoesID, TeamID, World_State
@@ -90,13 +90,11 @@ class BobManager:
         for obs in obstacles:
             if obs == robot.state.position:
                 obstacles.remove(obs)
-        robot.state.path = robot.find_shortest_path(
+        robot.state.path = MotionHelper.find_shortest_path(
             robot.state.position,
             target,
             obstacles,
-            ROBOT_RADIUS,
             self.ball_pos,
-            BALL_RADIUS,
         )
 
     # ------------------------------------------------------------------------------------------------------------------------------------------------------------------#
@@ -165,30 +163,6 @@ class BobManager:
         if info and info["team"] == "ally":
             return info["id"]
         return None
-
-    def set_bob_freekick_position(self):
-        """
-        Decide metas de posicionamento para **goleiro**, **cobrador** e **apoio** em bola parada ofensiva.
-        Para bola parada defenciva, podemos ter goleiro cobrador e  2 apoio
-        """
-        if self.ball_pos.x < self.configuration.max_ball_y_to_goalkeeper_kick:  # type: ignore
-            self.set_offensive_suport_position(TeamID.Kamiji)
-            aux = self.bobs.get(TeamID.Kamiji)
-            if not aux or not aux.state:
-                return
-            pos = aux.state.path[len(aux.state.path) - 1]
-            self.set_midlle_suport_position(TeamID.Defender, pos)  # type: ignore
-            self.set_kicker_position(TeamID.Goalkeeper)
-        else:
-            self.set_kicker_position(TeamID.Kamiji)
-
-            self.set_offensive_suport_position(TeamID.Defender)
-            print("tres")
-
-            self.set_goalkeeper_position(TeamID.Goalkeeper)
-            print("quatro")
-
-        return
 
 
 if __name__ == "__main__":
