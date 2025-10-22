@@ -10,7 +10,7 @@ class Blackboard_Manager:
 
     def __init__(self):
         if Blackboard_Manager._instance is not None:
-            raise Exception("Use BlackboardManager.get() para acessar a instância.")
+            raise Exception("Use BlackboardManager.get_instance() para acessar a instância.")
         self._bb = py_trees.blackboard.Blackboard()
     @staticmethod
     def get_instance():
