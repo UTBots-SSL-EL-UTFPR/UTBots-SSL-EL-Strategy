@@ -1,6 +1,6 @@
 from typing import List
 from ..core.blackboard import Blackboard_Manager
-from .Observer import EventEnum
+from .Observer import Event
 from __future__ import annotations
 from .Observer import Observer
 
@@ -36,15 +36,15 @@ class EventNotifier:
         
         self._observersList.append(observer)
 
-    def reciveEvent(self, event: EventEnum):
-        if not isinstance(event, EventEnum):
+    def reciveEvent(self, event: Event):
+        if not isinstance(event, Event):
             raise Exception("Send the fkn right param type, it must to be an EventEnum instance")
 
         self.notify(event)
-        self.blackBoard.set(event.name, )
+        self.blackBoard.set(event.name, event.value)
 
-    def notify(self, event: EventEnum):
-        if not isinstance(event, EventEnum):
+    def notify(self, event: Event):
+        if not isinstance(event, Event):
             raise Exception("Send the fkn right param type, it must to be an EventEnum instance")
         
         for observer in self._observersList:

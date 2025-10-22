@@ -36,11 +36,17 @@ class StringEnum(str, Enum):
 
     def __repr__(self):
         return f"<{self.__class__.__name__}.{self.name}: '{self.value}'>"
+
+
+
+class EventEnum(StringEnum):
+    VAZIO = ""
+
     
-class EventEnum():
-    def __init__(self, name: str, value: bool):
-        self.name = name
-        self.value = value
+class Event():
+    def __init__(self, name: EventEnum = EventEnum.VAZIO, value: bool = False):
+        self.name: EventEnum = name
+        self.value: bool = value
 
 
 class BlackboardKeys:

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from ..core.event_callbacks import EventEnum
+from ..core.event_callbacks import Event
 
 class Observer(ABC):
 
@@ -9,6 +9,6 @@ class Observer(ABC):
         instance.subscribe(self)
 
     @abstractmethod
-    def update(self, event: EventEnum):
+    def update(self, event: Event):
         #Virtual method to recive notifications from notifier
         pass
