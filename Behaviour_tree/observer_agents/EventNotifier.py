@@ -48,4 +48,4 @@ class EventNotifier:
             raise Exception("Send the fkn right param type, it must to be an EventEnum instance")
         
         for observer in self._observersList:
-            observer.update(event) 
+            observer.notify(event) 

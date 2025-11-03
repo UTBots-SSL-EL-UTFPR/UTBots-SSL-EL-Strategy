@@ -9,6 +9,6 @@ class Observer(ABC):
         instance.subscribe(self)
 
     @abstractmethod
-    def update(self, event: Event):
+    def notify(self, event: Event):
         #Virtual method to recive notifications from notifier
         pass

@@ -40,7 +40,10 @@ class StringEnum(str, Enum):
 
 
 class EventEnum(StringEnum):
-    VAZIO = ""
+    TEAM_HAS_BALL = "teamHasBall"
+    FOES_HAS_BALL = "foesHasBall"
+    PASSA_MEIO = "passaMeio"
+    
 
     
 class Event():
