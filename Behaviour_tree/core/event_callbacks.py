@@ -43,7 +43,31 @@ class EventEnum(StringEnum):
     TEAM_HAS_BALL = "teamHasBall"
     FOES_HAS_BALL = "foesHasBall"
     PASSA_MEIO = "passaMeio"
-    
+    HALT = "halt"
+    TEAM_PENALTY = "teamPenalty"
+    FOES_PENALTY = "foesPenalty"
+    TEAM_FREE_KICK = "teamFreeKick"
+    FOES_FREE_KICK = "foesFreeKick"
+    STOP = "stop"
+
+class TreePaths(StringEnum):
+    KICKER = "kicker"
+    SUPORT_OF = "suportOf"
+    PIVO = "pivo"
+    GOALKEEPER = "goalKeeper"
+    DEF_RECUADO = "defRecuado"
+    DEF_ADD = "def_add"
+    BARRIER = "barrier"
+    STOP1 = "stop1"
+    STOP2 = "stop2"
+    STOP3 = "stop3"
+    HALT1 = "halt1"
+    HALT2 = "halt2"
+    HALT3 = "halt3"
+    EXPULSO1 = "expulso1"
+    EXPULSO2 = "expulso2"
+    EXPULSO3 = "expulso3"
+
 
     
 class Event():

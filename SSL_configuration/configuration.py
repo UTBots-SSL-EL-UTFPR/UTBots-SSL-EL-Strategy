@@ -45,6 +45,8 @@ class Configuration:
         self.threshould_arrived_target = None
         self.distance_to_press_opponent = None
 
+        self.startWithBall = None
+
     def get_side_sign(self):
         if self.is_left_team:
             return 1
@@ -116,5 +118,6 @@ class Configuration:
             instance.threshould_arrived_target = data["Motion"][
                 "threshould_arrived_target"
             ]
+            instance.startWithBall = data["startWithBall"]
 
         return Configuration._instance
