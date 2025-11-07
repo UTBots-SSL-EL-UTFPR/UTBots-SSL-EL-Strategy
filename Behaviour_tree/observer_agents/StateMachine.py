@@ -61,12 +61,13 @@ class StateMachine(Observer):
             "J3": TreePaths.EXPULSO3,
         }
 
-        self.stack = []
+        self.normalState = "DefRec"
+        self.specialState = None
 
-        if self.config.startWithBall:
-            self.stack.append("TeamFreeKick")
-        else:
-            self.stack.append("FoesFreeKick")
+        # if self.config.startWithBall:
+        #     self.stack.append("TeamFreeKick")
+        # else:
+        #     self.stack.append("FoesFreeKick")
 
     def setTrees(self):
         _bb.set(TreePaths.KICKER, None)
@@ -108,99 +109,107 @@ class StateMachine(Observer):
         ...
 
     def updateBobTrees(self):
-        if not self.stack:
-            return
-        tree_codes = self.stateDef.get(self.stack[-1], ())
+        state = self.specialState
+        if state is None:
+            state = self.normalState
+        tree_codes = self.stateDef.get(state, ())
         bob_values = list(self.bobManager.bobs.values())
         for code, value in zip(tree_codes, bob_values):
             path = self.treesRelation.get(code)
             if path is not None:
                 _bb.set(path, value)
-                print(path, value)
+                print(path, value.robot_id)
 
 
     def updateState(self):
-        if not self.stack:
-            return
-        
-        top = self.stack[-1]
 
-        if self.events[EventEnum.FOES_PENALTY].value == True and top != "FoesPenalty":
-            self.stack.append("FoesPenalty")
+        if self.events[EventEnum.FOES_PENALTY].value == True and self.specialState is None:
+            self.specialState = "FoesPenalty"
             return True
 
-        if self.events[EventEnum.TEAM_PENALTY].value == True and top != "TeamPenalty":
-            self.stack.append("TeamPenalty")
+        if self.events[EventEnum.TEAM_PENALTY].value == True and self.specialState is None:
+            self.specialState = "TeamPenalty"
             return True
         
-        if self.events[EventEnum.TEAM_FREE_KICK].value == True and top != "TeamFreeKick":
-            self.stack.append("TeamFreeKick")
+        if self.events[EventEnum.TEAM_FREE_KICK].value == True and self.specialState is None:
+            self.specialState = "TeamFreeKick"
             return True
         
-        if self.events[EventEnum.FOES_FREE_KICK].value == True and top != "FoesFreeKick":
-            self.stack.append("FoesFreeKick")
+        if self.events[EventEnum.FOES_FREE_KICK].value == True and self.specialState is None:
+            self.specialState = "FoesFreeKick"
             return True
         
-        if self.events[EventEnum.HALT].value == True and top != "Halt":
-            self.stack.append("Halt")
+        if self.events[EventEnum.HALT].value == True and self.specialState is None:
+            self.specialState = "Halt"
             return True
         
-        if self.events[EventEnum.STOP].value == True and top != "Stop":
-            self.stack.append("Stop")
+        if self.events[EventEnum.STOP].value == True and self.specialState is None:
+            self.specialState = "Stop"
             return True
-
-        match(top):
+        match(self.specialState):
             case "Stop":
                 if self.events[EventEnum.STOP].value == False:
-                    self.stack.pop()
+                    self.specialState = None
                     return True
 
             case "Halt":
                 if self.events[EventEnum.HALT].value == False:
-                    self.stack.pop()
+                    self.specialState = None
                     return True
 
             case "FoesFreeKick":
                 if self.events[EventEnum.FOES_FREE_KICK].value == False:
-                    self.stack.pop()
+                    self.specialState = None
                     return True
             
             case "TeamFreeKick":
                 if self.events[EventEnum.TEAM_FREE_KICK].value == False:
-                    self.stack.pop()
+                    self.specialState = None
                     return True
 
             case "TeamPenalty":
                 if self.events[EventEnum.TEAM_PENALTY].value == False:
-                    self.stack.pop()
+                    self.specialState = None
                     return True
 
             case "FoesPenalty":
                 if self.events[EventEnum.FOES_PENALTY].value == False:
-                    self.stack.pop()
+                    self.specialState = None
                     return True
+        if self.specialState is not None:
+            return
 
+        match(self.normalState):
             case "AtkPosse":
                 if self.events[EventEnum.TEAM_HAS_BALL].value == False and self.events[EventEnum.FOES_HAS_BALL].value == True:
-                    self.stack.pop()
-                    self.stack.append("DefPerca")
+                    self.normalState = "DefPerca"
                     return True
             
             case "DefPerca":
                 if self.events[EventEnum.PASSA_MEIO].value == True:
-                    self.stack.pop()
-                    self.stack.append("DefRec")
+                    self.normalState = "DefRec"
                     return True
             
             case "DefRec":
                 if self.events[EventEnum.TEAM_HAS_BALL].value == True and self.events[EventEnum.FOES_HAS_BALL].value == False:
-                    self.stack.pop()
-                    self.stack.append("AtkPosse")
+                    self.normalState = "AtkPosse"
                     return True
 
     def update(self):
+        initialNormalState = self.normalState
+        inititalSpecialState = self.specialState
         while self.updateState() == True:
+            continue
+        if self.specialState is not None:
+            if inititalSpecialState != self.specialState:
+                self.updateBobTrees()
+
+            return
+        
+        if initialNormalState != self.normalState or inititalSpecialState != self.specialState:
             self.updateBobTrees()
+        
+        
         
     #2 problemas ainda, o loop infinito, so fazer com variaveis separadas para estados especiais, e o fato do estado inicial nao ser um estado in game de vdd
         
