@@ -199,10 +199,7 @@ def robot_lost_posetion(robot_id: str):
 @events.on(Event.TEAM_GOT_BALL_POSSESSION)
 def team_got_ball_posetion():
     logger.debug("TEAM got ball posetion")
-    if _bb.get(BlackboardKeys.FOES_HAVE_BALL):
-        _bb.set(BlackboardKeys.FOES_HAVE_BALL, False)
-    else:
-        _bb.set(
+    _bb.set(
             f"{BlackboardKeys.TEAM_HAS_BALL}",
             True,
         )
@@ -217,8 +214,7 @@ def lost_ball_posetion():
 @events.on(Event.FOES_GOT_BALL_POSSESSION)
 def foes_got_ball_posetion():
     logger.debug("FOES got ball posetion")
-    if not _bb.get(BlackboardKeys.TEAM_HAS_BALL):
-        _bb.set(
+    _bb.set(
             f"{BlackboardKeys.FOES_HAVE_BALL}",
             True,
         )

@@ -288,9 +288,16 @@ class MovimentoUnico(py_trees.behaviour.Behaviour):
     envia um movimento e retorna Sucess
     """
 
-    def __init__(self, robot: Bob, name: str = "MovimentoUnico"):
+    def __init__(
+        self,
+        robot: Bob,
+        name: str = "MovimentoUnico",
+        delta_t: float = 1,
+    ):
         super().__init__(name)
         self.robot = robot
+        self.delta_t = delta_t
+        self._last_update_time = 0.0
 
     def setup(self, **kwargs) -> None:
         logger.debug(f"setup {self.name}")
@@ -300,8 +307,13 @@ class MovimentoUnico(py_trees.behaviour.Behaviour):
         logger.debug("movimento unitario")
 
     def update(self) -> py_trees.common.Status:
+        current_time = time.time()
+        if (current_time - self._last_update_time) > self.delta_t:
+            logger.debug(f"{self.name} - SUCCESS")
+            return py_trees.common.Status.SUCCESS
+
         self.robot.fast_movement()
         self.robot.state.current_command = self.name
-        logger.debug(f"{self.name} - SUCCESS")
+        logger.debug(f"{self.name} - RUNNING")
 
-        return py_trees.common.Status.SUCCESS
+        return py_trees.common.Status.RUNNING
