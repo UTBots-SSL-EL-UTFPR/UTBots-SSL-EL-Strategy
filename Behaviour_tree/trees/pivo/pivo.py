@@ -25,7 +25,7 @@ class PivoAtk(py_trees.behaviour.Behaviour):
         self,
         robot: Bob,
         name: str = "reposicionar-se como PIVO",
-        delta_t: float = 0.2,
+        delta_t: float = 0.5,
     ):
         super().__init__(name)
         self.robot = robot
@@ -86,7 +86,7 @@ class PivoDef(py_trees.behaviour.Behaviour):
         self,
         robot: Bob,
         name: str = "pivo defesa",
-        delta_t: float = 0.2,
+        delta_t: float = 0.5,
     ):
         super().__init__(name)
         self.robot = robot

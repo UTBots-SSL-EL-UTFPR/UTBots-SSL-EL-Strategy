@@ -40,6 +40,9 @@ class BobManager(Manager):
         self.bobs[TeamID.Kamiji] = Bob(TeamID.Kamiji)
         self.bobs[TeamID.Argenton] = Bob(TeamID.Argenton)
         self.bobs[TeamID.SabKawa] = Bob(TeamID.SabKawa)
+        self.foes[FoesID.Cerberus] = FoeState(FoesID.Cerberus)
+        self.foes[FoesID.TauraBots] = FoeState(FoesID.TauraBots)
+        self.foes[FoesID.GralhaBots] = FoeState(FoesID.GralhaBots)
 
     def update(self):
         """Atualiza o estado global de todos os robôs."""

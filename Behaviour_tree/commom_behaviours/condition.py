@@ -82,12 +82,16 @@ class HasBall(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
-        if _bb.get(f"{self.robot.robot_id.name}{BlackboardKeys.HAS_BALL}") and _bb.get(
-            f"{BlackboardKeys.TEAM_HAS_BALL}"
-        ):
-            print(_bb.get(f"{BlackboardKeys.TEAM_HAS_BALL}"))
+        hasTeam = BlackboardKeys.TEAM_HAS_BALL
+        hasFoes = BlackboardKeys.FOES_HAVE_BALL
+        
+        if _bb.get(hasTeam) and _bb.get(hasFoes):
+            return py_trees.common.Status.FAILURE
+        
+        if _bb.get(f"{self.robot.robot_id.name}{BlackboardKeys.HAS_BALL}"):
             logger.debug(f"{self.name}-{self.robot.robot_id.name} - SUCCESS")
             return py_trees.common.Status.SUCCESS
+        
         logger.debug(f"{self.name}-{self.robot.robot_id.name} - FAILURE")
         return py_trees.common.Status.FAILURE
 

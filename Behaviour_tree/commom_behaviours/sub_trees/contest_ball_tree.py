@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import time
 
 import py_trees
 
@@ -25,35 +26,67 @@ class PressureOpponent(py_trees.behaviour.Behaviour):
     é usado quando ja se espera estar em alguma pos entre o inimigo e o gol
     """
 
-    def __init__(self, robot: Bob, name: str = "PressureOpponent"):
+    def __init__(
+        self,
+        robot: Bob,
+        name: str = "PressureOpponent",
+        delta_t: float = 0.5,
+    ):
         super().__init__(name)
-        self.bb = py_trees.blackboard.Blackboard()
         self.robot = robot
+        self.delta_t = delta_t
+        self.last_target = Pose2D(0, 0)
+        self._last_update_time = 0.0
         self.foes_with_ball = f"{BlackboardKeys.FOES_HAVE_BALL}"
+
+        self._bb = Blackboard_Manager.get_instance()
 
     def setup(self, **kwargs) -> None:
         logger.debug(f"setup {self.name}")
         return super().setup(**kwargs)
 
+    def initialise(self) -> None:
+        current_time = time.time()
+        new_pos = StrategyHelper.get_press_oponent_position()
+        new_path = StrategyHelper.get_Robot_path(
+            new_pos, self.robot.state.position, None
+        )
+
+        self.robot.set_path(new_path)
+
+        self.last_target = new_path[-1]
+        self._last_update_time = current_time
+
     def update(self) -> py_trees.common.Status:
-        """se prepara para press oponente"""
+        """
+        Verifica o tempo e atualiza a posição se o delta_t foi atingido.
+        """
         if not _bb.get(self.foes_with_ball):
             logger.debug(f"{self.name} - FAILURE FOES SEM BOLA")
             return py_trees.common.Status.FAILURE
-        self.robot.state.target_position = StrategyHelper.get_press_oponent_position()
-        logger.debug(f"{self.name} - SUCCESS")
-        return py_trees.common.Status.SUCCESS
+        current_time = time.time()
+
+        if (current_time - self._last_update_time) > self.delta_t:
+            new_pos = StrategyHelper.get_press_oponent_position()
+            new_path = StrategyHelper.get_Robot_path(
+                new_pos, self.robot.state.position, None
+            )
+            self.robot.set_path(new_path)
+            self.last_target = new_path[-1]
+            self._last_update_time = current_time
+            logger.debug("new target", new_path)
+            return py_trees.common.Status.SUCCESS
+
+        logger.debug(f"{self.name} - {self.robot.robot_id.name} - RUNNING")
+
+        self.robot.fast_movement()
+        return py_trees.common.Status.RUNNING
 
 
-def get_luta_pela_bola_sub_tree(robot: Bob) -> py_trees.composites.Sequence:
+def get_luta_pela_bola_sub_tree(robot: Bob) -> py_trees.composites.Selector:
     press_op = PressureOpponent(robot)
     rec_bola = RecuperarBola(robot)
     onde_ir = py_trees.composites.Selector(
-        "onde ir", False, children=[press_op, rec_bola]
+        "onde ir", True, children=[press_op, rec_bola]
     )
-
-    mov_unico = MovimentoUnico(robot)
-    sequencia_brigar_pela_bola = py_trees.composites.Sequence(
-        "brigar pela bola", memory=False, children=[onde_ir, mov_unico]
-    )
-    return sequencia_brigar_pela_bola
+    return onde_ir
