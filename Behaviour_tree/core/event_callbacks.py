@@ -24,6 +24,7 @@ class StringEnum(str, Enum):
 
 
 class EventEnum(StringEnum):
+    VAZIO = ""
     TEAM_HAS_BALL = "teamHasBall"
     FOES_HAS_BALL = "foesHasBall"
     PASSA_MEIO = "passaMeio"
@@ -54,7 +55,7 @@ class TreePaths(StringEnum):
 
 
     
-class Event():
+class EventClass():
     def __init__(self, name: EventEnum = EventEnum.VAZIO, value: bool = False):
         self.name: EventEnum = name
         self.value: bool = value
