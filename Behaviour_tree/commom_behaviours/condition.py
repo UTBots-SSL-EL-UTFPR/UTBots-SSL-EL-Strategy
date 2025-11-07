@@ -4,16 +4,15 @@ from typing import Any
 import py_trees
 from py_trees.common import Status
 
+import Behaviour_tree.helpers.visiblidade_gol as vis_gol
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
 from Behaviour_tree.core.World_State import TeamID, World_State
-from Behaviour_tree.helpers.positioning_helper import PositioningHelper
+from Behaviour_tree.helpers.field_helper import FieldHelper
 from Behaviour_tree.robot.bob import Bob
+from utils.defines import MAX_SHOOT_DISTANCE
 from utils.pose2D import Pose2D
-from utils.defines import (MAX_SHOOT_DISTANCE)
-import Behaviour_tree.helpers.visiblidade_gol as vis_gol
 
-positions_values = BlackboardKeys.Values.Positions
 _bb = Blackboard_Manager.get_instance()
 _ws = World_State.get_object()
 
@@ -41,7 +40,7 @@ class TeamHasBall(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
-        if _bb.get(f"{BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL}"):
+        if _bb.get(f"{BlackboardKeys.TEAM_HAS_BALL}"):
             logger.debug(f"{self.name} - SUCCESS")
             return py_trees.common.Status.SUCCESS
         logger.debug(f"{self.name} - FAILURE")
@@ -65,7 +64,7 @@ class FoesHaveBall(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
-        if _bb.get(f"{BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL}"):
+        if _bb.get(f"{BlackboardKeys.FOES_HAVE_BALL}"):
             logger.debug(f"{self.name} - SUCCESS")
             return py_trees.common.Status.SUCCESS
         logger.debug(f"{self.name} - FAILURE")
@@ -83,9 +82,10 @@ class HasBall(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
-        if _bb.get(
-            f"{self.robot.state.robot_id.name}{BlackboardKeys.Flags.BallMotion.HAS_BALL}"
+        if _bb.get(f"{self.robot.robot_id.name}{BlackboardKeys.HAS_BALL}") and _bb.get(
+            f"{BlackboardKeys.TEAM_HAS_BALL}"
         ):
+            print(_bb.get(f"{BlackboardKeys.TEAM_HAS_BALL}"))
             logger.debug(f"{self.name}-{self.robot.robot_id.name} - SUCCESS")
             return py_trees.common.Status.SUCCESS
         logger.debug(f"{self.name}-{self.robot.robot_id.name} - FAILURE")
@@ -106,7 +106,7 @@ class ValidLine(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
-        if _bb.get(f"{BlackboardKeys.Flags.TeamContext.VALID_LINE}"):
+        if _bb.get(f"{BlackboardKeys.VALID_LINE}"):
             return py_trees.common.Status.RUNNING
         return py_trees.common.Status.FAILURE
 
@@ -121,7 +121,7 @@ class BolaSegura(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
-        if _bb.get(BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL):
+        if _bb.get(BlackboardKeys.FOES_HAVE_BALL):
             logger.debug(f"{self.name} - FAILURE FOES com bola")
             return py_trees.common.Status.FAILURE
 
@@ -145,7 +145,7 @@ class ReceiverUnmarked(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
-        if _bb.get(f"{BlackboardKeys.Flags.TeamContext.UNMARKED_RECEIVER}"):
+        if _bb.get(f"{BlackboardKeys.UNMARKED_RECEIVER}"):
             return py_trees.common.Status.RUNNING
 
         return py_trees.common.Status.FAILURE
@@ -181,11 +181,9 @@ class BallVisible(py_trees.behaviour.Behaviour):
         if not self.robot or not self.robot.state:
             return py_trees.common.Status.FAILURE
 
-        if _bb.get(
-            f"{self.robot.robot_id.name}{BlackboardKeys.Flags.BallMotion.BALL_VISIBLE}"
-        ):
+        if _bb.get(f"{self.robot.robot_id.name}{BlackboardKeys.BALL_VISIBLE}"):
             return py_trees.common.Status.SUCCESS
-        pos = _bb.get(f"{self.robot.robot_id.name}{positions_values.POS_BALL_VISIBLE}")
+        pos = _bb.get(f"{self.robot.robot_id.name}{BlackboardKeys.POS_BALL_VISIBLE}")
 
         if isinstance(pos, Pose2D):
             self.robot.adicionar_ponto_trajetoria(pos)
@@ -203,60 +201,53 @@ class Teamkick(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
-        if _bb.get(f"{BlackboardKeys.Flags.KickActions.TEAM_KICK}"):
+        if _bb.get(f"{BlackboardKeys.TEAM_KICK}"):
             return py_trees.common.Status.SUCCESS
         return py_trees.common.Status.FAILURE
-    
+
+
 class Goal_visibility(py_trees.behaviour.Behaviour):
-    def __init__(
-      self,
-      attacker: Bob,
-      name: str = "Goal_visibility"
-  ):
-      super().__init__(name)
-      self.attacker = attacker
+    def __init__(self, attacker: Bob, name: str = "Goal_visibility"):
+        super().__init__(name)
+        self.attacker = attacker
 
-def setup(self, **kwargs: Any) -> None:
-      if self.attacker is None:
-          raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
-      return super().setup(**kwargs)
-def update(self) -> py_trees.common.Status:
-      obstacles_pose = _ws.get_all_robot_position()
-      attacker_id = self.attacker.robot_id.value   # Transforma de enum para int
-      attacker_pose = _ws.get_team_robot_pose(attacker_id)
-      goal_center = _pos_helper.get_goal_center()
-      x_goal = goal_center.x
-    
-      if(vis_gol.max_range_of_visibility(obstacles_pose, attacker_pose, x_goal)):
-          return py_trees.common.Status.SUCCESS
-      return py_trees.common.Status.FAILURE
+    def setup(self, **kwargs: Any) -> None:
+        if self.attacker is None:
+            raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
+        return super().setup(**kwargs)
 
+    def update(self) -> py_trees.common.Status:
+        obstacles_pose = _ws.get_all_robot_position()
+        attacker_pose = self.attacker.state.position
+        goal_center = FieldHelper.get_enemy_goal_center()
+        x_goal = goal_center.x
 
+        if vis_gol.max_range_of_visibility(obstacles_pose, attacker_pose, x_goal):
+            return py_trees.common.Status.SUCCESS
+        return py_trees.common.Status.FAILURE
 
 
 class Goal_distance(py_trees.behaviour.Behaviour):
-  def __init__(
-      self,
-      attacker: Bob,
-      name: str = "Goal_distance",
-  ):
-      super().__init__(name)
-      self.attacker = attacker
+    def __init__(
+        self,
+        attacker: Bob,
+        name: str = "Goal_distance",
+    ):
+        super().__init__(name)
+        self.attacker = attacker
 
-def setup(self, **kwargs: Any) -> None:
-      if self.attacker is None:
-          raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
-      return super().setup(**kwargs)
+    def setup(self, **kwargs: Any) -> None:
+        if self.attacker is None:
+            raise RuntimeError(f"[{self.name}] Robôs não definidos no setup()")
+        return super().setup(**kwargs)
 
-def update(self) -> py_trees.common.Status:
-      attacker_id = self.attacker.robot_id.value   # Transforma de enum para int
-      attacker_pose = _ws.get_team_robot_pose(attacker_id)
+    def update(self) -> py_trees.common.Status:
+        attacker_pose = self.attacker.state.position
 
-      goal_center = _pos_helper.get_goal_center()
-      x_goal = goal_center.x
+        goal_center = FieldHelper.get_enemy_goal_center()
+        x_goal = goal_center.x
 
-      distance_to_goal = attacker_pose.distance_to(Pose2D(x_goal, goal_center.y))
-      if(distance_to_goal <= MAX_SHOOT_DISTANCE):
-          return py_trees.common.Status.SUCCESS
-      return py_trees.common.Status.FAILURE
-
+        distance_to_goal = attacker_pose.distance_to(Pose2D(x_goal, goal_center.y))
+        if distance_to_goal <= MAX_SHOOT_DISTANCE:
+            return py_trees.common.Status.SUCCESS
+        return py_trees.common.Status.FAILURE

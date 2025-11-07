@@ -1,16 +1,24 @@
 import math
 import time
 from collections import deque
+from typing import List, Optional, Set, Tuple
 
 import numpy as np
 
 from utils import defines
 from utils.pose2D import Pose2D
 
-from .positioning_helper import PositioningHelper
-
 
 class MotionHelper:
+    @classmethod
+    def is_valid_placement(
+        cls, x: float, y: float, obstacules: list[Pose2D], raio: float
+    ) -> bool:
+        for obs in obstacules:
+            if ((x - obs.x) ** 2 + (y - obs.y) ** 2) < raio**2 * 2.2:
+                return False
+        return True
+
     @classmethod
     def find_shortest_path(
         cls,
@@ -19,6 +27,8 @@ class MotionHelper:
         obstacules: list[Pose2D],
         ball: Pose2D | None = None,
     ) -> list[Pose2D]:
+
+        print(f"{start} +++----+++ {end}")
         step = 20
         start_cell = (int(start.x // step), int(start.y // step))
         end_cell = (int(end.x // step), int(end.y // step))
@@ -46,19 +56,18 @@ class MotionHelper:
             ]:
                 if (nx, ny) not in visited:
                     wx, wy = nx * step, ny * step
-                    if PositioningHelper.is_valid_placement(
+                    if cls.is_valid_placement(
                         wx, wy, obstacules, defines.LOGIC_ROBOT_RADIUS
                     ):
 
-                        if ball and not PositioningHelper.is_valid_placement(
+                        if ball and not cls.is_valid_placement(
                             wx, wy, [ball], defines.LOGIC_BALL_RADIUS
                         ):
                             continue
 
                         visited[(nx, ny)] = current  # type: ignore
                         queue.append((nx, ny))
-
-        return [start]
+        return [end]
 
     @classmethod
     def motorVel(cls, q, phi):

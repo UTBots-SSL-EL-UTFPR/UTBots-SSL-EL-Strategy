@@ -1,28 +1,23 @@
 from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from SSL_configuration.configuration import Configuration
-from utils.defines import BALL_POSSESSION_DISTANCE
 from utils.pose2D import Pose2D, RoleType
-
-from ..core import event_callbacks
-from ..core.World_State import TeamID, World_State
 
 
 class Bob_State:
     """Estado dinâmico do robô (posição, velocidade, posse, quadrante e role)."""
 
-    def __init__(self, robot_id: TeamID):
-        self.robot_id = robot_id
+    def __init__(self):
 
-        self.world_state = World_State.get_object()
-        self.configuration = Configuration.getObject()
+        self._position: Pose2D = Pose2D(3333, 3333)
+        self._velocity: Pose2D = Pose2D()
 
-        self.position: Pose2D = Pose2D(3333, 3333)
-        self.velocity: Pose2D = Pose2D()
+        self._path: list[Pose2D] = []
+        self.fast_mov = 0
+        self._path_index = 0
 
-        self.path: list[Pose2D] = []
-        self.path_index = 0
-        self.target_position: Pose2D | None = Pose2D()
+        self._target_position: Pose2D | None = Pose2D()
         self.target_theta: float | None = 0
+
         self.active_function = None
         self.current_command: str = "None"
         self.role: RoleType | None = None
@@ -31,136 +26,62 @@ class Bob_State:
         self.has_ball = False
         self.position_rept = 0
 
-    def setup_callbacks(self):
-
-        event_callbacks.lost_ball_posetion(self.robot_id.name)
-        event_callbacks.new_quadrant(self.robot_id.name, 0)
-        event_callbacks.new_zone(self.robot_id.name, 0)
-        event_callbacks.on_robot_stuck(self.robot_id.name)
-        event_callbacks.target_reset(self.robot_id.name)
-        event_callbacks.on_ball_not_visible(self.robot_id.name, Pose2D(0, 0))
-
-    # ---------------------------------------------------------------------------------------#
-    #                                       UPDATE                                          #
-    # temos os seguintes eventos:                                                           #
-    #   1. Mudança de posse de bola                                                         #
-    #   3. Verifica target_position + repetição de target
-    # ---------------------------------------------------------------------------------------#
-
-    def update(self):
-        new = self.world_state.get_team_robot_pose(self.robot_id.value)
-        if new:
-            self.position = new
-
-        self.is_ball_with_robot()
-        self.target_reached()
-        self.is_visible_from_ball()
-        self.is_ball_reachable()
-        self.angle_reached()
-
-    def is_ball_with_robot(self):
-        if self.has_ball != self.check_ball_possession():
-            if self.has_ball:
-                print(self.robot_id)
-                event_callbacks.lost_ball_posetion(self.robot_id.name)
-            else:
-                self.ball_visible = True
-                event_callbacks.team_got_ball_posetion(self.robot_id.name)
-            self.has_ball = not self.has_ball
-
-    def angle_reached(self):
-        if self.target_theta:
-            print(f"{self.position.theta} -+- {self.target_theta}")
-            if abs(self.target_theta - self.position.theta) <= 0.1:
-                self.target_theta = None
-                print("dkasjdasjdioasdj")
-
-    def target_reached(self):
-        """
-        Verifica se o robô alcançou o alvo atual no caminho.
-        Se o alvo for o último do percurso, limpa o caminho e sinaliza o evento.
-        Caso contrário, avança para o próximo alvo do caminho.
-        """
-        if not self.path or self.target_theta:
-            return
-
-        self.target_position = self.path[self.path_index]
-        if self.target_position.is_in_range(
-            self.position, self.configuration.threshould_arrived_target
-        ):
-            if self.path_index >= len(self.path) - 1:
-                self.path.clear()
-                self.path_index = 0
-                event_callbacks.on_target_reached(self.robot_id.name)
-            else:
-                self.path_index += 1
-
-    def is_visible_from_ball(self):
-        visible, best_position = PositioningHelper.get_clear_pass_position(
-            self.position
-        )
-        if visible != self.ball_visible:
-            if visible:
-                event_callbacks.on_ball_visible(self.robot_id.name)
-            else:
-                event_callbacks.on_ball_not_visible(self.robot_id.name, best_position)
-
-        self.ball_visible = visible
-
-    def is_ball_reachable(self):
-        reachable = 500 > self.position.distance_to(
-            self.world_state.get_ball_position()
-        )
-        event_callbacks.on_ball_reachable(self.robot_id.name, reachable)
-
-    # ---------------------------------------------------------------------------------------#
-    #                                         Setters                                       #
-    # ---------------------------------------------------------------------------------------#
-    def set_position(self, position: Pose2D):
-        """Define manualmente a posição e recalcula quadrante e role."""
-        self.position = position
-        self.quadrant_index = self.position.quadrant
-
-    def set_velocity(self, velocity: Pose2D):
-        """Atualiza o vetor de velocidade (vx, vy)."""
-        self.velocity = velocity
-
-    def set_orientation(self, angle: float):
-        """Define a orientação atual do robô."""
-        self.orientation = angle
-
-    def set_target_position(self, position: Pose2D):
-        """Define uma posição alvo (goal) para planejamento de movimento."""
-        event_callbacks.target_reset(self.robot_id.name)
-        self.target_position = position
-
     def reset(self):
-        """Restaura o estado para valores padrão (limpa alvo, role e quadrante)."""
-        self.position = Pose2D()
-        self.velocity = Pose2D()
-        self.target_position = Pose2D()
-        self.active_function = None
-        self.current_command = "None"
-        self.has_ball = False
-        self.quadrant_index = None
+        self._position = Pose2D(3333, 3333)
+        self._velocity = Pose2D()
+        self._path.clear()
+        self._path_index = 0
+        self._target_position = None
         self.role = None
-        self.setup_callbacks()
+        self.has_ball = False
 
-    # ---------------------------------------------------------------------------------------#
-    #                                   METRICAS/CONSULTAS                                  #
-    # ---------------------------------------------------------------------------------------#
-    def check_ball_possession(self) -> bool:
-        ball_position = self.world_state.get_ball_position()
-        if self.position and ball_position:
-            return self.position.distance_to(ball_position) <= BALL_POSSESSION_DISTANCE
-        print("ERRO, POS da BOLA OU do ROBO NULOS")
-        return False
+    @property
+    def position(self):
+        return self._position
 
-    # =================== Getters simples para agregador ===================
-    def get_position(self) -> Pose2D:
-        return self.position
+    @position.setter
+    def position(self, value: Pose2D | None):
+        if value is not None:
+            self._position = value
 
-    def get_velocity(self) -> Pose2D:
-        return self.velocity
+    @property
+    def velocity(self):
+        return self._velocity
 
-    # =================== Internos de classificação ===================
+    @velocity.setter
+    def velocity(self, value: Pose2D | None):
+        if value is not None:
+            self._velocity = value
+
+    @property
+    def path(self) -> list[Pose2D]:
+        """Lista de pontos da trajetória."""
+        return self._path
+
+    @path.setter
+    def path(self, new_path: list[Pose2D]):
+        """Define uma nova trajetória e reseta o índice."""
+        if not isinstance(new_path, list):
+            raise TypeError("path deve ser uma lista de Pose2D")
+        self._path = new_path
+        self._path_index = 0
+
+    def add_path_point(self, target: Pose2D):
+        """Adiciona um ponto ao final da trajetória."""
+        self._path.append(target)
+
+    @property
+    def target_position(self) -> Pose2D | None:
+        """Retorna o alvo atual (último ponto da trajetória)."""
+        if self._path:
+            return self._path[-1]
+        return self._target_position
+
+    @target_position.setter
+    def target_position(self, target: Pose2D | None):
+        """Define uma nova posição-alvo, limpando o caminho atual."""
+        self._path.clear()
+        self._path_index = 0
+        self._target_position = target
+        if target:
+            self._path.append(target)

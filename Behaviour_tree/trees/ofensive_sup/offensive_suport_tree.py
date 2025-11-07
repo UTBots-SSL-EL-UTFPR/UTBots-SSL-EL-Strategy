@@ -5,9 +5,8 @@ import py_trees
 
 from Behaviour_tree import commom_behaviours as cb
 from Behaviour_tree.core.blackboard import Blackboard_Manager
-from Behaviour_tree.core.World_State import TeamID
 from Behaviour_tree.helpers.strategy_helper import StrategyHelper
-from Behaviour_tree.robot.bob import Bob
+from Behaviour_tree.robot.bob import Bob,TeamID
 from utils.pose2D import Pose2D
 
 logger = logging.getLogger(__name__)

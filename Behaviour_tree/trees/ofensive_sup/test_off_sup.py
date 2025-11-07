@@ -2,12 +2,12 @@
 import logging
 import time
 
-from Behaviour_tree.bob_manager import BobManager
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
-from Behaviour_tree.core.World_State import TeamID, World_State
-from Behaviour_tree.robot.bob import Bob
-from Behaviour_tree.robot.FoesManager import FoesManager
+from Behaviour_tree.core.World_State import World_State
+from Behaviour_tree.robot.bob import Bob, TeamID
+from Behaviour_tree.robot.BobManager import BobManager
+from Behaviour_tree.robot.FoeState import FoeState
 from utils.pose2D import Pose2D
 
 from ..goalkeeper.goalkeeper_tree import get_goalkeeper_tree

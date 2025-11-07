@@ -4,7 +4,6 @@ import time
 
 import py_trees as pt
 
-from Behaviour_tree.bob_manager import BobManager
 from Behaviour_tree.commom_behaviours import actions as s_action_nodes
 from Behaviour_tree.commom_behaviours import condition as c_condition_nodes
 from Behaviour_tree.core import event_callbacks as callbacks
@@ -13,6 +12,7 @@ from Behaviour_tree.core.event_callbacks import BlackboardKeys
 from Behaviour_tree.core.World_State import TeamID, World_State
 from Behaviour_tree.helpers.positioning_helper import PositioningHelper
 from Behaviour_tree.robot.bob import Bob
+from Behaviour_tree.robot.BobManager import BobManager
 from utils.pose2D import Pose2D
 
 TICK_INTERVAL = 0.1

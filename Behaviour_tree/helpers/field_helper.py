@@ -1,6 +1,7 @@
 # -------------------------------------------------------------------------- #
 #                                  IMPORTS                                   #
 # -------------------------------------------------------------------------- #
+from Behaviour_tree.core.World_State import World_State
 from SSL_configuration.configuration import Configuration
 from utils.pose2D import Pose2D
 
@@ -42,7 +43,7 @@ class FieldHelper:
     def get_enemy_goal_center(cls) -> Pose2D:
         config = Configuration.getObject()
         goal_pose = Pose2D(2250, 0)
-        goal_pose.x *= config.get_side_sign()
+        goal_pose.x *= -config.get_side_sign()
         return goal_pose
 
     @classmethod
@@ -77,6 +78,15 @@ class FieldHelper:
             )
 
         return Pose2D(int(new_x), int(new_y))
+
+    @classmethod
+    def get_most_advanced_opponent(cls):
+        ws = World_State.get_object()
+        x = cls.get_team_goal_center().x
+        opponents = ws.get_all_foes_position()
+        if not opponents:
+            return None
+        return max(opponents, key=lambda opp: opp.x * x)
 
     @classmethod
     def clamp_out_goalkeeper_area(cls, position: Pose2D) -> Pose2D:
@@ -158,7 +168,7 @@ class FieldHelper:
         post_top = Pose2D(goal_x, cls.GOAL_Y_LIMIT)
         post_bottom = Pose2D(goal_x, -cls.GOAL_Y_LIMIT)
         return post_top, post_bottom
-    
+
     @classmethod
     def get_attack_y_magnitude(cls) -> float:
         """Retorna a magnitude no eixo Y largura no ataque."""

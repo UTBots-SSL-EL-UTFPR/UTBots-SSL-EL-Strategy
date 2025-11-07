@@ -124,13 +124,29 @@ class StrategyHelper:
 
     @classmethod
     def get_Robot_path(
-        cls, target_pose: Pose2D, robot_position: Pose2D, ball_position: Pose2D | None
+        cls,
+        target_pose: Pose2D,
+        robot_position: Pose2D,
+        ball_position: Pose2D | None = None,
     ):
         obstacles = cls._ws.get_all_robot_position()
         obstacles = [obs for obs in obstacles if obs != robot_position]
         return MotionHelper.find_shortest_path(
             robot_position, target_pose, obstacles, ball_position
         )
+
+    @classmethod
+    def get_oriented_robot_path(
+        cls,
+        target_pose: Pose2D,
+        robot_position: Pose2D,
+        target_theta: float,
+        ball_position: Pose2D | None = None,
+    ):
+        path = cls.get_Robot_path(target_pose, robot_position, ball_position)
+        target_pose.theta = target_theta
+        path[-1] = target_pose
+        return path
 
     @classmethod
     def _decide_goalkeeper_depth_factor(cls, ball_position: Pose2D) -> float:
@@ -226,17 +242,14 @@ class StrategyHelper:
     def calculate_defense_support_pos(cls) -> Pose2D:
         """Calcula a melhor posição para interceptar um contra-ataque."""
         INTERCEPT_DISTANCE_FROM_OPPONENT = 600
-        opponents = cls._ws.get_all_foes_position()
-
-        if not opponents:
+        most_advanced_opponent = FieldHelper.get_most_advanced_opponent()
+        if not most_advanced_opponent:
             return Pose2D(-500, 0)
 
         our_goal = FieldHelper.get_team_goal_center()
-        most_advanced_opponent = max(opponents, key=lambda opp: opp.x)
-
         target_pose = GeometryHelper.calculate_point_on_line(
-            origin=our_goal,
-            target=most_advanced_opponent,
+            origin=most_advanced_opponent,
+            target=our_goal,
             radius=INTERCEPT_DISTANCE_FROM_OPPONENT,
         )
 

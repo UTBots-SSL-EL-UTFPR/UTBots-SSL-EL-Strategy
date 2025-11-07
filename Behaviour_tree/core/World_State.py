@@ -11,22 +11,14 @@ from communication.receiver.vision_receiver import VisionReceiver
 from SSL_configuration.configuration import Configuration
 from utils.pose2D import Pose2D
 
-
 # =====================================================
 # Enum de IDs de robôs
 # =====================================================
+
 class TeamID(Enum):
     Kamiji = 0
     Argenton = 1
     SabKawa = 2
-
-
-class FoesID(Enum):
-    TauraBots = 0
-    GralhaBots = 1
-    Cerberus = 2
-
-
 class World_State:
     _instance = None
 
@@ -149,7 +141,6 @@ class World_State:
             return None
         x, y = self._robot_positions[team_color][robot_id]
         theta = self._robot_orientations[team_color][robot_id]
-        print(theta)
         return Pose2D(int(x), int(y), theta)
 
     def get_team_robot_velocity(self, robot_id: int) -> Pose2D | None:

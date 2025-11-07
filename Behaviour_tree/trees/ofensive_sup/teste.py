@@ -2,11 +2,13 @@
 import logging
 import time
 
-from Behaviour_tree.bob_manager import BobManager
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
 from Behaviour_tree.core.World_State import TeamID, World_State
+from Behaviour_tree.helpers.positioning_helper import PositioningHelper
+from Behaviour_tree.helpers.strategy_helper import StrategyHelper
 from Behaviour_tree.robot.bob import Bob
+from Behaviour_tree.robot.BobManager import BobManager
 from Behaviour_tree.robot.FoesManager import FoesManager
 from utils.pose2D import Pose2D
 
@@ -67,8 +69,17 @@ if __name__ == "__main__":
     print_delay = 0.5
     tPrint = time.time()
     tUpdate = time.time()
-    argenton.set_new_target_position(Pose2D(0, 0, -2))
+    argenton.update()
     var = 0
+
+    ball = wd.get_ball_position()
+    target = PositioningHelper.getBehindBall()
+    theta = PositioningHelper.faceEmemyGoal(target)
+    path = StrategyHelper.get_oriented_robot_path(
+        target, argenton.state.position, theta, ball
+    )
+    argenton.set_path(path)
+    aux = 0
     while True:
         if time.time() >= print_delay + tPrint:
             prints_e_logs(argenton, [kamiji, goalkeeper])
@@ -77,5 +88,15 @@ if __name__ == "__main__":
             argenton.update()
             wd.update()
 
-            argenton.precision_movement()
+            argenton.Move()
+            if bb.get(
+                f"{argenton.robot_id.name}{BlackboardKeys.Flags.Navigation.TARGET_REACHED}"
+            ):
+                aux = 1
+                print(theta)
+                argenton.set_new_target_angle(theta)
+
+            if aux:
+                argenton.rotate()
+                argenton.kick_ball()
             tUpdate = time.time()
