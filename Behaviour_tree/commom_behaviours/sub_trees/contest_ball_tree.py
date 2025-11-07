@@ -29,7 +29,7 @@ class PressureOpponent(py_trees.behaviour.Behaviour):
         super().__init__(name)
         self.bb = py_trees.blackboard.Blackboard()
         self.robot = robot
-        self.foes_with_ball = f"{BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL}"
+        self.foes_with_ball = f"{BlackboardKeys.FOES_HAVE_BALL}"
 
     def setup(self, **kwargs) -> None:
         logger.debug(f"setup {self.name}")

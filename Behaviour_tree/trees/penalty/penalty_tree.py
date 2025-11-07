@@ -6,10 +6,10 @@ from __future__ import annotations
 
 import py_trees as pt
 
-from Behaviour_tree.bob_manager import BobManager
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.World_State import World_State
 from Behaviour_tree.robot.bob import Bob
+from Behaviour_tree.robot.BobManager import BobManager
 from utils.pose2D import Pose2D
 
 

@@ -47,8 +47,8 @@ class Configuration:
 
     def get_side_sign(self):
         if self.is_left_team:
-            return 1
-        return -1
+            return -1
+        return 1
 
     @staticmethod
     def loadFromJson():

@@ -4,9 +4,9 @@ import time
 import py_trees
 
 from Behaviour_tree import commom_behaviours as cb
+from Behaviour_tree.commom_behaviours.actions import Move_node
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
-from Behaviour_tree.core.World_State import TeamID
 from Behaviour_tree.helpers.strategy_helper import StrategyHelper
 from Behaviour_tree.robot.bob import Bob
 from utils.pose2D import Pose2D
@@ -24,8 +24,8 @@ class PivoAtk(py_trees.behaviour.Behaviour):
     def __init__(
         self,
         robot: Bob,
-        name: str = "reposicionar-se como sup_off",
-        delta_t: float = 1.0,
+        name: str = "reposicionar-se como PIVO",
+        delta_t: float = 0.2,
     ):
         super().__init__(name)
         self.robot = robot
@@ -54,7 +54,7 @@ class PivoAtk(py_trees.behaviour.Behaviour):
         Verifica o tempo e atualiza a posição se o delta_t foi atingido.
         """
         current_time = time.time()
-        if self._bb.get(BlackboardKeys.Flags.BallPossession.FOES_HAVE_BALL):
+        if self._bb.get(BlackboardKeys.FOES_HAVE_BALL):
             return py_trees.common.Status.FAILURE
 
         if (current_time - self._last_update_time) > self.delta_t:
@@ -68,14 +68,12 @@ class PivoAtk(py_trees.behaviour.Behaviour):
             self.last_target = new_path[-1]
             self._last_update_time = current_time
             logger.debug(new_path)
+            return py_trees.common.Status.SUCCESS
 
-        else:
-            self.robot.set_new_target_position(self.last_target)
-            logger.debug(self.last_target)
-
+        self.robot.fast_movement()
         self.robot.state.current_command = self.name
-        logger.debug(f"{self.name} - {self.robot.robot_id.name} - SUCCESS")
-        return py_trees.common.Status.SUCCESS
+        logger.debug(f"{self.name} - {self.robot.robot_id.name} - Running")
+        return py_trees.common.Status.RUNNING
 
 
 class PivoDef(py_trees.behaviour.Behaviour):
@@ -87,8 +85,8 @@ class PivoDef(py_trees.behaviour.Behaviour):
     def __init__(
         self,
         robot: Bob,
-        name: str = "reposicionar-se como sup_off",
-        delta_t: float = 1.0,
+        name: str = "pivo defesa",
+        delta_t: float = 0.2,
     ):
         super().__init__(name)
         self.robot = robot
@@ -117,8 +115,9 @@ class PivoDef(py_trees.behaviour.Behaviour):
         Verifica o tempo e atualiza a posição se o delta_t foi atingido.
         """
         current_time = time.time()
-        if self._bb.get(BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL):
+        if self._bb.get(BlackboardKeys.TEAM_HAS_BALL):
             return py_trees.common.Status.FAILURE
+
         if (current_time - self._last_update_time) > self.delta_t:
             new_pos = StrategyHelper.calculate_defense_support_pos()
             new_path = StrategyHelper.get_Robot_path(
@@ -127,15 +126,13 @@ class PivoDef(py_trees.behaviour.Behaviour):
             self.robot.set_path(new_path)
             self.last_target = new_path[-1]
             self._last_update_time = current_time
-            logger.debug(new_path)
+            logger.debug("new target", new_path)
+            return py_trees.common.Status.SUCCESS
 
-        else:
-            self.robot.set_new_target_position(self.last_target)
-            logger.debug(self.last_target)
+        logger.debug(f"{self.name} - {self.robot.robot_id.name} - RUNNING")
 
-        self.robot.state.current_command = self.name
-        logger.debug(f"{self.name} - {self.robot.robot_id.name} - SUCCESS")
-        return py_trees.common.Status.SUCCESS
+        self.robot.fast_movement()
+        return py_trees.common.Status.RUNNING
 
 
 def get_pivo_tree(robot: Bob) -> py_trees.trees.BehaviourTree:
@@ -170,7 +167,11 @@ def get_pivo_tree(robot: Bob) -> py_trees.trees.BehaviourTree:
     suporte_off = py_trees.composites.Selector(
         "off sup subtree",
         memory=True,
-        children=[kick_or_pass_sub_tree, reposition_sub_tree, contest_ball_sub_tree],
+        children=[
+            kick_or_pass_sub_tree,
+            reposition_sub_tree,
+            contest_ball_sub_tree,
+        ],
     )
 
     root = py_trees.trees.BehaviourTree(suporte_off)

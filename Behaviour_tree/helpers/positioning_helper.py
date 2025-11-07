@@ -1,7 +1,7 @@
 import math
 from dataclasses import dataclass
 from math import sqrt
-from typing import Iterable, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from SSL_configuration.configuration import Configuration
 from utils.defines import (
@@ -15,11 +15,11 @@ from utils.pose2D import Pose2D, Quadrant, QuadrantType, ZoneType
 from ..core.World_State import TeamID, World_State
 from .field_helper import (
     GOAL_LENGHT,
-    GRID_STEP,
     HALF_GOALKEEPER_AREA_WIDTH,
     HALF_LEGHT,
     KEEPER_MARGIN,
     WALL_MARGIN,
+    FieldHelper,
 )
 from .geometry_helper import GeometryHelper
 
@@ -71,15 +71,6 @@ class PositioningHelper:
         if not PositioningHelper._instance:
             PositioningHelper._instance = PositioningHelper()
         return PositioningHelper._instance
-
-    @classmethod
-    def is_valid_placement(
-        cls, x: float, y: float, obstacules: list[Pose2D], raio: float
-    ) -> bool:
-        for obs in obstacules:
-            if sqrt((x - obs.x) ** 2 + (y - obs.y) ** 2) < raio * 2.2:
-                return False
-        return True
 
     @staticmethod
     def distance_to_quadrant_border(pose: Pose2D, quad: Quadrant) -> float:
@@ -687,13 +678,10 @@ class PositioningHelper:
         normal_x /= norm_mag
         normal_y /= norm_mag
 
-        # Fórmula da reflexão: R = V - 2 * (V · N) * N (nao sei gaal)
         dot_product = vec_in_x * normal_x + vec_in_y * normal_y
 
         vec_out_x = vec_in_x - 2 * dot_product * normal_x
         vec_out_y = vec_in_y - 2 * dot_product * normal_y
-
-        # --- Definir o ponto de espera ---
 
         rebound_mag = math.hypot(vec_out_x, vec_out_y)
         if rebound_mag == 0:
@@ -702,9 +690,7 @@ class PositioningHelper:
         rebound_dir_x = vec_out_x / rebound_mag
         rebound_dir_y = vec_out_y / rebound_mag
 
-        intercept_distance = (
-            500  # Distância que o suporte deve esperar do local da colisão
-        )
+        intercept_distance = 500
         rebound_pos = Pose2D(
             primary_blocker.x + rebound_dir_x * intercept_distance,
             primary_blocker.y + rebound_dir_y * intercept_distance,
@@ -736,15 +722,12 @@ class PositioningHelper:
         Retorna um ângulo em radianos (orientação ideal do receptor).
         """
 
-        # Vetor da bola para o receptor (direção de recepção)
         vec_receive = (passer_pos.x - receiver_pos.x, passer_pos.y - receiver_pos.y)
         angle_receive = math.atan2(vec_receive[1], vec_receive[0])
 
-        # Vetor do receptor para o gol (direção ofensiva)
         vec_goal = (goal_pos.x - receiver_pos.x, goal_pos.y - receiver_pos.y)
         angle_goal = math.atan2(vec_goal[1], vec_goal[0])
 
-        # Combinação ponderada dos ângulos (mantém continuidade da jogada)
         best_angle = math.atan2(
             weight_receive * math.sin(angle_receive)
             + weight_goal * math.sin(angle_goal),
@@ -752,9 +735,7 @@ class PositioningHelper:
             + weight_goal * math.cos(angle_goal),
         )
 
-        # Ajuste de segurança: verificar se caminho está livre até o receptor
         if not PositioningHelper.is_path_clear(passer_pos, receiver_pos, opponents):
-            # Se caminho bloqueado, orientar receptor para bola diretamente (prioridade em receber)
             return angle_receive
 
         return best_angle
@@ -789,3 +770,17 @@ class PositioningHelper:
             return True
         else:
             return False
+
+    @classmethod
+    def getBehindBall(cls):
+        gol = FieldHelper.get_enemy_goal_center()
+        ballPos = cls._world_state.get_ball_position()
+        orientation = -(gol.x / abs(gol.x))
+        pos = GeometryHelper.calculate_point_on_line(ballPos, gol, 100 * orientation)
+        return pos
+
+    @classmethod
+    def faceEmemyGoal(cls, position):
+        "returns theta to face enemyGoal from position"
+        gol = FieldHelper.get_enemy_goal_center()
+        return GeometryHelper.calculate_angle_between_points(position, gol)

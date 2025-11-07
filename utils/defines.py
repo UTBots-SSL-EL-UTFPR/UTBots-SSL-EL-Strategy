@@ -9,6 +9,8 @@ FIELD_INVERTED_SIDE = False  # Altere para True se seu time defende o lado direi
 LOGIC_ROBOT_RADIUS = 90
 LOGIC_BALL_RADIUS = 15
 BALL_POSSESSION_DISTANCE = LOGIC_ROBOT_RADIUS + LOGIC_BALL_RADIUS + 250
+BALL_LOSS_DISTANCE = LOGIC_ROBOT_RADIUS + LOGIC_BALL_RADIUS + 350
+
 MIN_PASS_DISTANCE = 1000
 MAX_SHOOT_DISTANCE = 1500
 DISTANCE_PRESS_OPPONENT = 400
@@ -60,7 +62,7 @@ CONTROL_KD_ANG_FUNC = 0.2  # Ganho derivativo angular específico da função
 CONTROL_V_MAX = 0.5  # m/s saturação linear
 CONTROL_W_MAX = 2.5  # rad/s saturação angular
 CONTROL_POS_TOL = 0.03  # m tolerância de posição
-CONTROL_ANG_TOL = math.radians(0.5)  # rad tolerância angular
+CONTROL_ANG_TOL = math.radians(0.04)  # rad tolerância angular
 CONTROL_V_MIN = 0.20  # [m/s] piso de velocidade (vencer atrito)
 CONTROL_YAW_DEADBAND = math.radians(1.0)  # [rad] ignora correções pequenas
 CONTROL_DEFAULT_DT = 0.02  # 50 Hz (para dt inicial)

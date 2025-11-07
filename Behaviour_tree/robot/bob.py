@@ -1,23 +1,23 @@
 import math
 import time
+from enum import Enum
 
 import numpy as np
 
-from Behaviour_tree.core.event_callbacks import BlackboardKeys
 from Behaviour_tree.helpers.motion_helper import MotionHelper
+from communication.sender.command_builder import CommandBuilder
+from communication.sender.command_sender_sim import CommandSenderSim
 from utils import defines
 from utils.pose2D import Pose2D
 
 from ..core.blackboard import Blackboard_Manager
-from ..core.World_State import TeamID
-from .bob_config import Bob_Config
 from .bob_state import Bob_State
-from .foes import FoesState
 
-positions = BlackboardKeys.Values.Positions
 
-from communication.sender.command_builder import CommandBuilder
-from communication.sender.command_sender_sim import CommandSenderSim
+class TeamID(Enum):
+    Kamiji = 0
+    Argenton = 1
+    SabKawa = 2
 
 
 class Bob:
@@ -25,10 +25,8 @@ class Bob:
     def __init__(self, robot_id: TeamID):
         self._bb = Blackboard_Manager.get_instance()
         self.robot_id = robot_id
-        self.config = Bob_Config(robot_id)
-        self.state: Bob_State = Bob_State(robot_id)
+        self.state: Bob_State = Bob_State()
         self._has_ball = False
-        self.foes: list[FoesState]  # TODO
         self.cmd_builder = CommandBuilder()
         self.cmd_sender = CommandSenderSim()
         self.cmd: bytes | None = None
@@ -47,24 +45,16 @@ class Bob:
     # ==== GERENCIAMENTO DE ESTADO E TRAJETÓRIA      ====#
     # ===================================================#
 
-    def update(self):
-        if self.state:
-            self._bb.set(
-                f"{self.robot_id.name}{BlackboardKeys.Flags.Navigation.TARGET_REACHED}",
-                False,
-            )
-            self.state.update()
-
     def adicionar_ponto_trajetoria(self, target: Pose2D):
         self.state.path.append(target)
 
     def set_path(self, path: list[Pose2D]):
         self.state.path = path
-        self.state.path_index = 0
+        self.state._path_index = 0
 
     def set_new_target_position(self, target_position: Pose2D):
         self.state.path.clear()
-        self.state.path_index = 0
+        self.state._path_index = 0
         self.adicionar_ponto_trajetoria(target_position)
 
     def set_new_target_angle(self, theta: float):
@@ -82,7 +72,7 @@ class Bob:
             return False
         if not self._has_ball:
             return False
-        my_pos = self.state.get_position()
+        my_pos = self.state.position
         dx = goal_position.x - my_pos.x
         dy = goal_position.y - my_pos.y
         self.state.target_theta = math.atan2(dy, dx)
@@ -92,7 +82,7 @@ class Bob:
     def pass_to_teammate(self, teammate_pos: Pose2D):
         if self.state is None:
             return False
-        my_pos = self.state.get_position()
+        my_pos = self.state.position
         dx = teammate_pos.x - my_pos.x
         dy = teammate_pos.y - my_pos.y
         self.state.target_theta = math.atan2(dy, dx)
@@ -102,6 +92,13 @@ class Bob:
     # ===================================================#
     # ==== PRIMITIVAS DE MOVIMENTO (COMO SE MOVER)   ====#
     # ===================================================#
+    def Move(self):
+        if not self.state.target_position:
+            return
+        if self.state.fast_mov:
+            self.fast_movement()
+        else:
+            self.precision_movement()
 
     def precision_movement(self):
         self._execute_movement(mode="precision_movement")
@@ -124,9 +121,9 @@ class Bob:
         no simulador nao se projeta pra frente, ele so pisca em vermelho como
         indicativo visual de q foi acionado.
         """
-        if not self._has_ball:
-            return
-        self.cmd_builder.command_robots(id=self.robot_id.value, kick_x=ballSpeed)
+        self.cmd_builder.command_robots(
+            id=self.robot_id.value, kick_x=ballSpeed, kick_z=4
+        )
 
         self.cmd = self.cmd_builder.build()
         self.cmd_sender.send(self.cmd)
