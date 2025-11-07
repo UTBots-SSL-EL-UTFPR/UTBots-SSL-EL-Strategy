@@ -73,9 +73,9 @@ class FoesHaveBall(py_trees.behaviour.Behaviour):
 
 class HasBall(py_trees.behaviour.Behaviour):
 
-    def __init__(self, robot: Bob, name: str = "HasBall"):
+    def __init__(self, path: str, name: str = "HasBall"):
         super().__init__(name)
-        self.robot = robot
+        self.path: str = path
 
     def setup(self, **kwargs: Any) -> None:
         logger.debug(f"setup {self.name}")
@@ -84,15 +84,17 @@ class HasBall(py_trees.behaviour.Behaviour):
     def update(self) -> py_trees.common.Status:
         hasTeam = BlackboardKeys.TEAM_HAS_BALL
         hasFoes = BlackboardKeys.FOES_HAVE_BALL
+
+        robot: Bob = _bb.get(self.path)
         
         if _bb.get(hasTeam) and _bb.get(hasFoes):
             return py_trees.common.Status.FAILURE
         
-        if _bb.get(f"{self.robot.robot_id.name}{BlackboardKeys.HAS_BALL}"):
-            logger.debug(f"{self.name}-{self.robot.robot_id.name} - SUCCESS")
+        if _bb.get(f"{robot.robot_id.name}{BlackboardKeys.HAS_BALL}"):
+            logger.debug(f"{self.name}-{robot.robot_id.name} - SUCCESS")
             return py_trees.common.Status.SUCCESS
         
-        logger.debug(f"{self.name}-{self.robot.robot_id.name} - FAILURE")
+        logger.debug(f"{self.name}-{robot.robot_id.name} - FAILURE")
         return py_trees.common.Status.FAILURE
 
 
@@ -116,22 +118,23 @@ class ValidLine(py_trees.behaviour.Behaviour):
 
 
 class BolaSegura(py_trees.behaviour.Behaviour):
-    def __init__(self, robot: Bob, name: str = "BolaSegura"):
+    def __init__(self, path: str, name: str = "BolaSegura"):
         self._ws = World_State.get_object()
-        self.robot = robot
+        self.path = path
         super().__init__(name)
 
     def setup(self, **kwargs):
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
+        robot: Bob = _bb.get(self.path)
         if _bb.get(BlackboardKeys.FOES_HAVE_BALL):
             logger.debug(f"{self.name} - FAILURE FOES com bola")
             return py_trees.common.Status.FAILURE
 
         ball = self._ws.get_ball_position()
         robots = self._ws.get_all_robot_position()
-        robot_pos = self.robot.state.position
+        robot_pos = robot.state.position
         for robot in robots:
             if ball.distance_to(robot) < ball.distance_to(robot_pos):
                 logger.debug(f"{self.name} - FAILURE OUTRO ROBO MAIS PROX")

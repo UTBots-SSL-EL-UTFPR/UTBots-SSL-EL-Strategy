@@ -27,6 +27,7 @@ from ..core.World_State import TeamID, World_State
 
 _pos_helper = PositioningHelper.get_object()
 _ws = World_State.get_object()
+_bb = Blackboard_Manager.get_instance()
 
 # ---------------------------------------------------------------------------------------#
 #                                         MOVIMENTO                                     #
@@ -254,10 +255,10 @@ class RecuperarBola(py_trees.behaviour.Behaviour):
     por enquanto assume estar em boa pos para tal, mas deve ser verificado
     """
 
-    def __init__(self, robot: Bob, name: str = "RecuperarBola"):
+    def __init__(self, path: str, name: str = "RecuperarBola"):
         super().__init__(name)
         self._bb = py_trees.blackboard.Blackboard()
-        self.robot = robot
+        self.path = path
         self.team_has_ball = f"{BlackboardKeys.TEAM_HAS_BALL}"
         self.foes_have_ball = f"{BlackboardKeys.FOES_HAVE_BALL}"
 
@@ -269,17 +270,18 @@ class RecuperarBola(py_trees.behaviour.Behaviour):
 
     def update(self) -> py_trees.common.Status:
         """vai atras da bola"""
+        robot: Bob = self._bb.get(self.path)
         if self._bb.get(self.team_has_ball):
-            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE TEAM")
+            logger.debug(f"{self.name} - {robot.robot_id.name} - FAILURE TEAM")
             return py_trees.common.Status.FAILURE
         if self._bb.get(self.foes_have_ball):
-            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE FOES")
+            logger.debug(f"{self.name} - {robot.robot_id.name} - FAILURE FOES")
             return py_trees.common.Status.FAILURE
-        self.robot.set_new_target_position(
+        robot.set_new_target_position(
             hp.StrategyHelper.get_ball_recovery_position()
         )
-        self.robot.state.current_command = self.name
-        logger.debug(f"{self.name} - {self.robot.robot_id.name} - SUCCESS")
+        robot.state.current_command = self.name
+        logger.debug(f"{self.name} - {robot.robot_id.name} - SUCCESS")
         return py_trees.common.Status.SUCCESS
 
 
@@ -288,16 +290,9 @@ class MovimentoUnico(py_trees.behaviour.Behaviour):
     envia um movimento e retorna Sucess
     """
 
-    def __init__(
-        self,
-        robot: Bob,
-        name: str = "MovimentoUnico",
-        delta_t: float = 1,
-    ):
+    def __init__(self, path: str, name: str = "MovimentoUnico"):
         super().__init__(name)
-        self.robot = robot
-        self.delta_t = delta_t
-        self._last_update_time = 0.0
+        self.path = path
 
     def setup(self, **kwargs) -> None:
         logger.debug(f"setup {self.name}")
@@ -307,13 +302,9 @@ class MovimentoUnico(py_trees.behaviour.Behaviour):
         logger.debug("movimento unitario")
 
     def update(self) -> py_trees.common.Status:
-        current_time = time.time()
-        if (current_time - self._last_update_time) > self.delta_t:
-            logger.debug(f"{self.name} - SUCCESS")
-            return py_trees.common.Status.SUCCESS
-
-        self.robot.fast_movement()
-        self.robot.state.current_command = self.name
-        logger.debug(f"{self.name} - RUNNING")
+        robot: Bob = _bb.get(self.path)
+        robot.fast_movement()
+        robot.state.current_command = self.name
+        logger.debug(f"{self.name} - SUCCESS")
 
         return py_trees.common.Status.RUNNING

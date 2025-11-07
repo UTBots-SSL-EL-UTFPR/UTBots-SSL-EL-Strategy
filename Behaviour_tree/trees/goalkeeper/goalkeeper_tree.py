@@ -18,13 +18,13 @@ from Behaviour_tree.robot.bob import Bob
 logger = logging.getLogger(__name__)
 
 
-def get_goalkeeper_tree(robot: Bob) -> py_trees.trees.BehaviourTree:
+def get_goalkeeper_tree(path: str) -> py_trees.trees.BehaviourTree:
+    
+    kick = get_kick_subtree(path)
 
-    kick = get_kick_subtree(robot)
-
-    bola_segura = BolaSegura(robot)
-    recuperar_bola = RecuperarBola(robot)
-    movimento_unico = MovimentoUnico(robot)
+    bola_segura = BolaSegura(path)
+    recuperar_bola = RecuperarBola(path)
+    movimento_unico = MovimentoUnico(path)
 
     bola_solta = py_trees.composites.Sequence(
         name="Bola_Solta",
@@ -34,7 +34,7 @@ def get_goalkeeper_tree(robot: Bob) -> py_trees.trees.BehaviourTree:
 
     # caso de defesa comum e suas folhas======================================
     foesHasBall = FoesHaveBall()
-    goalkeeperCommonPosition = GoalkeeperCommonPosition(robot)
+    goalkeeperCommonPosition = GoalkeeperCommonPosition(path)
 
     defesa_comum = py_trees.composites.Sequence(
         name="Defesa_Comum",
@@ -52,19 +52,22 @@ def get_goalkeeper_tree(robot: Bob) -> py_trees.trees.BehaviourTree:
 
 class GoalkeeperCommonPosition(py_trees.behaviour.Behaviour):
 
-    def __init__(self, robot: Bob, name: str = "GoalkeeperCommonPosition"):
+    def __init__(self, path: str, name: str = "GoalkeeperCommonPosition"):
         super().__init__(name)
-        self.robot = robot
+        self.path = path
 
     def setup(self, **kwargs) -> None:
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
+        from Behaviour_tree.core.blackboard import Blackboard_Manager
+        _bb = Blackboard_Manager.get_instance()
+        robot: Bob = _bb.get(self.path)
         position = hp.StrategyHelper.get_goalkeeper_defense_position()
         if position is None:
             return py_trees.common.Status.FAILURE
 
-        self.robot.set_new_target_position(position)
-        self.robot.fast_movement()
+        robot.set_new_target_position(position)
+        robot.fast_movement()
 
         return py_trees.common.Status.SUCCESS
