@@ -25,13 +25,11 @@ class PivoAtk(py_trees.behaviour.Behaviour):
         self,
         path: str,
         name: str = "reposicionar-se como PIVO",
-        delta_t: float = 0.5,
+        delta_t: float = 0.6,
     ):
         super().__init__(name)
         self.path = path
-        self.delta_t = delta_t
         self.last_target = Pose2D(0, 0)
-        self._last_update_time = 0.0
         self._bb = Blackboard_Manager.get_instance()
 
     def setup(self, **kwargs) -> None:
@@ -39,16 +37,7 @@ class PivoAtk(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def initialise(self) -> None:
-        robot: Bob = self._bb.get(self.path)
-        current_time = time.time()
-        new_pos = StrategyHelper.calculate_attack_support_pos(robot.state.position)
-        new_path = StrategyHelper.get_Robot_path(
-            new_pos, robot.state.position, None
-        )
-        robot.set_path(new_path)
-
-        self.last_target = new_path[-1]
-        self._last_update_time = current_time
+        pass
 
     def update(self) -> py_trees.common.Status:
         """
@@ -56,26 +45,14 @@ class PivoAtk(py_trees.behaviour.Behaviour):
         """
         robot: Bob = self._bb.get(self.path)
         current_time = time.time()
-        if self._bb.get(BlackboardKeys.FOES_HAVE_BALL):
+        if self._bb.get(BlackboardKeys.FOES_HAVE_BALL) or not self._bb.get(
+            BlackboardKeys.TEAM_HAS_BALL
+        ):
             return py_trees.common.Status.FAILURE
-
-        if (current_time - self._last_update_time) > self.delta_t:
-            new_pos = StrategyHelper.calculate_attack_support_pos(
-                robot.state.position
-            )
-            new_path = StrategyHelper.get_Robot_path(
-                new_pos, robot.state.position, None
-            )
-            robot.set_path(new_path)
-            self.last_target = new_path[-1]
-            self._last_update_time = current_time
-            logger.debug(new_path)
-            return py_trees.common.Status.SUCCESS
-
-        robot.fast_movement()
-        robot.state.current_command = self.name
-        logger.debug(f"{self.name} - {robot.robot_id.name} - Running")
-        return py_trees.common.Status.RUNNING
+        new_pos = StrategyHelper.calculate_attack_support_pos(robot.state.position)
+        robot.set_new_target_position(new_pos)
+        self._last_update_time = current_time
+        return py_trees.common.Status.SUCCESS
 
 
 class PivoDef(py_trees.behaviour.Behaviour):
@@ -88,13 +65,10 @@ class PivoDef(py_trees.behaviour.Behaviour):
         self,
         path: str,
         name: str = "pivo defesa",
-        delta_t: float = 0.5,
     ):
         super().__init__(name)
         self.path = path
-        self.delta_t = delta_t
         self.last_target = Pose2D(0, 0)
-        self._last_update_time = 0.0
         self._bb = Blackboard_Manager.get_instance()
 
     def setup(self, **kwargs) -> None:
@@ -102,41 +76,21 @@ class PivoDef(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def initialise(self) -> None:
-        robot: Bob = self._bb.get(self.path)
-        current_time = time.time()
-        new_pos = StrategyHelper.calculate_defense_support_pos()
-        new_path = StrategyHelper.get_Robot_path(
-            new_pos, robot.state.position, None
-        )
-        robot.set_path(new_path)
-
-        self.last_target = new_path[-1]
-        self._last_update_time = current_time
+        pass
 
     def update(self) -> py_trees.common.Status:
         """
         Verifica o tempo e atualiza a posição se o delta_t foi atingido.
         """
         robot: Bob = self._bb.get(self.path)
-        current_time = time.time()
         if self._bb.get(BlackboardKeys.TEAM_HAS_BALL):
-            return py_trees.common.Status.FAILURE
-
-        if (current_time - self._last_update_time) > self.delta_t:
-            new_pos = StrategyHelper.calculate_defense_support_pos()
-            new_path = StrategyHelper.get_Robot_path(
-                new_pos, robot.state.position, None
+            return py_trees.common.Status.FAILURE or not self._bb.get(
+                BlackboardKeys.FOES_HAVE_BALL
             )
-            robot.set_path(new_path)
-            self.last_target = new_path[-1]
-            self._last_update_time = current_time
-            logger.debug("new target", new_path)
-            return py_trees.common.Status.SUCCESS
 
-        logger.debug(f"{self.name} - {robot.robot_id.name} - RUNNING")
-
-        robot.fast_movement()
-        return py_trees.common.Status.RUNNING
+        new_pos = StrategyHelper.calculate_defense_support_pos()
+        robot.set_new_target_position(new_pos)
+        return py_trees.common.Status.SUCCESS
 
 
 def get_pivo_tree(path) -> py_trees.trees.BehaviourTree:
@@ -158,10 +112,14 @@ def get_pivo_tree(path) -> py_trees.trees.BehaviourTree:
     posse_aliada = PivoAtk(path)
     posse_inimiga = PivoDef(path)
     receber_passe = cb.actions.Receive_pass(path)
+    mover = Move_node(path)
     reposition_sub_tree = py_trees.composites.Selector(
         "reposicionar-se",
         True,
         children=[receber_passe, posse_inimiga, posse_aliada],
+    )
+    reposition_move_tree = py_trees.composites.Sequence(
+        "mover", True, children=[reposition_sub_tree, mover]
     )
     # +--------------------------------------------------------------------------+ #
     # +--------------------------------------------------------------------------+ #
@@ -173,7 +131,7 @@ def get_pivo_tree(path) -> py_trees.trees.BehaviourTree:
         memory=True,
         children=[
             kick_or_pass_sub_tree,
-            reposition_sub_tree,
+            reposition_move_tree,
             contest_ball_sub_tree,
         ],
     )

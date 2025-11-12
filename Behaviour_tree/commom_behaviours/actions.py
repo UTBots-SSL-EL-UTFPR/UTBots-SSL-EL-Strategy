@@ -310,8 +310,10 @@ class MovimentoUnico(py_trees.behaviour.Behaviour):
 
     def update(self) -> py_trees.common.Status:
         robot: Bob = _bb.get(self.path)
+
         robot.fast_movement()
         robot.state.current_command = self.name
+        
         logger.debug(f"{self.name} - SUCCESS")
 
         return py_trees.common.Status.RUNNING

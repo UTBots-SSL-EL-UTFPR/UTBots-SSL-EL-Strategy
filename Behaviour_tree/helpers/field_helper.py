@@ -34,8 +34,8 @@ HALF_WID = int(FIELD_HEIGHT / 2)
 
 class FieldHelper:
 
-    GOAL_AREA_Y_LIMIT = int(600)
-    GOAL_AREA_X_INNER_LIMIT = int(1650)
+    GOAL_AREA_Y_LIMIT = int(700)
+    GOAL_AREA_X_INNER_LIMIT = int(1600)
     GOAL_AREA_X_OUTER_LIMIT = int(2250)
     GOAL_Y_LIMIT = int(400)
 
