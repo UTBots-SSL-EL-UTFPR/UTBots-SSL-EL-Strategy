@@ -43,8 +43,8 @@ from ...helpers import positioning_helper as Positioning_helper
 #                                         MOVIMENTO                                     #
 # ---------------------------------------------------------------------------------------#
 logger = logging.getLogger(__name__)
-
-
+#def rec
+#def add = pivot
 class DefenderActions(pt.behaviour.Behaviour):
     """
     Classe que define ações específicas para o defensor.

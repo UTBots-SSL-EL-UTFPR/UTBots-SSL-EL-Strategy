@@ -18,11 +18,11 @@ logger = logging.getLogger(__name__)
 class StopNode(py_trees.behaviour.Behaviour):
     def __init__(
         self,
-        robot: Bob,
+        path: str,
         name: str = "Parar",
     ):
         super().__init__(name)
-        self.robot = robot
+        self.path = path
 
     def setup(self, **kwargs) -> None:
         logger.debug(f"setup {self.name}")
@@ -35,8 +35,8 @@ class StopNode(py_trees.behaviour.Behaviour):
         return py_trees.common.Status.RUNNING
 
 
-def get_stop_tree(robot: Bob) -> py_trees.trees.BehaviourTree:
-    stop = StopNode(robot)
+def get_stop_tree(path: str) -> py_trees.trees.BehaviourTree:
+    stop = StopNode(path)
     explusoSequence = py_trees.composites.Sequence(
         "sai do campo e para",
         True,

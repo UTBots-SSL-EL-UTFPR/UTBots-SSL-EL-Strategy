@@ -2,6 +2,7 @@
 import py_trees
 from Behaviour_tree.robot.bob import Bob
 from Behaviour_tree import commom_behaviours as cb
+from Behaviour_tree.core.blackboard import Blackboard_Manager
 
 # Importa as novas condições e estratégias
 from .defender_conditions import (
@@ -10,61 +11,65 @@ from .defender_conditions import (
     IsBallInDefensiveHalf,
 )
 from .defender_strategy_helper import DefenderStrategyHelper
-
+_bb = Blackboard_Manager.get_instance()
 # --- Comportamentos "Cola" que conectam a estratégia com a ação ---
 
 class Intercept(py_trees.behaviour.Behaviour):
-    def __init__(self, robot: Bob, name: str = "Definir Alvo de Interceptação"):
+    def __init__(self, path: str, name: str = "Definir Alvo de Interceptação"):
         super().__init__(name)
-        self.robot = robot
+        self.path = path
 
     def update(self) -> py_trees.common.Status:
+        robot: Bob = _bb.get(self.path)
         target = DefenderStrategyHelper.get_intercept_position()
         if not target: return py_trees.common.Status.FAILURE
-        path = DefenderStrategyHelper.get_path_to_target(self.robot.state.position, target)
-        self.robot.set_path(path)
-        self.robot.state.current_command = "Interceptando Ameaça!"
+        path = DefenderStrategyHelper.get_path_to_target(robot.state.position, target)
+        robot.set_path(path)
+        robot.state.current_command = "Interceptando Ameaça!"
         return py_trees.common.Status.SUCCESS
 
 class BlockOpponent(py_trees.behaviour.Behaviour):
-    def __init__(self, robot: Bob, name: str = "Definir Alvo de Bloqueio"):
+    def __init__(self, path: str, name: str = "Definir Alvo de Bloqueio"):
         super().__init__(name)
-        self.robot = robot
+        self.path = path
 
     def update(self) -> py_trees.common.Status:
+        robot: Bob = _bb.get(self.path)
         target = DefenderStrategyHelper.get_blocking_position()
-        path = DefenderStrategyHelper.get_path_to_target(self.robot.state.position, target)
-        self.robot.set_path(path)
-        self.robot.state.current_command = "Bloqueando Oponente"
+        path = DefenderStrategyHelper.get_path_to_target(robot.state.position, target)
+        robot.set_path(path)
+        robot.state.current_command = "Bloqueando Oponente"
         return py_trees.common.Status.SUCCESS
 
 class CoverZone(py_trees.behaviour.Behaviour):
-    def __init__(self, robot: Bob, name: str = "Definir Alvo de Cobertura"):
+    def __init__(self, path: str, name: str = "Definir Alvo de Cobertura"):
         super().__init__(name)
-        self.robot = robot
+        self.path = path
 
     def update(self) -> py_trees.common.Status:
+        robot: Bob = _bb.get(self.path)
         target = DefenderStrategyHelper.get_zonal_marking_position()
-        path = DefenderStrategyHelper.get_path_to_target(self.robot.state.position, target)
-        self.robot.set_path(path)
-        self.robot.state.current_command = "Cobindo Zona Defensiva"
+        path = DefenderStrategyHelper.get_path_to_target(robot.state.position, target)
+        robot.set_path(path)
+        robot.state.current_command = "Cobindo Zona Defensiva"
         return py_trees.common.Status.SUCCESS
 
 class ReturnToBase(py_trees.behaviour.Behaviour):
-    def __init__(self, robot: Bob, name: str = "Definir Alvo Base"):
+    def __init__(self, path: str, name: str = "Definir Alvo Base"):
         super().__init__(name)
-        self.robot = robot
+        self.path = path
 
     def update(self) -> py_trees.common.Status:
+        robot: Bob = _bb.get(self.path)
         target = DefenderStrategyHelper.get_base_position()
-        path = DefenderStrategyHelper.get_path_to_target(self.robot.state.position, target)
-        self.robot.set_path(path)
-        self.robot.state.current_command = "Retornando para a Base"
+        path = DefenderStrategyHelper.get_path_to_target(robot.state.position, target)
+        robot.set_path(path)
+        robot.state.current_command = "Retornando para a Base"
         return py_trees.common.Status.SUCCESS
 
 # --- Função Principal que Monta a Árvore ---
 
-def get_defender_tree(robot: Bob) -> py_trees.trees.BehaviourTree:
+def get_defender_tree(path: str) -> py_trees.trees.BehaviourTree:
     """Monta a árvore de comportamento completa para o papel de Defensor."""
     
     # Ramo 1: Interceptar (Prioridade Máxima)
@@ -72,8 +77,8 @@ def get_defender_tree(robot: Bob) -> py_trees.trees.BehaviourTree:
         "Ramo: Interceptar", memory=True,
         children=[
             IsBallMovingFastTowardsGoal(), 
-            Intercept(robot), 
-            cb.actions.Move_node(robot, name="Executar Movimento") # CORREÇÃO: Nova instância
+            Intercept(path), 
+            cb.actions.Move_node(path, name="Executar Movimento") # CORREÇÃO: Nova instância
         ]
     )
 
@@ -82,8 +87,8 @@ def get_defender_tree(robot: Bob) -> py_trees.trees.BehaviourTree:
         "Ramo: Bloquear", memory=True,
         children=[
             IsOpponentWithBallInDangerZone(), 
-            BlockOpponent(robot), 
-            cb.actions.Move_node(robot, name="Executar Movimento") # CORREÇÃO: Nova instância
+            BlockOpponent(path), 
+            cb.actions.Move_node(path, name="Executar Movimento") # CORREÇÃO: Nova instância
         ]
     )
     
@@ -92,8 +97,8 @@ def get_defender_tree(robot: Bob) -> py_trees.trees.BehaviourTree:
         "Ramo: Cobrir", memory=True,
         children=[
             IsBallInDefensiveHalf(), 
-            CoverZone(robot), 
-            cb.actions.Move_node(robot, name="Executar Movimento") # CORREÇÃO: Nova instância
+            CoverZone(path), 
+            cb.actions.Move_node(path, name="Executar Movimento") # CORREÇÃO: Nova instância
         ]
     )
     
@@ -101,8 +106,8 @@ def get_defender_tree(robot: Bob) -> py_trees.trees.BehaviourTree:
     base_branch = py_trees.composites.Sequence(
         "Ramo: Base", memory=True,
         children=[
-            ReturnToBase(robot), 
-            cb.actions.Move_node(robot, name="Executar Movimento") # CORREÇÃO: Nova instância
+            ReturnToBase(path), 
+            cb.actions.Move_node(path, name="Executar Movimento") # CORREÇÃO: Nova instância
         ]
     )
 

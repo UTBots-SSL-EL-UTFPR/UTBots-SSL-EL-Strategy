@@ -11,13 +11,13 @@ from Behaviour_tree.core.World_State import World_State
 from Behaviour_tree.robot.bob import Bob
 from Behaviour_tree.robot.BobManager import BobManager
 from utils.pose2D import Pose2D
+_bb = Blackboard_Manager.get_instance()
 
-
-def get_penalty_tree(robot: Bob) -> pt.behaviour.Behaviour:
+def get_penalty_tree(path: str) -> pt.behaviour.Behaviour:
     # Nó de sequência principal do pênalti
-    is_penalty = IsPenalty(robot)
-    position_between_ball_and_goal = PositionBetweenBallAndGoal(robot)
-    choose_side_and_shoot = ChooseSideAndShoot(robot)
+    is_penalty = IsPenalty(path)
+    position_between_ball_and_goal = PositionBetweenBallAndGoal(path)
+    choose_side_and_shoot = ChooseSideAndShoot(path)
 
     root = pt.composites.Sequence(
         name="PenaltyTree",
@@ -30,10 +30,9 @@ def get_penalty_tree(robot: Bob) -> pt.behaviour.Behaviour:
 class IsPenalty(pt.behaviour.Behaviour):
     """Stub: checagem de pênalti (deixe em branco por enquanto)."""
 
-    def __init__(self, robot: Bob, name: str = "IsPenalty"):
+    def __init__(self, path: str, name: str = "IsPenalty"):
         super().__init__(name)
-        self.robot = robot
-        self._bb = Blackboard_Manager.get_instance()
+        self.path = path
 
     def update(self) -> pt.common.Status:
         # TODO: implementar detecção real de pênalti
@@ -44,11 +43,12 @@ class IsPenalty(pt.behaviour.Behaviour):
 class PositionBetweenBallAndGoal(pt.behaviour.Behaviour):
     """Posiciona o robô entre a bola e o gol adversário."""
 
-    def __init__(self, robot: Bob, name: str = "PositionBetweenBallAndGoal"):
+    def __init__(self, path: str, name: str = "PositionBetweenBallAndGoal"):
         super().__init__(name)
-        self.robot = robot
+        self.path = path
 
     def update(self) -> pt.common.Status:
+        robot: Bob = _bb.get(self.path)
         ws = World_State.get_object()
         ball = ws.get_ball_position()
         if ball is None:
@@ -59,19 +59,20 @@ class PositionBetweenBallAndGoal(pt.behaviour.Behaviour):
 
         # Posiciona num ponto alinhado bola->gol, a uma pequena margem da bola para chutar
         target = Pose2D.align_two(ball, goal_center, margin=200, is_left_team=True)
-        self.robot.set_new_target_position(target)
-        self.robot.fast_movement()
+        robot.set_new_target_position(target)
+        robot.fast_movement()
         return pt.common.Status.SUCCESS
 
 
 class ChooseSideAndShoot(pt.behaviour.Behaviour):
     """Escolhe um lado do gol e chuta."""
 
-    def __init__(self, robot: Bob, name: str = "ChooseSideAndShoot"):
+    def __init__(self, path: str, name: str = "ChooseSideAndShoot"):
         super().__init__(name)
-        self.robot = robot
+        self.path = path
 
     def update(self) -> pt.common.Status:
+        robot: Bob = _bb.get(self.path)
         ws = World_State.get_object()
         ball = ws.get_ball_position()
         if ball is None:
@@ -85,7 +86,7 @@ class ChooseSideAndShoot(pt.behaviour.Behaviour):
         target = left_post if ball.y < 0 else right_post
 
         # Orienta e chuta
-        self.robot.set_new_target_position(target)
-        self.robot.fast_movement()
-        self.robot.kick()
+        robot.set_new_target_position(target)
+        robot.fast_movement()
+        robot.kick()
         return pt.common.Status.SUCCESS

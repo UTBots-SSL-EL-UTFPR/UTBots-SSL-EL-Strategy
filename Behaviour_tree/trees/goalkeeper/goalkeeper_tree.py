@@ -35,7 +35,7 @@ def get_goalkeeper_tree(path: str) -> py_trees.trees.BehaviourTree:
     # caso de defesa comum e suas folhas======================================
     foesHasBall = FoesHaveBall()
     goalkeeperCommonPosition = GoalkeeperCommonPosition(path)
-
+                    
     defesa_comum = py_trees.composites.Sequence(
         name="Defesa_Comum",
         memory=False,

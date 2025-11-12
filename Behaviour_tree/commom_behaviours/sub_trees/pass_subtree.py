@@ -7,9 +7,9 @@ from Behaviour_tree.robot.bob import Bob
 from ..condition import HasBall
 
 
-def get_pass_subtree(robot: Bob) -> py_trees.composites.Sequence:
+def get_pass_subtree(path: str) -> py_trees.composites.Sequence:
     # TODO
-    has_ball = HasBall(robot)
+    has_ball = HasBall(path)
 
     pass_subtree = py_trees.composites.Sequence(
         "arvore de chute", True, children=[has_ball]

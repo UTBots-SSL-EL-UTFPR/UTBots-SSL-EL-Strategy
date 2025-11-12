@@ -49,12 +49,12 @@ class Move_node(pt.behaviour.Behaviour):
 
     def __init__(
         self,
-        robot: Bob,
+        path: str,
         name: str = "MOVE",
         timeout_s: float = 5,
     ):
         super().__init__(name=name)
-        self.robot: Bob | None = robot
+        self.path = path
         self._bb = Blackboard_Manager.get_instance()
 
         self.target_reached_key = ""
@@ -66,24 +66,26 @@ class Move_node(pt.behaviour.Behaviour):
         self._max_stall_ticks: int = 30
 
     def setup(self, **kwargs) -> None:
+        robot: Bob = self._bb.get(self.path)
         logger.debug(f"setup {self.name}")
-        if self.robot is None:
+        if robot is None:
             raise RuntimeError(f"[{self.name}] 'robot' não definido no setup()")
         self.target_reached_key = (
-            f"{self.robot.robot_id.name}{BlackboardKeys.TARGET_REACHED}"
+            f"{robot.robot_id.name}{BlackboardKeys.TARGET_REACHED}"
         )
 
         self._bb.set(self.target_reached_key, False)
 
     def initialise(self) -> None:
-        if self.robot is None or self.robot.state is None:
+        robot: Bob = self._bb.get(self.path)
+        if robot is None or robot.state is None:
             return
 
         self._t0 = time.time()
         self._last_move_ts = self._t0
         self._stall_ticks = 0
         self._bb.set(
-            f"{self.robot.robot_id.name}{BlackboardKeys.IS_STUCK}",
+            f"{robot.robot_id.name}{BlackboardKeys.IS_STUCK}",
             False,
         )
         self._bb.set(self.target_reached_key, False)
@@ -97,42 +99,44 @@ class Move_node(pt.behaviour.Behaviour):
         :returns: SUCCESS quando alvo alcançado; RUNNING durante o deslocamento; FAILURE em erro/timeout.
         :rtype: pt.common.Status
         """
-        if self.robot is None:
+        robot: Bob = self._bb.get(self.path)
+        if robot is None:
             return pt.common.Status.FAILURE
-        logger.debug(f"{self.robot.state.target_position} - target")
-        logger.debug(f"{self.robot.state.position}")
+        logger.debug(f"{robot.state.target_position} - target")
+        logger.debug(f"{robot.state.position}")
 
         if bool(self._bb.get(self.target_reached_key)):
-            logging.debug(f"{self.name} - {self.robot.robot_id} SUCCESS")
+            logging.debug(f"{self.name} - {robot.robot_id} SUCCESS")
             return pt.common.Status.SUCCESS
 
-        if not getattr(self.robot.state, "target_position", None):
+        if not getattr(robot.state, "target_position", None):
             logger.debug(
-                f"{self.name} - {self.robot.robot_id.name} - FAILURE  TARGET NONE"
+                f"{self.name} - {robot.robot_id.name} - FAILURE  TARGET NONE"
             )
             return pt.common.Status.FAILURE
 
         if (time.time() - self._t0) > self.timeout_s:
-            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE  TIMEOUT")
+            logger.debug(f"{self.name} - {robot.robot_id.name} - FAILURE  TIMEOUT")
             return pt.common.Status.FAILURE
 
-        if self._bb.get(f"{self.robot.robot_id.name}{BlackboardKeys.IS_STUCK}"):
+        if self._bb.get(f"{robot.robot_id.name}{BlackboardKeys.IS_STUCK}"):
             logger.debug(
-                f"{self.name} - {self.robot.robot_id.name} - FAILURE  ROBOT STUCK"
+                f"{self.name} - {robot.robot_id.name} - FAILURE  ROBOT STUCK"
             )
             return pt.common.Status.FAILURE
-        logger.debug(f"{self.name} - {self.robot.robot_id.name} - RUNNING")
-        self.robot.fast_movement()
+        logger.debug(f"{self.name} - {robot.robot_id.name} - RUNNING")
+        robot.fast_movement()
         return pt.common.Status.RUNNING
 
     def terminate(self, new_status: pt.common.Status) -> None:
-        if self.robot is None or self.robot.state is None:
+        robot: Bob = self._bb.get(self.path)
+        if robot is None or robot.state is None:
             return
 
-        self.robot.state.target_position = None
+        robot.state.target_position = None
 
         try:
-            callbacks.target_reset(self.robot.robot_id.name)
+            callbacks.target_reset(robot.robot_id.name)
         except Exception:
             pass
 
@@ -151,19 +155,20 @@ class Receive_pass(pt.behaviour.Behaviour):
 
     def __init__(
         self,
-        robot: Bob,
+        path: str,
         name: str = "Receive_pass",
     ):
         super().__init__(name=name)
-        self.robot: Bob = robot
+        self.path = path
         self._bb = Blackboard_Manager.get_instance()
         self.receive_key: str
 
     def setup(self, **kwargs) -> None:
+        robot: Bob = self._bb.get(self.path)
         logger.debug(f"setup {self.name}")
-        if self.robot is None:
+        if robot is None:
             raise RuntimeError(f"[{self.name}] 'robot' não definido no setup()")
-        self.receive_key = f"{self.robot.robot_id.name}{BlackboardKeys.TEAM_PASS}"
+        self.receive_key = f"{robot.robot_id.name}{BlackboardKeys.TEAM_PASS}"
         self.pos_pass_key: str = f"{BlackboardKeys.POS_PASS_TARGET}"
         self._bb.set(self.receive_key, False)
         self._bb.set(self.pos_pass_key, False)
@@ -177,13 +182,13 @@ class Receive_pass(pt.behaviour.Behaviour):
         calcula a Pose2D alvo apontando para o centro do gol e
         adiciona na trajetória do robô. Retorna SUCCESS ao preparar.
         """
-
-        if self.robot is None or getattr(self.robot, "state", None) is None:
+        robot: Bob = self._bb.get(self.path)
+        if robot is None or getattr(robot, "state", None) is None:
             return pt.common.Status.FAILURE
 
         passe = self._bb.get(self.receive_key)
         if not passe:
-            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
+            logger.debug(f"{self.name} - {robot.robot_id.name} - FAILURE")
             return pt.common.Status.FAILURE
 
         target = self._bb.get(self.pos_pass_key)
@@ -193,13 +198,13 @@ class Receive_pass(pt.behaviour.Behaviour):
 
         pose_target = hp.PositioningHelper.compute_pose_facing_goal(target)
 
-        self.robot.adicionar_ponto_trajetoria(pose_target)
+        robot.adicionar_ponto_trajetoria(pose_target)
 
         self._bb.set(self.receive_key, False)
         self._bb.set(self.pos_pass_key, None)
 
-        logger.debug(f"{self.name} - {self.robot.robot_id.name} - SUCCESS")
-        self.robot.state.current_command = self.name
+        logger.debug(f"{self.name} - {robot.robot_id.name} - SUCCESS")
+        robot.state.current_command = self.name
 
         return pt.common.Status.SUCCESS
 
@@ -209,14 +214,15 @@ class Rebound_position(pt.behaviour.Behaviour):
     se posiciona de maneira a receber um rebote
     """
 
-    def __init__(self, robot: Bob, name: str = "Rebound_position"):
+    def __init__(self, path: str, name: str = "Rebound_position"):
         super().__init__(name=name)
-        self.robot: Bob = robot
+        self.path = path
         self._bb = Blackboard_Manager.get_instance()
 
     def setup(self, **kwargs) -> None:
+        robot: Bob = self._bb.get(self.path)
         logger.debug(f"setup {self.name}")
-        if self.robot is None:
+        if robot is None:
             raise RuntimeError(f"[{self.name}] 'robot' não definido no setup()")
         self.team_kick_key = f"{BlackboardKeys.TEAM_KICK}"
         self._bb.set(self.team_kick_key, False)
@@ -230,19 +236,20 @@ class Rebound_position(pt.behaviour.Behaviour):
         calcula a Pose2D alvo apontando para o centro do gol e
         adiciona na trajetória do robô. Retorna SUCCESS ao preparar.
         """
-        if self.robot is None or self.robot.state is None:
+        robot: Bob = self._bb.get(self.path)
+        if robot is None or robot.state is None:
             logger.warning("robo NONE")
             return pt.common.Status.FAILURE
         if not self._bb.get(self.team_kick_key):
-            logger.debug(f"{self.name} - {self.robot.robot_id.name} - FAILURE")
+            logger.debug(f"{self.name} - {robot.robot_id.name} - FAILURE")
             return pt.common.Status.FAILURE
 
         target_pose = hp.PositioningHelper.calculate_rebound_position(
-            self.robot.state.position
+            robot.state.position
         )
-        self.robot.adicionar_ponto_trajetoria(target_pose)
-        logger.debug(f"{self.name} - {self.robot.robot_id.name} - SUCCESS")
-        self.robot.state.current_command = self.name
+        robot.adicionar_ponto_trajetoria(target_pose)
+        logger.debug(f"{self.name} - {robot.robot_id.name} - SUCCESS")
+        robot.state.current_command = self.name
 
         return pt.common.Status.SUCCESS
 

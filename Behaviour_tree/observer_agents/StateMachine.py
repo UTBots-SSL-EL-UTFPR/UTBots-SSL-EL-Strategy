@@ -6,6 +6,12 @@ from ..core.event_callbacks import EventEnum
 from ..core.event_callbacks import TreePaths
 from SSL_configuration.configuration import Configuration
 from ..core.blackboard import Blackboard_Manager
+from ..trees.goalkeeper.goalkeeper_tree import get_goalkeeper_tree
+from ..trees.defender.defender_tree import get_defender_tree
+from ..trees.halt.Halt import get_halt_tree
+from ..trees.ofensive_sup.offensive_suport_tree import get_off_sup_tree
+from ..trees.pivo.pivo import get_pivo_tree
+from ..trees.stop.stop_tree import get_stop_tree
 
 
 _bb = Blackboard_Manager.get_instance()
@@ -32,7 +38,7 @@ class StateMachine(Observer):
 
         self.stateDef = {
             "AtkPosse":     ("D", "C", "B"),
-            "DefPerca":     ("D", "E", "F"),
+            "DefPerca":     ("D", "E", "C"),
             "DefRec":       ("D", "E", "G"),
             "TeamFreeKick": ("A", "B", "C"),
             "FoesFreeKick": ("D", "E", "G"),
@@ -48,7 +54,6 @@ class StateMachine(Observer):
             "C": TreePaths.PIVO,
             "D": TreePaths.GOALKEEPER,
             "E": TreePaths.DEF_RECUADO,
-            "F": TreePaths.DEF_ADD,
             "G": TreePaths.BARRIER,
             "H1": TreePaths.STOP1,
             "H2": TreePaths.STOP2,
@@ -61,13 +66,37 @@ class StateMachine(Observer):
             "J3": TreePaths.EXPULSO3,
         }
 
+        self.treesInstances = {
+            TreePaths.KICKER: None,
+            TreePaths.BARRIER: None,
+            TreePaths.PIVO: get_pivo_tree(TreePaths.PIVO),
+            TreePaths.SUPORT_OF: get_off_sup_tree(TreePaths.SUPORT_OF),
+            TreePaths.GOALKEEPER: get_goalkeeper_tree(TreePaths.GOALKEEPER),
+            TreePaths.DEF_RECUADO: get_defender_tree(TreePaths.DEF_RECUADO),
+            TreePaths.STOP1: get_stop_tree(TreePaths.STOP1),
+            TreePaths.STOP2: get_stop_tree(TreePaths.STOP2),
+            TreePaths.STOP3: get_stop_tree(TreePaths.STOP3),
+            TreePaths.HALT1: get_halt_tree(TreePaths.HALT1),
+            TreePaths.HALT2: get_halt_tree(TreePaths.HALT2),
+            TreePaths.HALT3: get_halt_tree(TreePaths.HALT3),
+        }
+
         self.normalState = "DefRec"
         self.specialState = None
 
-        # if self.config.startWithBall:
-        #     self.stack.append("TeamFreeKick")
-        # else:
-        #     self.stack.append("FoesFreeKick")
+    def tickTrees(self):
+        state = self.normalState
+        if self.specialState is not None:
+            state = self.specialState
+        for treeCode in self.stateDef.get(state):
+            tree = self.treesRelation.get(treeCode)
+            if not tree:
+                continue
+            treeInst = self.treesInstances.get(tree)
+            if not treeInst:
+                continue
+            treeInst.tick()
+        
 
     def setTrees(self):
         _bb.set(TreePaths.KICKER, None)
@@ -88,9 +117,6 @@ class StateMachine(Observer):
         _bb.set(TreePaths.STOP3, None)
 
         self.updateBobTrees()
-
-        
-
     
     def notify(self, event: EventClass):
         ev = self.events.get(event.name)
@@ -99,14 +125,6 @@ class StateMachine(Observer):
             return  # ignora eventos que a SM não conhece
         ev.value = event.value
         self.update()
-
-
-    # def updateBobs(self):
-    #     for bob in self.bobs:
-    #         bob.update()
-    
-    def tickTrees(self):
-        ...
 
     def updateBobTrees(self):
         state = self.specialState
@@ -118,7 +136,7 @@ class StateMachine(Observer):
             path = self.treesRelation.get(code)
             if path is not None:
                 _bb.set(path, value)
-                print(path, value.robot_id)
+                #print(path, value.robot_id)
 
 
     def updateState(self):
@@ -194,6 +212,8 @@ class StateMachine(Observer):
                 if self.events[EventEnum.TEAM_HAS_BALL].value == True and self.events[EventEnum.FOES_HAS_BALL].value == False:
                     self.normalState = "AtkPosse"
                     return True
+                
+        return False
 
     def update(self):
         initialNormalState = self.normalState
@@ -210,6 +230,5 @@ class StateMachine(Observer):
             self.updateBobTrees()
         
         
-        
-    #2 problemas ainda, o loop infinito, so fazer com variaveis separadas para estados especiais, e o fato do estado inicial nao ser um estado in game de vdd
+    
         
