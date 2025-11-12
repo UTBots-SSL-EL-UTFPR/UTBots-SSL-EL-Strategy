@@ -7,7 +7,7 @@ import logging
 import py_trees
 
 from Behaviour_tree import helpers as hp
-from Behaviour_tree.commom_behaviours.actions import MovimentoUnico, RecuperarBola
+from Behaviour_tree.commom_behaviours.actions import MovimentoUnico, RecuperarBola, Move_node
 from Behaviour_tree.commom_behaviours.condition import BolaSegura, FoesHaveBall
 from Behaviour_tree.commom_behaviours.sub_trees.kick_subtree import get_kick_subtree
 from Behaviour_tree.robot.bob import Bob
@@ -24,12 +24,11 @@ def get_goalkeeper_tree(robot: Bob) -> py_trees.trees.BehaviourTree:
 
     bola_segura = BolaSegura(robot)
     recuperar_bola = RecuperarBola(robot)
-    movimento_unico = MovimentoUnico(robot)
-
+    move = Move_node(robot)
     bola_solta = py_trees.composites.Sequence(
         name="Bola_Solta",
         memory=False,
-        children=[bola_segura, recuperar_bola, movimento_unico],
+        children=[bola_segura, recuperar_bola, move],
     )
 
     # caso de defesa comum e suas folhas======================================

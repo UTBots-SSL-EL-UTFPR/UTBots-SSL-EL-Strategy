@@ -278,7 +278,6 @@ class RecuperarBola(py_trees.behaviour.Behaviour):
         self.robot.set_new_target_position(
             hp.StrategyHelper.get_ball_recovery_position()
         )
-        self.robot.state.current_command = self.name
         logger.debug(f"{self.name} - {self.robot.robot_id.name} - SUCCESS")
         return py_trees.common.Status.SUCCESS
 
@@ -307,13 +306,8 @@ class MovimentoUnico(py_trees.behaviour.Behaviour):
         logger.debug("movimento unitario")
 
     def update(self) -> py_trees.common.Status:
-        current_time = time.time()
-        if (current_time - self._last_update_time) > self.delta_t:
-            logger.debug(f"{self.name} - SUCCESS")
-            return py_trees.common.Status.SUCCESS
-
         self.robot.fast_movement()
         self.robot.state.current_command = self.name
-        logger.debug(f"{self.name} - RUNNING")
+        logger.debug(f"{self.name} - SUCCESS")
 
         return py_trees.common.Status.RUNNING

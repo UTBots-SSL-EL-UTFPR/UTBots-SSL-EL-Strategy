@@ -6,12 +6,14 @@ import py_trees
 
 from .core import World_State
 from .robot.BobManager import Bob, BobManager, TeamID
+from .trees.barreira.Barreira import get_barreira_tree
 from .trees.defender.defender_tree import get_defender_tree
 from .trees.goalkeeper.goalkeeper_tree import get_goalkeeper_tree
+from .trees.ofensive_sup.offensive_suport_tree import get_off_sup_tree
 from .trees.pivo.pivo import get_pivo_tree
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s | %(name)-12s | %(levelname)-8s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
@@ -29,16 +31,15 @@ class StateMockObj:
         bobs = self.bobManager.bobs
         goalkeeper = get_goalkeeper_tree(bobs[TeamID.SabKawa])
         if a:
-            defensor = get_defender_tree(bobs[TeamID.Kamiji])
+            defensor = get_barreira_tree(bobs[TeamID.Kamiji])
             pivo = get_pivo_tree(bobs[TeamID.Argenton])
-            #self.trees.append(defensor)
+            self.trees.append(defensor)
             self.trees.append(pivo)
         self.trees.append(goalkeeper)
 
     def tick_trees(self):
         for tree in self.trees:
             tree.tick()
-            return
 
     def update(self):
         self.bobManager.update()

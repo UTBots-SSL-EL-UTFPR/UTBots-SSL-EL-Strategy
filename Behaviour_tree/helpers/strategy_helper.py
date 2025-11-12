@@ -163,6 +163,35 @@ class StrategyHelper:
         return 0.1
 
     @classmethod
+    def get_barreira_position(cls):
+        ball = cls._ws.get_ball_position()
+        our_goal = FieldHelper.get_team_goal_center()
+        if ball is None:
+            return our_goal
+        depth_factor = 0.6
+
+        defense_x = FieldHelper.calculate_defense_line_x(depth_factor)
+
+        post_top, post_bottom = FieldHelper.get_team_goal_posts()
+        upper = ball.distance_to(post_bottom) > ball.distance_to(post_top)
+        if upper:
+            bisector_dir = GeometryHelper.calculate_bisector_direction(
+                ball, post_top, our_goal
+            )
+        else:
+            bisector_dir = GeometryHelper.calculate_bisector_direction(
+                ball, our_goal, post_bottom
+            )
+
+        ideal_target = GeometryHelper.find_line_intersection_with_vertical(
+            start_point=ball, direction_vec=bisector_dir, vertical_line_x=defense_x
+        )
+
+        final_target = FieldHelper.clamp_out_goalkeeper_area(ideal_target)
+        final_target.x += 40
+        return final_target
+
+    @classmethod
     def get_goalkeeper_defense_position(cls) -> Pose2D:
         """
         Executa a estratégia do goleiro para encontrar a melhor posição.

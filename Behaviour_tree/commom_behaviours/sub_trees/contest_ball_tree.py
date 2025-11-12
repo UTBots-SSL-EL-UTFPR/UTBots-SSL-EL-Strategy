@@ -6,6 +6,7 @@ import time
 
 import py_trees
 
+from Behaviour_tree.commom_behaviours.actions import MovimentoUnico
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
 from Behaviour_tree.helpers.strategy_helper import StrategyHelper
@@ -46,16 +47,7 @@ class PressureOpponent(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def initialise(self) -> None:
-        current_time = time.time()
-        new_pos = StrategyHelper.get_press_oponent_position()
-        new_path = StrategyHelper.get_Robot_path(
-            new_pos, self.robot.state.position, None
-        )
-
-        self.robot.set_path(new_path)
-
-        self.last_target = new_path[-1]
-        self._last_update_time = current_time
+        pass
 
     def update(self) -> py_trees.common.Status:
         """
@@ -64,29 +56,19 @@ class PressureOpponent(py_trees.behaviour.Behaviour):
         if not _bb.get(self.foes_with_ball):
             logger.debug(f"{self.name} - FAILURE FOES SEM BOLA")
             return py_trees.common.Status.FAILURE
-        current_time = time.time()
-
-        if (current_time - self._last_update_time) > self.delta_t:
-            new_pos = StrategyHelper.get_press_oponent_position()
-            new_path = StrategyHelper.get_Robot_path(
-                new_pos, self.robot.state.position, None
-            )
-            self.robot.set_path(new_path)
-            self.last_target = new_path[-1]
-            self._last_update_time = current_time
-            logger.debug("new target", new_path)
-            return py_trees.common.Status.SUCCESS
-
-        logger.debug(f"{self.name} - {self.robot.robot_id.name} - RUNNING")
-
-        self.robot.fast_movement()
-        return py_trees.common.Status.RUNNING
+        new_pos = StrategyHelper.get_press_oponent_position()
+        self.robot.set_new_target_position(new_pos)
+        return py_trees.common.Status.SUCCESS
 
 
-def get_luta_pela_bola_sub_tree(robot: Bob) -> py_trees.composites.Selector:
+def get_luta_pela_bola_sub_tree(robot: Bob) -> py_trees.composites.Sequence:
     press_op = PressureOpponent(robot)
     rec_bola = RecuperarBola(robot)
+    fastMove = MovimentoUnico(robot)
     onde_ir = py_trees.composites.Selector(
         "onde ir", True, children=[press_op, rec_bola]
     )
-    return onde_ir
+    mover_rapido = py_trees.composites.Sequence(
+        "superNome", False, children=[onde_ir, fastMove]
+    )
+    return mover_rapido
