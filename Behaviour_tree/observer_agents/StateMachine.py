@@ -1,9 +1,7 @@
-from .Observer import Observer
-from .Observer import EventClass
+from .Observer import EventClass, Observer
 from typing import List
 from Behaviour_tree.robot.BobManager import BobManager
-from ..core.event_callbacks import EventEnum
-from ..core.event_callbacks import TreePaths
+from ..core.event_callbacks import EventEnum, TreePaths
 from SSL_configuration.configuration import Configuration
 from ..core.blackboard import Blackboard_Manager
 from ..trees.goalkeeper.goalkeeper_tree import get_goalkeeper_tree
@@ -12,6 +10,8 @@ from ..trees.halt.Halt import get_halt_tree
 from ..trees.ofensive_sup.offensive_suport_tree import get_off_sup_tree
 from ..trees.pivo.pivo import get_pivo_tree
 from ..trees.stop.stop_tree import get_stop_tree
+from ..trees.barreira.Barreira import get_barreira_tree
+from ..trees.penalty.penalty_tree import get_penalty_tree
 
 
 _bb = Blackboard_Manager.get_instance()
@@ -31,6 +31,7 @@ class StateMachine(Observer):
             EventEnum.HALT:  EventClass(EventEnum.HALT, None),
             EventEnum.STOP:  EventClass(EventEnum.STOP, None),
         }
+        self.expulsos: List[bool] = [False, False, False]
 
         self.config = Configuration.getObject()
 
@@ -67,8 +68,8 @@ class StateMachine(Observer):
         }
 
         self.treesInstances = {
-            TreePaths.KICKER: None,
-            TreePaths.BARRIER: None,
+            TreePaths.KICKER: get_penalty_tree(TreePaths.KICKER),
+            TreePaths.BARRIER: get_barreira_tree(TreePaths.BARRIER),
             TreePaths.PIVO: get_pivo_tree(TreePaths.PIVO),
             TreePaths.SUPORT_OF: get_off_sup_tree(TreePaths.SUPORT_OF),
             TreePaths.GOALKEEPER: get_goalkeeper_tree(TreePaths.GOALKEEPER),
@@ -82,13 +83,18 @@ class StateMachine(Observer):
         }
 
         self.normalState = "DefRec"
+        #self.normalState = "AtkPosse"
         self.specialState = None
+
+        self.setTrees()
 
     def tickTrees(self):
         state = self.normalState
         if self.specialState is not None:
             state = self.specialState
-        for treeCode in self.stateDef.get(state):
+        for treeCode, exp in zip(self.stateDef.get(state), self.expulsos):
+            if exp == True:
+                continue
             tree = self.treesRelation.get(treeCode)
             if not tree:
                 continue
@@ -96,6 +102,7 @@ class StateMachine(Observer):
             if not treeInst:
                 continue
             treeInst.tick()
+            print(treeInst)
         
 
     def setTrees(self):
@@ -119,12 +126,21 @@ class StateMachine(Observer):
         self.updateBobTrees()
     
     def notify(self, event: EventClass):
+        self.expUpdate(event)
         ev = self.events.get(event.name)
         
         if ev is None:
             return  # ignora eventos que a SM não conhece
         ev.value = event.value
         self.update()
+
+    def expUpdate(self, event: EventClass):
+        evName: EventEnum = event.name
+        if evName != EventEnum.KAMIJI_EXPULSO and evName != EventEnum.ARGENTON_EXPULSO and evName != EventEnum.SABADIN_EXPULSO:
+            return
+
+        index: int = int(evName[0])
+        self.expulsos[index] = event.value
 
     def updateBobTrees(self):
         state = self.specialState
@@ -136,7 +152,9 @@ class StateMachine(Observer):
             path = self.treesRelation.get(code)
             if path is not None:
                 _bb.set(path, value)
-                #print(path, value.robot_id)
+                print(path, value.robot_id)
+
+    
 
 
     def updateState(self):
@@ -223,11 +241,13 @@ class StateMachine(Observer):
         if self.specialState is not None:
             if inititalSpecialState != self.specialState:
                 self.updateBobTrees()
+                
 
             return
         
         if initialNormalState != self.normalState or inititalSpecialState != self.specialState:
             self.updateBobTrees()
+            
         
         
     

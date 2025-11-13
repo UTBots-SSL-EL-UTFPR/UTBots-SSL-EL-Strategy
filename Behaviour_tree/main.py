@@ -11,6 +11,11 @@ from .trees.defender.defender_tree import get_defender_tree
 from .trees.goalkeeper.goalkeeper_tree import get_goalkeeper_tree
 from .trees.ofensive_sup.offensive_suport_tree import get_off_sup_tree
 from .trees.pivo.pivo import get_pivo_tree
+from .observer_agents.StateMachine import StateMachine
+from .observer_agents.EventNotifier import EventNotifier
+from .observer_agents.StateMachine import EventClass
+from .observer_agents.StateMachine import EventEnum
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -23,27 +28,16 @@ logger = logging.getLogger(__name__)
 class StateMockObj:
     def __init__(self) -> None:
         self.bobManager: BobManager = BobManager.get_instance()
-        self.trees: List[py_trees.trees.BehaviourTree] = []
-        self.setup_trees()
+        self.stateMachine = StateMachine()
+        self.eventNotifier = EventNotifier.get_instance()
 
-    def setup_trees(self):
-        a = 1
-        bobs = self.bobManager.bobs
-        goalkeeper = get_goalkeeper_tree(bobs[TeamID.SabKawa])
-        if a:
-            defensor = get_barreira_tree(bobs[TeamID.Kamiji])
-            pivo = get_pivo_tree(bobs[TeamID.Argenton])
-            self.trees.append(defensor)
-            self.trees.append(pivo)
-        self.trees.append(goalkeeper)
-
-    def tick_trees(self):
-        for tree in self.trees:
-            tree.tick()
-
-    def update(self):
+    def update(self, event: EventClass | None = None):
         self.bobManager.update()
-        self.tick_trees()
+
+        if event is not None:
+            self.eventNotifier.reciveEvent(event)
+
+        self.stateMachine.tickTrees()
 
     # python3.10 -m Behaviour_tree.main
     def initialize(self):
@@ -61,10 +55,23 @@ def main():
     tUpdate = time.time()
     state = StateMockObj()
     state.initialize()
-    while True:
-        if time.time() >= update_delay + tUpdate:
-            wordState.update()
-            state.update()
+
+    wordState.update()
+    state.update()
+
+    wordState.update()
+    state.update(EventClass(EventEnum.ARGENTON_EXPULSO, True))
+
+    wordState.update()
+    state.update(EventClass(EventEnum.ARGENTON_EXPULSO, False))
+
+    
+
+    
+    #while True:
+    #    if time.time() >= update_delay + tUpdate:
+    #        wordState.update()
+    #        state.update()
 
 
 if __name__ == "__main__":

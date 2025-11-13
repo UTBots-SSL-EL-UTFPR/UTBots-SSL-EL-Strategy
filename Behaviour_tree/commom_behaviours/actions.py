@@ -66,18 +66,16 @@ class Move_node(pt.behaviour.Behaviour):
         self._max_stall_ticks: int = 30
 
     def setup(self, **kwargs) -> None:
-        robot: Bob = self._bb.get(self.path)
+        
         logger.debug(f"setup {self.name}")
-        if robot is None:
-            raise RuntimeError(f"[{self.name}] 'robot' não definido no setup()")
+
+    def initialise(self) -> None:
+        robot: Bob = self._bb.get(self.path)
         self.target_reached_key = (
             f"{robot.robot_id.name}{BlackboardKeys.TARGET_REACHED}"
         )
 
         self._bb.set(self.target_reached_key, False)
-
-    def initialise(self) -> None:
-        robot: Bob = self._bb.get(self.path)
         if robot is None or robot.state is None:
             return
 
@@ -164,13 +162,9 @@ class Receive_pass(pt.behaviour.Behaviour):
         self.receive_key: str
 
     def setup(self, **kwargs) -> None:
-        robot: Bob = self._bb.get(self.path)
         logger.debug(f"setup {self.name}")
-        if robot is None:
-            raise RuntimeError(f"[{self.name}] 'robot' não definido no setup()")
-        self.receive_key = f"{robot.robot_id.name}{BlackboardKeys.TEAM_PASS}"
+        
         self.pos_pass_key: str = f"{BlackboardKeys.POS_PASS_TARGET}"
-        self._bb.set(self.receive_key, False)
         self._bb.set(self.pos_pass_key, False)
 
     def initialise(self) -> None:
@@ -182,7 +176,13 @@ class Receive_pass(pt.behaviour.Behaviour):
         calcula a Pose2D alvo apontando para o centro do gol e
         adiciona na trajetória do robô. Retorna SUCCESS ao preparar.
         """
+
+        
         robot: Bob = self._bb.get(self.path)
+
+        self.receive_key = f"{robot.robot_id.name}{BlackboardKeys.TEAM_PASS}"
+        self._bb.set(self.receive_key, False)
+
         if robot is None or getattr(robot, "state", None) is None:
             return pt.common.Status.FAILURE
 
@@ -220,12 +220,9 @@ class Rebound_position(pt.behaviour.Behaviour):
         self._bb = Blackboard_Manager.get_instance()
 
     def setup(self, **kwargs) -> None:
-        robot: Bob = self._bb.get(self.path)
+        
         logger.debug(f"setup {self.name}")
-        if robot is None:
-            raise RuntimeError(f"[{self.name}] 'robot' não definido no setup()")
-        self.team_kick_key = f"{BlackboardKeys.TEAM_KICK}"
-        self._bb.set(self.team_kick_key, False)
+        
 
     def initialise(self) -> None:
         pass
@@ -237,6 +234,10 @@ class Rebound_position(pt.behaviour.Behaviour):
         adiciona na trajetória do robô. Retorna SUCCESS ao preparar.
         """
         robot: Bob = self._bb.get(self.path)
+        if robot is None:
+            raise RuntimeError(f"[{self.name}] 'robot' não definido no setup()")
+        self.team_kick_key = f"{BlackboardKeys.TEAM_KICK}"
+        self._bb.set(self.team_kick_key, False)
         if robot is None or robot.state is None:
             logger.warning("robo NONE")
             return pt.common.Status.FAILURE

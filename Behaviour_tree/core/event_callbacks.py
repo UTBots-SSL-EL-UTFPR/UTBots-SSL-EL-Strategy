@@ -4,7 +4,7 @@
 import logging
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
-
+    
 from .blackboard import Blackboard_Manager
 
 logger = logging.getLogger(__name__)
@@ -34,6 +34,9 @@ class EventEnum(StringEnum):
     TEAM_FREE_KICK = "teamFreeKick"
     FOES_FREE_KICK = "foesFreeKick"
     STOP = "stop"
+    KAMIJI_EXPULSO = f'0expulso'
+    ARGENTON_EXPULSO = f'1expulso'
+    SABADIN_EXPULSO = f'2expulso'
 
 class TreePaths(StringEnum):
     KICKER = "kicker"
