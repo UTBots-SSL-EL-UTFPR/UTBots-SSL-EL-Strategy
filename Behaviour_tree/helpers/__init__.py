@@ -8,9 +8,9 @@ from .positioning_helper import PositioningHelper
 from .strategy_helper import StrategyHelper
 
 __all__ = [
-    "field_helper",
-    "geometry_helper",
-    "motion_helper",
-    "positioning_helper",
-    "strategy_helper",
+    "FieldHelper",
+    "GeometryHelper",
+    "MotionHelper",
+    "PositioningHelper",
+    "StrategyHelper",
 ]

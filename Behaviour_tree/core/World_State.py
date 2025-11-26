@@ -15,10 +15,13 @@ from utils.pose2D import Pose2D
 # Enum de IDs de robôs
 # =====================================================
 
+
 class TeamID(Enum):
     Kamiji = 0
     Argenton = 1
     SabKawa = 2
+
+
 class World_State:
     _instance = None
 
@@ -191,8 +194,13 @@ class World_State:
                 robots.append(pos)
         return robots
 
-    def get_all_robot_position(self):
+    def get_all_robot_position(self, Exclude: int | None = None):
         robots: list[Pose2D] = []
         robots.extend(self.get_all_foes_position())
-        robots.extend(self.get_all_team_position())
+        for id in TeamID:
+            if id.value == Exclude:
+                continue
+            pos = self.get_team_robot_pose(id.value)
+            if pos:
+                robots.append(pos)
         return robots

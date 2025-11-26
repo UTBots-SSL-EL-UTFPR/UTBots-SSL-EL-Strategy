@@ -141,3 +141,32 @@ class GeometryHelper:
         Calcula o ângulo em radianos para que o start_point "olhe" para o end_point.
         """
         return (math.atan2(end_point.y - start_point.y, end_point.x - start_point.x))
+
+    @staticmethod
+    def displace_from_target_along(origin: Pose2D, target: Pose2D, z: int) -> Pose2D:
+        """
+        Retorna um novo ponto deslocado em 'z' milímetros além (ou aquém, se z<0)
+        do 'target', seguindo a direção de (origin -> target).
+
+        - origin: Pose2D de referência (ex: posição do robô)
+        - target: Pose2D inicial (ex: posição da bola)
+        - z: deslocamento total (inteiro, positivo ou negativo)
+
+        Exemplo:
+            origin=(0,0), target=(10,0), z=2  -> (12,0)
+            origin=(0,0), target=(10,0), z=-2 -> (8,0)
+        """
+        dx = target.x - origin.x
+        dy = target.y - origin.y
+        dist = math.hypot(dx, dy)
+
+        if dist == 0:
+            return Pose2D(target.x, target.y)
+
+        ux = dx / dist
+        uy = dy / dist
+
+        new_x = int(round(target.x + z * ux))
+        new_y = int(round(target.y + z * uy))
+
+        return Pose2D(new_x, new_y)

@@ -1,6 +1,8 @@
 # -------------------------------------------------------------------------- #
 #                                  IMPORTS                                   #
 # -------------------------------------------------------------------------- #
+import math
+
 from Behaviour_tree.core.World_State import World_State
 from SSL_configuration.configuration import Configuration
 from utils.pose2D import Pose2D
@@ -45,6 +47,22 @@ class FieldHelper:
         goal_pose = Pose2D(2250, 0)
         goal_pose.x *= -config.get_side_sign()
         return goal_pose
+
+    @classmethod
+    def position_behind(cls, dist: int) -> int:
+        """
+        não sei como nomear isso melhor
+        pega uma distancia absoluta, e retona o valor a ser somado para
+        distanciar-se aquele absoluto do gol.
+        EXEMPLO: eu quero me posicionar 150 pontos atras da bola na direção do gol inimigo (chute)
+        eu passo 150 para essa func, ela vai retonar um valor a ser somado diretamente a posição original
+        (se o gol estiver em X = 2200, ela retornaria -150, e vice versa)
+        """
+        config = Configuration.getObject()
+        sideSign = (
+            config.get_side_sign()
+        )  # para sidesing funcionar, ele deve ser neg. mas como teriamos q inverter o sinal novamente, apenas fazemos essa coisa
+        return int(math.copysign(dist, sideSign))
 
     @classmethod
     def get_team_goal_center(cls) -> Pose2D:

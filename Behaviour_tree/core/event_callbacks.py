@@ -22,7 +22,6 @@ class StringEnum(str, Enum):
         return f"<{self.__class__.__name__}.{self.name}: '{self.value}'>"
 
 
-
 class EventEnum(StringEnum):
     VAZIO = ""
     TEAM_HAS_BALL = "teamHasBall"
@@ -37,6 +36,7 @@ class EventEnum(StringEnum):
     KAMIJI_EXPULSO = f'0expulso'
     ARGENTON_EXPULSO = f'1expulso'
     SABADIN_EXPULSO = f'2expulso'
+
 
 class TreePaths(StringEnum):
     KICKER = "kicker"
@@ -57,23 +57,12 @@ class TreePaths(StringEnum):
     EXPULSO3 = "expulso3"
 
 
-    
-class EventClass():
+class EventClass:
     def __init__(self, name: EventEnum = EventEnum.VAZIO, value: bool = False):
         self.name: EventEnum = name
         self.value: bool = value
 
 
-class BlackboardKeys:
-    class Flags:
-        class TeamContext(StringEnum):
-            IS_SIMPLE_ATTACK = "is_simple_atack"
-            IS_PASS = "is_pass"
-            VALID_LINE = "valide_line"
-            UNMARKED_RECEIVER = "unmarked_receiver"
-            IS_ATTACK_FROM_RECOVERY = "is_atack_from_recovery"
-            IS_DEFENSE_EXEMPLE = "is_defense_exemple"
-            IS_SLOW_ATTACK = "is_slow_attack"
 class BlackboardKeys(StringEnum):
     IS_PASS = "is_pass"
     VALID_LINE = "valide_line"
@@ -109,7 +98,7 @@ class BlackboardKeys(StringEnum):
 class Event(str, Enum):
 
     TEAM_GOT_BALL_POSSESSION = "team_got_ball_possession"
-    TEAM_LOST_BALL_POSSESSION = "lost_ball_possession"
+    TEAM_LOST_BALL_POSSESSION = "team_lost_ball_possession"
     FOES_GOT_BALL_POSSESSION = "foes_got_ball_possession"
     FOES_LOST_BALL_POSSESSION = "foes_lost_ball_possession"
     BALL_REACHABLE = "ball_reachable"
@@ -203,24 +192,18 @@ def robot_lost_posetion(robot_id: str):
 def team_got_ball_posetion():
     logger.debug("TEAM got ball posetion")
     _bb.set(
-            f"{BlackboardKeys.TEAM_HAS_BALL}",
-            True,
-        )
-
-
-@events.on(Event.TEAM_LOST_BALL_POSSESSION)
-def lost_ball_posetion():
-    logger.debug("lost ball posetion")
-    _bb.set(f"{BlackboardKeys.TEAM_HAS_BALL}", False)
+        f"{BlackboardKeys.TEAM_HAS_BALL}",
+        True,
+    )
 
 
 @events.on(Event.FOES_GOT_BALL_POSSESSION)
 def foes_got_ball_posetion():
     logger.debug("FOES got ball posetion")
     _bb.set(
-            f"{BlackboardKeys.FOES_HAVE_BALL}",
-            True,
-        )
+        f"{BlackboardKeys.FOES_HAVE_BALL}",
+        True,
+    )
 
 
 @events.on(Event.FOES_LOST_BALL_POSSESSION)
@@ -234,13 +217,12 @@ def foes_lost_ball_posetion():
 
 @events.on(Event.TARGET_REACHED)
 def on_target_reached(robot_id: str):
-    logger.debug("%s - %s", robot_id, BlackboardKeys.TARGET_REACHED)
+    logger.debug("%s - %s = TRUE", robot_id, BlackboardKeys.TARGET_REACHED)
     _bb.set(f"{robot_id}{BlackboardKeys.TARGET_REACHED}", True)
 
 
 @events.on(Event.TARGET_RESET)
 def on_target_reset(robot_id: str):
-    logger.debug("%s - %s", robot_id, BlackboardKeys.TARGET_REACHED)
     _bb.set(f"{robot_id}{BlackboardKeys.TARGET_REACHED}", False)
 
 

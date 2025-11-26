@@ -85,15 +85,18 @@ class HasBall(py_trees.behaviour.Behaviour):
         hasTeam = BlackboardKeys.TEAM_HAS_BALL
         hasFoes = BlackboardKeys.FOES_HAVE_BALL
 
-        robot: Bob = _bb.get(self.path)
-        
-        if _bb.get(hasTeam) and _bb.get(hasFoes):
+        robot: Bob | None = _bb.get(self.path)
+        if not robot:
             return py_trees.common.Status.FAILURE
-        
+
+        if _bb.get(hasTeam) and _bb.get(hasFoes):
+            logger.debug(f"{self.name}-{robot.robot_id.name} - Failure")
+            return py_trees.common.Status.FAILURE
+
         if _bb.get(f"{robot.robot_id.name}{BlackboardKeys.HAS_BALL}"):
             logger.debug(f"{self.name}-{robot.robot_id.name} - SUCCESS")
             return py_trees.common.Status.SUCCESS
-        
+
         logger.debug(f"{self.name}-{robot.robot_id.name} - FAILURE")
         return py_trees.common.Status.FAILURE
 

@@ -57,11 +57,11 @@ GLOBAL_KD_ANG = 0.3
 # ===================================================#
 
 CONTROL_K_POS = 0.7  # 1/s ganho linear
-CONTROL_K_ANG = 0.4  # 1/s ganho angular
+CONTROL_K_ANG = 0.15  # 1/s ganho angular
 CONTROL_KD_ANG_FUNC = 0.2  # Ganho derivativo angular específico da função
 CONTROL_V_MAX = 0.5  # m/s saturação linear
 CONTROL_W_MAX = 2.5  # rad/s saturação angular
-CONTROL_POS_TOL = 0.03  # m tolerância de posição
+CONTROL_POS_TOL = 0.04  # m tolerância de posição
 CONTROL_ANG_TOL = math.radians(0.04)  # rad tolerância angular
 CONTROL_V_MIN = 0.20  # [m/s] piso de velocidade (vencer atrito)
 CONTROL_YAW_DEADBAND = math.radians(1.0)  # [rad] ignora correções pequenas

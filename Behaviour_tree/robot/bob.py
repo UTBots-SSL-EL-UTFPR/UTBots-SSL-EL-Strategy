@@ -121,6 +121,7 @@ class Bob:
         no simulador nao se projeta pra frente, ele so pisca em vermelho como
         indicativo visual de q foi acionado.
         """
+        
         self.cmd_builder.command_robots(
             id=self.robot_id.value, kick_x=ballSpeed, kick_z=4
         )

@@ -784,3 +784,83 @@ class PositioningHelper:
         "returns theta to face enemyGoal from position"
         gol = FieldHelper.get_enemy_goal_center()
         return GeometryHelper.calculate_angle_between_points(position, gol)
+
+    @classmethod
+    def find_most_open_spot_on_enemy_goal(
+        cls,
+        origin: Pose2D,
+        opponents: List[Pose2D],
+        *,
+        y_step_coarse: int = 100,
+        y_step_fine: int = 25,
+    ) -> Optional[Pose2D]:
+        """
+        Retorna o ponto na boca do gol adversário com MAIOR 'folga' (distância ao oponente mais próximo)
+        que esteja VISÍVEL a partir de 'origin'. Se nada for visível, retorna None.
+
+        Parâmetros:
+        - origin: ponto de onde o chute/passe é feito
+        - opponents: lista de Pose2D dos oponentes
+        - y_step_coarse / y_step_fine: granularidade da busca
+        - corridor_radius: raio de colisão do corredor origin->ponto
+        """
+
+        def dist_point_to_segment_sq(p: Pose2D, a: Pose2D, b: Pose2D) -> float:
+            """Distância ao quadrado de p ao segmento AB."""
+            ax, ay, bx, by = a.x, a.y, b.x, b.y
+            l2 = (bx - ax) ** 2 + (by - ay) ** 2
+            if l2 == 0:
+                return (p.x - ax) ** 2 + (p.y - ay) ** 2
+            t = ((p.x - ax) * (bx - ax) + (p.y - ay) * (by - ay)) / l2
+            t = max(0.0, min(1.0, t))
+            projx = ax + t * (bx - ax)
+            projy = ay + t * (by - ay)
+            dx, dy = p.x - projx, p.y - projy
+            return dx * dx + dy * dy
+
+        def path_is_clear(a: Pose2D, b: Pose2D) -> bool:
+            corridor_radius = LOGIC_ROBOT_RADIUS + LOGIC_ROBOT_RADIUS
+            if not opponents:
+                return True
+            thresh_sq = corridor_radius * corridor_radius
+            for opp in opponents:
+                if dist_point_to_segment_sq(opp, a, b) < thresh_sq:
+                    return False
+            return True
+
+        def clearance_to_opponents(p: Pose2D) -> float:
+            if not opponents:
+                return float("inf")
+            return min(math.hypot(p.x - o.x, p.y - o.y) for o in opponents)
+
+        goal_center = FieldHelper.get_enemy_goal_center()
+        goal_x = goal_center.x
+        y_min, y_max = -380, 380
+
+        best: Optional[Pose2D] = None
+        best_clearance = -1.0
+
+        y = y_min
+        while y <= y_max:
+            candidate = Pose2D(int(goal_x), int(y))
+            if path_is_clear(origin, candidate):
+                c = clearance_to_opponents(candidate)
+                if c > best_clearance:
+                    best_clearance, best = c, candidate
+            y += y_step_coarse
+
+        if best is None:
+            return None
+        y_low = max(y_min, best.y - 3 * y_step_coarse)
+        y_high = min(y_max, best.y + 3 * y_step_coarse)
+
+        y = y_low
+        while y <= y_high:
+            candidate = Pose2D(int(goal_x), int(y))
+            if path_is_clear(origin, candidate):
+                c = clearance_to_opponents(candidate)
+                if c > best_clearance:
+                    best_clearance, best = c, candidate
+            y += y_step_fine
+
+        return best

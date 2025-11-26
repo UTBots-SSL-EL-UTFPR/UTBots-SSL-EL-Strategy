@@ -23,7 +23,7 @@ class Bob_State:
         self.role: RoleType | None = None
 
         self.ball_visible = False
-        self.has_ball = False
+        self.has_ball = True
         self.position_rept = 0
 
     def reset(self):

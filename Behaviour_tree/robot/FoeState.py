@@ -18,7 +18,7 @@ class FoeState:
     """ESTADO SIMPLIFICADO DOS ROBOS INIMIGOS"""
 
     def __init__(self, id: FoesID):
-        self.has_ball = False
+        self.has_ball = True
         self.robot_id = id
         self._position: Pose2D = Pose2D(3333, 3333)
         self._velocity: Pose2D = Pose2D()

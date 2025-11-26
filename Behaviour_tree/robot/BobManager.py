@@ -43,6 +43,8 @@ class BobManager(Manager):
         self.foes[FoesID.Cerberus] = FoeState(FoesID.Cerberus)
         self.foes[FoesID.TauraBots] = FoeState(FoesID.TauraBots)
         self.foes[FoesID.GralhaBots] = FoeState(FoesID.GralhaBots)
+        self.eventManager.emit(Event.FOES_GOT_BALL_POSSESSION)
+        self.eventManager.emit(Event.TEAM_GOT_BALL_POSSESSION)
 
     def update(self):
         """Atualiza o estado global de todos os robôs."""
@@ -95,8 +97,9 @@ class BobManager(Manager):
                     # evento: "perdeu_posse"
                     self.eventManager.emit(Event.LOST_BALL_POSSESSION, foeID.name)
                     self.foesHaveBall -= 1
-                    if self.foesHaveBall == 0:
+                    if self.foesHaveBall <= 0:
                         self.eventManager.emit(Event.FOES_LOST_BALL_POSSESSION)
+                        self.foesHaveBall = 0
 
             foe.has_ball = has_possession_now
 
@@ -111,7 +114,6 @@ class BobManager(Manager):
                 robot.position, robot.has_ball
             )
             changed = robot.has_ball != has_possession_now
-
             if changed:
                 if has_possession_now:
                     # evento: "ganhou_posse"
@@ -122,8 +124,9 @@ class BobManager(Manager):
                     # evento: "perdeu_posse"
                     self.eventManager.emit(Event.LOST_BALL_POSSESSION, teamID.name)
                     self.teamHasBall -= 1
-                    if self.teamHasBall == 0:
+                    if self.teamHasBall <= 0:
                         self.eventManager.emit(Event.TEAM_LOST_BALL_POSSESSION)
+                        self.teamHasBall = 0
 
             robot.has_ball = has_possession_now
 
