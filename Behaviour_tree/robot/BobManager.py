@@ -6,6 +6,7 @@ from typing import Dict, List, Optional
 
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.core.event_callbacks import BlackboardKeys
+from Behaviour_tree.helpers.field_helper import FieldHelper
 from SSL_configuration.configuration import Configuration
 from utils import defines
 from utils.pose2D import Pose2D
@@ -15,6 +16,10 @@ from ..core.World_State import World_State
 from .bob import Bob, TeamID
 from .FoeState import FoesID, FoeState
 from .Manager import Manager
+
+from ..observer_agents.EventNotifier import EventNotifier
+from ..observer_agents.StateMachine import EventClass
+from ..observer_agents.StateMachine import EventEnum
 
 
 class BobManager(Manager):
@@ -30,6 +35,7 @@ class BobManager(Manager):
         self.teamHasBall = 0
         self.foesHaveBall = 0
         self._bb = Blackboard_Manager.get_instance()
+        self.evNotifier = EventNotifier.get_instance()
 
     @staticmethod
     def get_instance() -> BobManager:
@@ -54,6 +60,11 @@ class BobManager(Manager):
     def update(self):
         """Atualiza o estado global de todos os robôs."""
         self.ball_position = self.world_state.get_ball_position()
+        if FieldHelper.get_team_goal_center().x * self.ball_position.x > 0:  
+            self.evNotifier.reciveEvent(EventClass(EventEnum.PASSA_MEIO, True))
+        else:
+            self.evNotifier.reciveEvent(EventClass(EventEnum.PASSA_MEIO, False))
+
         self.teamUpdate()
         self.teamGotBall()
         self.teamReachedTarget()

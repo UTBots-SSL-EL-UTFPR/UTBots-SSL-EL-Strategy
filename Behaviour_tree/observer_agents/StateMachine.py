@@ -94,7 +94,7 @@ class StateMachine(Observer):
         state = self.normalState
         if self.specialState is not None:
             state = self.specialState
-        for treeCode, exp in zip(self.stateDef.get(state), self.expulsos):
+        for treeCode, exp in zip(self.stateDef.get(state), self.expulsos):  # type: ignore
             if exp == True:
                 continue
             tree = self.treesRelation.get(treeCode)
@@ -104,7 +104,6 @@ class StateMachine(Observer):
             if not treeInst:
                 continue
             treeInst.tick()
-            (treeInst)
 
     def setTrees(self):
         _bb.set(TreePaths.KICKER, None)
@@ -157,7 +156,6 @@ class StateMachine(Observer):
             path = self.treesRelation.get(code)
             if path is not None:
                 _bb.set(path, value)
-                (path, value.robot_id)
 
     def updateState(self):
 
