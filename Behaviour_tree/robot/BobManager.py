@@ -4,6 +4,8 @@ from __future__ import annotations
 import math
 from typing import Dict, List, Optional
 
+from Behaviour_tree.core.blackboard import Blackboard_Manager
+from Behaviour_tree.core.event_callbacks import BlackboardKeys
 from SSL_configuration.configuration import Configuration
 from utils import defines
 from utils.pose2D import Pose2D
@@ -27,6 +29,7 @@ class BobManager(Manager):
         self.ball_position: Optional[Pose2D] = None
         self.teamHasBall = 0
         self.foesHaveBall = 0
+        self._bb = Blackboard_Manager.get_instance()
 
     @staticmethod
     def get_instance() -> BobManager:
@@ -43,8 +46,10 @@ class BobManager(Manager):
         self.foes[FoesID.Cerberus] = FoeState(FoesID.Cerberus)
         self.foes[FoesID.TauraBots] = FoeState(FoesID.TauraBots)
         self.foes[FoesID.GralhaBots] = FoeState(FoesID.GralhaBots)
-        self.eventManager.emit(Event.FOES_GOT_BALL_POSSESSION)
-        self.eventManager.emit(Event.TEAM_GOT_BALL_POSSESSION)
+        for bob in TeamID:
+            self.eventManager.emit(Event.BOB_LOST_BALL_POSSESSION, bob.name)
+        for foe in FoesID:
+            self.eventManager.emit(Event.FOE_LOST_BALL_POSSESSION, foe.name)
 
     def update(self):
         """Atualiza o estado global de todos os robôs."""
@@ -83,25 +88,26 @@ class BobManager(Manager):
             foe = self.foes.get(foeID)
             if not foe:
                 continue
-            has_possession_now = self.checkBallPossession(foe.position, foe.has_ball)
-            changed = foe.has_ball != has_possession_now
-
-            if changed:
+            ball_position = self.ball_position or self.world_state.get_ball_position()
+            has_possession_now = (
+                foe.position.distance_to(ball_position) <= defines.BALL_LOSS_DISTANCE
+            )
+            (f" quem ta co a bola agt ->{self._bb.get(BlackboardKeys.ALGUEM_TEM_BOLA)}")
+            if (
+                has_possession_now
+                and self._bb.get(BlackboardKeys.ALGUEM_TEM_BOLA) is None
+            ):
                 if has_possession_now:
-                    # evento: "ganhou_posse"
-                    self.foesHaveBall += 1
-                    self.eventManager.emit(Event.FOES_GOT_BALL_POSSESSION)
-                    self.eventManager.emit(Event.GOT_BALL_POSSESSION, foeID)
+                    self.eventManager.emit(
+                        Event.FOE_GOT_BALL_POSSESSION, foe.robot_id.name
+                    )
 
-                else:
-                    # evento: "perdeu_posse"
-                    self.eventManager.emit(Event.LOST_BALL_POSSESSION, foeID.name)
-                    self.foesHaveBall -= 1
-                    if self.foesHaveBall <= 0:
-                        self.eventManager.emit(Event.FOES_LOST_BALL_POSSESSION)
-                        self.foesHaveBall = 0
-
-            foe.has_ball = has_possession_now
+            elif (
+                not has_possession_now
+                and self._bb.get(BlackboardKeys.ALGUEM_TEM_BOLA) == foe.robot_id.name
+            ):
+                (foe.robot_id.name)
+                self.eventManager.emit(Event.FOE_LOST_BALL_POSSESSION)
 
     def teamGotBall(self):
         """Verifica e atualiza posse de bola."""
@@ -109,41 +115,24 @@ class BobManager(Manager):
             bob = self.bobs.get(teamID)
             if not bob:
                 continue
-            robot = bob.state
-            has_possession_now = self.checkBallPossession(
-                robot.position, robot.has_ball
+            ball_position = self.ball_position or self.world_state.get_ball_position()
+            has_possession_now = (
+                bob.state.position.distance_to(ball_position)
+                <= defines.BALL_LOSS_DISTANCE
             )
-            changed = robot.has_ball != has_possession_now
-            if changed:
-                if has_possession_now:
-                    # evento: "ganhou_posse"
-                    self.teamHasBall += 1
-                    self.eventManager.emit(Event.TEAM_GOT_BALL_POSSESSION)
-                    self.eventManager.emit(Event.GOT_BALL_POSSESSION, teamID.name)
-                else:
-                    # evento: "perdeu_posse"
-                    self.eventManager.emit(Event.LOST_BALL_POSSESSION, teamID.name)
-                    self.teamHasBall -= 1
-                    if self.teamHasBall <= 0:
-                        self.eventManager.emit(Event.TEAM_LOST_BALL_POSSESSION)
-                        self.teamHasBall = 0
-
-            robot.has_ball = has_possession_now
-
-    def checkBallPossession(
-        self, position: Optional[Pose2D], has_possession_now: bool
-    ) -> bool:
-        ball_position = self.ball_position or self.world_state.get_ball_position()
-
-        if position is None or ball_position is None:
-            return False
-
-        dist = position.distance_to(ball_position)
-
-        if has_possession_now:
-            return dist <= defines.BALL_LOSS_DISTANCE
-        else:
-            return dist <= defines.BALL_POSSESSION_DISTANCE
+            (f" quem ta co a bola agt ->{self._bb.get(BlackboardKeys.ALGUEM_TEM_BOLA)}")
+            if (
+                has_possession_now
+                and self._bb.get(BlackboardKeys.ALGUEM_TEM_BOLA) is None
+            ):
+                self.eventManager.emit(Event.BOB_GOT_BALL_POSSESSION, bob.robot_id.name)
+            elif (
+                not has_possession_now
+                and self._bb.get(BlackboardKeys.ALGUEM_TEM_BOLA) == bob.robot_id.name
+            ):
+                self.eventManager.emit(
+                    Event.BOB_LOST_BALL_POSSESSION, bob.robot_id.name
+                )
 
     def teamReachedTarget(self):
         """Gerencia o progresso dos robôs em seus caminhos (path)."""

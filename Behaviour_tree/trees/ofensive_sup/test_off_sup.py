@@ -63,7 +63,7 @@ def create_scenario(all_bobs: list[Bob]):
     # sub teste 3. O robo deve se posicionar como suporte ofencivo em caso de preparacao
 
     logger.info("Inicio simulacao")
-    print("-" * 100)
+    ("-" * 100)
     return
 
 
@@ -71,7 +71,7 @@ def prints_e_logs(robot: Bob, others: list[Bob]):
 
     team_has_ball = _bb.get(BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL)
     logger.info(f"time tem a bola? -- {team_has_ball}")
-    print("+++ ----------------------------- +++")
+    ("+++ ----------------------------- +++")
 
     logger.info(f"ID -- {robot.robot_id.value}")
     logger.info(f"POSITION -- {robot.state.position}")
@@ -82,7 +82,7 @@ def prints_e_logs(robot: Bob, others: list[Bob]):
         f"{_bb.get(BlackboardKeys.Flags.BallPossession.TEAM_HAS_BALL)} team has ball"
     )
 
-    print("=" * 50)
+    ("=" * 50)
 
 
 # EXECUTAR - # python3.10 -m Behaviour_tree.trees.ofensive_sup.test_off_sup

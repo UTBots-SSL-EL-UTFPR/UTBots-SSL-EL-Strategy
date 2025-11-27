@@ -21,7 +21,7 @@ from utils.pose2D import Pose2D
 from .positioning_helper import PositioningHelper
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.WARNING,
     format="%(asctime)s | %(name)-12s | %(levelname)-8s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
@@ -41,10 +41,12 @@ if __name__ == "__main__":
     _bb.set("super_bob", robo1)
     kicker_tree = get_off_sup_tree("super_bob")
     kicker_tree.setup()
-    update_delay = 0.005
+    update_delay = 0.003
     print_delay = 0.5
     tPrint = time.time()
     tUpdate = time.time()
+    _bb.set(BlackboardKeys.ALGUEM_TEM_BOLA, None)
+
     while True:
         if time.time() >= update_delay + tUpdate:
             wd.update()

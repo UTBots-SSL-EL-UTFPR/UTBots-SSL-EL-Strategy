@@ -313,8 +313,8 @@ class PositioningHelper:
         shadows_from_goal = [ShadowCone(origin_goal, opp) for opp in opponents]
         best_square = (0, 0, 0)
         # for s in shadows_from_kicker:
-        #     print(s.ray_left)
-        #     print(s.ray_right)
+        #     (s.ray_left)
+        #     (s.ray_right)
 
         y = quadrant.y_min
         while y < quadrant.y_max:
@@ -407,7 +407,7 @@ class PositioningHelper:
         x_start, y_start, side = square
         if side == 0:
             return None
-        print(square)
+        (square)
         valid_points = []
 
         y = y_start

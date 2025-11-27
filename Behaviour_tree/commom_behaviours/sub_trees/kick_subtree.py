@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 class PrecisionMove(py_trees.behaviour.Behaviour):
     """Move com precisão até (x, y) e opcionalmente theta, com timeout e detecção de travamento."""
 
-    def __init__(self, path: str, name: str = "PrecisionMove", timeout_s: float = 5.0):
+    def __init__(self, path: str, name: str = "PrecisionMove", timeout_s: float = 2.5):
         super().__init__(name)
         self.path = path
         self.timeout_s = float(timeout_s)
@@ -59,7 +59,7 @@ class PrecisionMove(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def initialise(self) -> None:
-        self._t0 = time.monotonic()
+        self._t0 = time.time()
         logger.debug("%s.initialise()", self.name)
 
     def _arrived_xy(self, robot: Bob) -> bool:
@@ -80,11 +80,19 @@ class PrecisionMove(py_trees.behaviour.Behaviour):
         return abs(tgt_theta - robot.state.position.theta) <= tol_theta
 
     def update(self) -> py_trees.common.Status:
+
+        if time.time() > self._t0 + self.timeout_s:
+            (self._t0, self.timeout_s)
+            return py_trees.common.Status.SUCCESS
         robot = _bb.get(self.path)
         if robot is None or not isinstance(robot, Bob):
             logger.debug(
                 "%s - FAILURE: robot não encontrado em '%s'", self.name, self.path
             )
+            return py_trees.common.Status.FAILURE
+        (_bb.get(f"{robot.robot_id.name}{BlackboardKeys.HAS_BALL}"))
+        if not _bb.get(f"{robot.robot_id.name}{BlackboardKeys.HAS_BALL}"):
+            logger.debug("saiu do chute")
             return py_trees.common.Status.FAILURE
 
         target = robot.state.target_position
@@ -146,7 +154,7 @@ class AproachBall(py_trees.behaviour.Behaviour):
         if not target:
             logger.debug(f"{self.name} - FAILURE not target")
             return py_trees.common.Status.SUCCESS
-        print(robot.state.position)
+        (robot.state.position)
         robot.set_new_target_position(target)
         logger.debug(
             f"{self.name} estou em {robot.state.position} e  preciso chegar em {robot.state.target_position} -- SUCCESS"
@@ -158,7 +166,7 @@ class PrepareKick(py_trees.behaviour.Behaviour):
     def __init__(
         self,
         path: str,
-        name: str = "pseudochutemovunicodocaralhosuper",
+        name: str = "prepareKick",
         timeout_s: float = 5,
     ):
         super().__init__(name)
@@ -172,22 +180,29 @@ class PrepareKick(py_trees.behaviour.Behaviour):
 
     def initialise(self) -> None:
         self.initpose = World_State.get_object().get_ball_position()
-        print(self.name)
+        (self.name)
 
     def update(self) -> py_trees.common.Status:
         robot: Bob | None = _bb.get(self.path)
         if robot is None:
             return py_trees.common.Status.FAILURE
+
         if not _bb.get(f"{robot.robot_id.name}{BlackboardKeys.HAS_BALL}"):
             logger.debug("saiu do chute")
-            return py_trees.common.Status.SUCCESS
+            return py_trees.common.Status.FAILURE
         pose = World_State.get_object().get_ball_position()
         robotPose = robot.state.position
+
+        if abs(abs(robot.state.position.x) - abs(pose.x)) > 280:
+            logger.debug(f"saiu do saiu saius {robot.state.position.x} // {pose.x}")
+            return py_trees.common.Status.SUCCESS
+
         if abs(pose.x) - abs(self.initpose.x) > 5:
             return py_trees.common.Status.SUCCESS
         Z = -hp.FieldHelper.position_behind(15)
         pose = hp.GeometryHelper.displace_from_target_along(robotPose, pose, Z)
-        logger.debug(f"{self.name} -- RUNNING -- {pose}")
+
+        logger.debug(f"{self.name} -- RUNNING -- {pose} // {self.initpose} // {Z}")
         robot.set_new_target_position(pose)
         robot.fast_movement()
         return py_trees.common.Status.RUNNING
@@ -197,7 +212,7 @@ class Kick(py_trees.behaviour.Behaviour):
     def __init__(
         self,
         path: str,
-        name: str = "pseudochutemovunicodocaralhosuper",
+        name: str = "superKick",
         timeout_s: float = 5,
     ):
         super().__init__(name)

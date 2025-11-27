@@ -28,7 +28,7 @@ class MotionHelper:
         ball: Pose2D | None = None,
     ) -> list[Pose2D]:
 
-        print(f"{start} +++----+++ {end}")
+        (f"{start} +++----+++ {end}")
         step = 20
         start_cell = (int(start.x // step), int(start.y // step))
         end_cell = (int(end.x // step), int(end.y // step))

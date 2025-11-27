@@ -6,11 +6,12 @@ import py_trees
 from Behaviour_tree import commom_behaviours as cb
 from Behaviour_tree.core.blackboard import Blackboard_Manager
 from Behaviour_tree.helpers.strategy_helper import StrategyHelper
-from Behaviour_tree.robot.bob import Bob,TeamID
+from Behaviour_tree.robot.bob import Bob, TeamID
 from utils.pose2D import Pose2D
 
 logger = logging.getLogger(__name__)
 _bb = Blackboard_Manager.get_instance()
+
 
 # ----------------------------------------------------------------------------------------------------------------------#
 class OffSupRepos(py_trees.behaviour.Behaviour):
@@ -38,16 +39,14 @@ class OffSupRepos(py_trees.behaviour.Behaviour):
     def initialise(self) -> None:
         robot: Bob = _bb.get(self.path)
         current_time = time.time()
-        new_path = StrategyHelper.set_offensive_suport_position(
-            robot.state.position
-        )
+        new_path = StrategyHelper.set_offensive_suport_position(robot.state.position)
         robot.set_path(new_path)
-        # print("-" * 100)
-        # print(len(new_path))
+        # ("-" * 100)
+        # (len(new_path))
         # for point in new_path:
-        #     print(point)
-        # print(new_path[-1])
-        # print("-" * 100)
+        #     (point)
+        # (new_path[-1])
+        # ("-" * 100)
         self.last_target = new_path[-1]
         self._last_update_time = current_time
 

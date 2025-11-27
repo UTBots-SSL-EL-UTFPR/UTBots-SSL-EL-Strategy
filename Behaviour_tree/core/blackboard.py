@@ -1,7 +1,7 @@
-#TODO 
+# TODO
 
-#Recebe os eventos de cada "Bob_State" e transforma em estados Globais 
-#"FIELD DIGERIDA"
+# Recebe os eventos de cada "Bob_State" e transforma em estados Globais
+# "FIELD DIGERIDA"
 import py_trees
 
 
@@ -10,8 +10,11 @@ class Blackboard_Manager:
 
     def __init__(self):
         if Blackboard_Manager._instance is not None:
-            raise Exception("Use BlackboardManager.get_instance() para acessar a instância.")
+            raise Exception(
+                "Use BlackboardManager.get_instance() para acessar a instância."
+            )
         self._bb = py_trees.blackboard.Blackboard()
+
     @staticmethod
     def get_instance():
         if Blackboard_Manager._instance is None:
@@ -25,16 +28,15 @@ class Blackboard_Manager:
         try:
             return self._bb.get(key)
         except KeyError:
-            print(f"chave {key} nao existe no blackboard")
+            (f"chave {key} nao existe no blackboard")
             return None
-
 
     def clear(self, key: str = ""):
         if key:
             try:
                 self._bb.unset(key)
             except KeyError:
-                print(f"chave {key} nao existe no blackboard")
+                (f"chave {key} nao existe no blackboard")
                 pass
         else:
             for k in list(self._bb.storage.keys()):
@@ -45,5 +47,5 @@ class Blackboard_Manager:
 
 
 if __name__ == "__main__":
-    bb=Blackboard_Manager.get_instance()
-    print(bb.get("dsdsd"))
+    bb = Blackboard_Manager.get_instance()
+    (bb.get("dsdsd"))

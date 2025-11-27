@@ -34,7 +34,7 @@ class World_State:
             self.referee_parser = RefereeParser()
             self.field = FieldState()
         except KeyError as e:
-            print(e)
+            (e)
 
         self.referee_data: referee_pb.Referee = None  # type: ignore
         self.vision_data: dict = {}

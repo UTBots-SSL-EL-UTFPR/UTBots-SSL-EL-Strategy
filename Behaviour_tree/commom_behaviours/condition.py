@@ -82,15 +82,8 @@ class HasBall(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
-        hasTeam = BlackboardKeys.TEAM_HAS_BALL
-        hasFoes = BlackboardKeys.FOES_HAVE_BALL
-
         robot: Bob | None = _bb.get(self.path)
         if not robot:
-            return py_trees.common.Status.FAILURE
-
-        if _bb.get(hasTeam) and _bb.get(hasFoes):
-            logger.debug(f"{self.name}-{robot.robot_id.name} - Failure")
             return py_trees.common.Status.FAILURE
 
         if _bb.get(f"{robot.robot_id.name}{BlackboardKeys.HAS_BALL}"):
@@ -130,7 +123,7 @@ class BolaSegura(py_trees.behaviour.Behaviour):
         return super().setup(**kwargs)
 
     def update(self) -> py_trees.common.Status:
-        robot: Bob = _bb.get(self.path)
+        robot: Bob = _bb.get(self.path)  # type: ignore
         if _bb.get(BlackboardKeys.FOES_HAVE_BALL):
             logger.debug(f"{self.name} - FAILURE FOES com bola")
             return py_trees.common.Status.FAILURE
@@ -138,7 +131,7 @@ class BolaSegura(py_trees.behaviour.Behaviour):
         ball = self._ws.get_ball_position()
         robots = self._ws.get_all_robot_position()
         robot_pos = robot.state.position
-        for robot in robots:
+        for bob in robots:
             if ball.distance_to(robot) < ball.distance_to(robot_pos):
                 logger.debug(f"{self.name} - FAILURE OUTRO ROBO MAIS PROX")
                 return py_trees.common.Status.FAILURE

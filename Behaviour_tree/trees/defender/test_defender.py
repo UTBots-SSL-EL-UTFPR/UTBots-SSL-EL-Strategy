@@ -54,17 +54,17 @@ def create_scenario(all_bobs: list[Bob]):
     logger.info(
         "World State inicializado. Iniciando simulação da árvore de comportamento."
     )
-    print("-" * 100)
+    ("-" * 100)
 
 
 def prints_e_logs(robot: Bob):
     """Exibe informações úteis sobre o estado do robô no console."""
-    print("=" * 50)
+    ("=" * 50)
     logger.info(f"ROBÔ: {robot.robot_id.name} ({robot.robot_id.value})")
     logger.info(f"POSIÇÃO ATUAL: {robot.state.position}")
     logger.info(f"ALVO ATUAL: {robot.state.target_position}")
     logger.info(f"COMANDO ATUAL: '{robot.state.current_command}'")
-    print("=" * 50)
+    ("=" * 50)
 
 
 # ==============================================================================#
