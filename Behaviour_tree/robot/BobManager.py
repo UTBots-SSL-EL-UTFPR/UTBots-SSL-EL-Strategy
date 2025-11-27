@@ -18,8 +18,7 @@ from .FoeState import FoesID, FoeState
 from .Manager import Manager
 
 from ..observer_agents.EventNotifier import EventNotifier
-from ..observer_agents.StateMachine import EventClass
-from ..observer_agents.StateMachine import EventEnum
+
 
 
 class BobManager(Manager):
@@ -59,6 +58,8 @@ class BobManager(Manager):
 
     def update(self):
         """Atualiza o estado global de todos os robôs."""
+        from ..observer_agents.StateMachine import EventClass
+        from ..observer_agents.StateMachine import EventEnum
         self.ball_position = self.world_state.get_ball_position()
         if FieldHelper.get_team_goal_center().x * self.ball_position.x > 0:  
             self.evNotifier.reciveEvent(EventClass(EventEnum.PASSA_MEIO, True))
@@ -95,6 +96,8 @@ class BobManager(Manager):
 
     def foesGotBall(self):
         """Verifica e atualiza posse de bola."""
+        from ..observer_agents.StateMachine import EventClass
+        from ..observer_agents.StateMachine import EventEnum
         for foeID in FoesID:
             foe = self.foes.get(foeID)
             if not foe:
@@ -124,6 +127,8 @@ class BobManager(Manager):
 
     def teamGotBall(self):
         """Verifica e atualiza posse de bola."""
+        from ..observer_agents.StateMachine import EventClass
+        from ..observer_agents.StateMachine import EventEnum
         for teamID in TeamID:
             bob = self.bobs.get(teamID)
             if not bob:
