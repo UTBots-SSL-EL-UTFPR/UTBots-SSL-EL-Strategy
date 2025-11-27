@@ -4,6 +4,7 @@ from __future__ import annotations
 import math
 from typing import Dict, List, Optional
 
+from Behaviour_tree.helpers.field_helper import FieldHelper
 from SSL_configuration.configuration import Configuration
 from utils import defines
 from utils.pose2D import Pose2D
@@ -13,6 +14,10 @@ from ..core.World_State import World_State
 from .bob import Bob, TeamID
 from .FoeState import FoesID, FoeState
 from .Manager import Manager
+
+from ..observer_agents.EventNotifier import EventNotifier
+from ..observer_agents.StateMachine import EventClass
+from ..observer_agents.StateMachine import EventEnum
 
 
 class BobManager(Manager):
@@ -27,6 +32,7 @@ class BobManager(Manager):
         self.ball_position: Optional[Pose2D] = None
         self.teamHasBall = 0
         self.foesHaveBall = 0
+        self.evNotifier = EventNotifier.get_instance()
 
     @staticmethod
     def get_instance() -> BobManager:
@@ -49,6 +55,11 @@ class BobManager(Manager):
     def update(self):
         """Atualiza o estado global de todos os robôs."""
         self.ball_position = self.world_state.get_ball_position()
+        if FieldHelper.get_team_goal_center().x * self.ball_position.x > 0:  
+            self.evNotifier.reciveEvent(EventClass(EventEnum.PASSA_MEIO, True))
+        else:
+            self.evNotifier.reciveEvent(EventClass(EventEnum.PASSA_MEIO, False))
+
         self.teamUpdate()
         self.teamGotBall()
         self.teamReachedTarget()
@@ -90,6 +101,7 @@ class BobManager(Manager):
                 if has_possession_now:
                     # evento: "ganhou_posse"
                     self.foesHaveBall += 1
+                    self.evNotifier.reciveEvent(EventClass(EventEnum.FOES_HAS_BALL, True))
                     self.eventManager.emit(Event.FOES_GOT_BALL_POSSESSION)
                     self.eventManager.emit(Event.GOT_BALL_POSSESSION, foeID)
 
@@ -98,6 +110,7 @@ class BobManager(Manager):
                     self.eventManager.emit(Event.LOST_BALL_POSSESSION, foeID.name)
                     self.foesHaveBall -= 1
                     if self.foesHaveBall <= 0:
+                        self.evNotifier.reciveEvent(EventClass(EventEnum.FOES_HAS_BALL, False))
                         self.eventManager.emit(Event.FOES_LOST_BALL_POSSESSION)
                         self.foesHaveBall = 0
 
@@ -118,6 +131,7 @@ class BobManager(Manager):
                 if has_possession_now:
                     # evento: "ganhou_posse"
                     self.teamHasBall += 1
+                    self.evNotifier.reciveEvent(EventClass(EventEnum.TEAM_HAS_BALL, True))
                     self.eventManager.emit(Event.TEAM_GOT_BALL_POSSESSION)
                     self.eventManager.emit(Event.GOT_BALL_POSSESSION, teamID.name)
                 else:
@@ -125,6 +139,7 @@ class BobManager(Manager):
                     self.eventManager.emit(Event.LOST_BALL_POSSESSION, teamID.name)
                     self.teamHasBall -= 1
                     if self.teamHasBall <= 0:
+                        self.evNotifier.reciveEvent(EventClass(EventEnum.TEAM_HAS_BALL, False))
                         self.eventManager.emit(Event.TEAM_LOST_BALL_POSSESSION)
                         self.teamHasBall = 0
 

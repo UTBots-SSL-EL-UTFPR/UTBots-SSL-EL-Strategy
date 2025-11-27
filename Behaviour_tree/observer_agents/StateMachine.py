@@ -102,7 +102,6 @@ class StateMachine(Observer):
             if not treeInst:
                 continue
             treeInst.tick()
-            print(treeInst)
         
 
     def setTrees(self):
@@ -152,7 +151,6 @@ class StateMachine(Observer):
             path = self.treesRelation.get(code)
             if path is not None:
                 _bb.set(path, value)
-                print(path, value.robot_id)
 
     
 
