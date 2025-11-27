@@ -112,6 +112,7 @@ class BobManager(Manager):
                     self.eventManager.emit(
                         Event.FOE_GOT_BALL_POSSESSION, foe.robot_id.name
                     )
+                    self.evNotifier.reciveEvent(EventClass(EventEnum.FOES_HAS_BALL, True))
 
             elif (
                 not has_possession_now
@@ -119,6 +120,7 @@ class BobManager(Manager):
             ):
                 (foe.robot_id.name)
                 self.eventManager.emit(Event.FOE_LOST_BALL_POSSESSION)
+                self.evNotifier.reciveEvent(EventClass(EventEnum.FOES_HAS_BALL, False))
 
     def teamGotBall(self):
         """Verifica e atualiza posse de bola."""
@@ -137,6 +139,7 @@ class BobManager(Manager):
                 and self._bb.get(BlackboardKeys.ALGUEM_TEM_BOLA) is None
             ):
                 self.eventManager.emit(Event.BOB_GOT_BALL_POSSESSION, bob.robot_id.name)
+                self.evNotifier(EventClass(EventEnum.TEAM_HAS_BALL, True))
             elif (
                 not has_possession_now
                 and self._bb.get(BlackboardKeys.ALGUEM_TEM_BOLA) == bob.robot_id.name
@@ -144,6 +147,7 @@ class BobManager(Manager):
                 self.eventManager.emit(
                     Event.BOB_LOST_BALL_POSSESSION, bob.robot_id.name
                 )
+                self.evNotifier(EventClass(EventEnum.TEAM_HAS_BALL, False))
 
     def teamReachedTarget(self):
         """Gerencia o progresso dos robôs em seus caminhos (path)."""
