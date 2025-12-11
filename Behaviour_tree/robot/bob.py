@@ -161,6 +161,10 @@ class Bob:
         self.cmd = self.cmd_builder.build()
         self.cmd_sender.send(self.cmd)
 
+        """
+        bloco temporário para enviar os comandos para os robos reais tmb
+        """
+
     def compute_world_velocity(self, current: Pose2D, goal: Pose2D | None, mode: str):
         """
         Retorna (vx_s, vy_s, w) em {s}.
