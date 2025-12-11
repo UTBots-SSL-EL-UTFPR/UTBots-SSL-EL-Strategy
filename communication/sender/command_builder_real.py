@@ -6,7 +6,7 @@ class CommandBuilderReal:
     Por padrão, assume que os valores recebidos já estão na escala do firmware (±4095).
     Se sua origem estiver em outra escala (ex.: ±255, ±1.0), use os parâmetros src_abs_max_*.
     """
-    def __init__(self, robot_id: int, src_abs_max: float | None = None):
+    def __init__(self, robot_id: int = 1, src_abs_max: float | None = None):
         """
         src_abs_max: se informado, os w1/w2/w3 recebidos serão reescalados de ±src_abs_max para ±FW_ABS_MAX.
         Ex.: src_abs_max=255 (manual antigo 8-bit) -> reescala para 12-bit.

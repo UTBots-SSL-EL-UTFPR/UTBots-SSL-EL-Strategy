@@ -7,6 +7,8 @@ import numpy as np
 from Behaviour_tree.helpers.motion_helper import MotionHelper
 from communication.sender.command_builder import CommandBuilder
 from communication.sender.command_sender_sim import CommandSenderSim
+from communication.sender.command_builder_real import CommandBuilderReal
+from communication.sender.command_sender_real import CommandSenderReal
 from utils import defines
 from utils.pose2D import Pose2D
 
@@ -30,6 +32,11 @@ class Bob:
         self.cmd_builder = CommandBuilder()
         self.cmd_sender = CommandSenderSim()
         self.cmd: bytes | None = None
+        self.cmd_builder_real = CommandBuilderReal(robot_id=self.robot_id.value)
+        self.cmd_sender_real = CommandSenderReal()
+        self.cmd_real:bytes | None = None
+
+        self.cmd_sender_real.register_robot(self.robot_id, "10.219.168.172", 4210)
 
         self._trans_state = {
             "prev_ex": 0.0,
@@ -162,8 +169,14 @@ class Bob:
         self.cmd_sender.send(self.cmd)
 
         """
-        bloco temporário para enviar os comandos para os robos reais tmb
+        bloco temporário para enviar os comandos para os robos reais tmb alem da simulacao
         """
+        q_real = np.array([[w], [vx_s], [vy_s]], dtype=float)
+        u_real = MotionHelper.motorVel_real(q_real, self.state.position.theta)
+
+        self.cmd_real = self.cmd_builder_real.build(-u_real[0].item(), -u_real[1].item(), -u_real[2].item())
+        self.cmd_sender_real.send(self.cmd_real)
+
 
     def compute_world_velocity(self, current: Pose2D, goal: Pose2D | None, mode: str):
         """

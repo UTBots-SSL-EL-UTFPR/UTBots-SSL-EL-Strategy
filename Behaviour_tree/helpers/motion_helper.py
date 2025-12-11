@@ -110,3 +110,45 @@ class MotionHelper:
         u = np.clip(u, -120.0, 120.0)
 
         return u
+
+    @classmethod
+    def motorVel_real(cls, q, phi):
+        """
+        Aqui é o modelo cinematico da gracia APLICADO PARA OS NOSSOS BOBS REAIS!!!
+        {w} = referencial da roda
+        {b} = referencial do robô
+        {s} = referencial do mundo
+
+        phi é o angulo atual do robo em relação a {s}
+
+        essa funcao tem q receber um vetor com as velocidades em {s}:
+            q = np.array([[w], [vx_s], [vy_s]], dtype=float)
+        com isso, ela monta a matriz de transformação H e resolve:
+            u = H @ q
+        depois satura em [-u_max, u_max].
+
+        retorna um vetor com as velocidades das rodas
+
+        """
+
+        h = np.zeros((defines.KINEMATIC_N_RODAS_REAL, 3))
+        for i in range(defines.KINEMATIC_N_RODAS_REAL):
+            Bi = defines.KINEMATIC_WHEELS_ANGLES_REAL[i]  # Ângulo entre {w} e {b}
+            gammai = defines.KINEMATIC_GAMMA_REAL[i]
+            hi = np.array(
+                [
+                    defines.KINEMATIC_ROBOT_RADIUS_REAL,
+                    np.cos(Bi + phi + gammai),
+                    np.sin(Bi + phi + gammai),
+                ]
+            )
+            hi /= defines.KINEMATIC_WHEEL_RADIUS_REAL * np.cos(
+                gammai
+            )  # Operações compactadas
+            h[i][0] = hi[0]
+            h[i][1] = hi[1]
+            h[i][2] = hi[2]
+        u = h @ q
+        u = np.clip(u, -120.0, 120.0)
+
+        return u
