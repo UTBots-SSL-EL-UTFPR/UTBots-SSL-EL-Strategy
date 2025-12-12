@@ -1,17 +1,15 @@
-# command_sender_real.py
 import socket
 from typing import Dict, Tuple
 from communication.sender.messages import Movement, MSG_ID_PING
 
 class CommandSenderReal:
     """
-    Envia pacotes UDP para robôs reais.
+    envia pacotes udp para os robos reais
     """
     def __init__(self, local_bind_ip: str = '0.0.0.0'):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        # bind opcional (porta efêmera); útil para estabilizar rota/firewall
         self.sock.bind((local_bind_ip, 0))
-        self.robot_endpoints: Dict[int, Tuple[str, int]] = {}  # id -> (ip, port)
+        self.robot_endpoints: Dict[int, Tuple[str, int]] = {}  # id: (ip, porta)
 
     def register_robot(self, robot_id: int, ip: str, port: int):
         self.robot_endpoints[robot_id] = (ip, port)
