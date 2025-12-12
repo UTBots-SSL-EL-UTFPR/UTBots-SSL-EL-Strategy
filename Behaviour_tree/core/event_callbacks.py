@@ -60,7 +60,7 @@ class TreePaths(StringEnum):
 class EventClass:
     def __init__(self, name: EventEnum = EventEnum.VAZIO, value: bool | None = False):
         self.name: EventEnum = name
-        self.value: bool = value
+        self.value: bool | None = value
 
 
 class BlackboardKeys(StringEnum):

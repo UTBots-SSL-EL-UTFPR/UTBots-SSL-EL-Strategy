@@ -132,7 +132,7 @@ class BolaSegura(py_trees.behaviour.Behaviour):
         robots = self._ws.get_all_robot_position()
         robot_pos = robot.state.position
         for bob in robots:
-            if ball.distance_to(robot) < ball.distance_to(robot_pos):
+            if ball.distance_to(bob) < ball.distance_to(robot_pos):
                 logger.debug(f"{self.name} - FAILURE OUTRO ROBO MAIS PROX")
                 return py_trees.common.Status.FAILURE
         logger.debug(f"{self.name} - SUCCESS")

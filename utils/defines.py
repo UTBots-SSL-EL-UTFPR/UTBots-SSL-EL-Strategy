@@ -41,6 +41,16 @@ KINEMATIC_ROBOT_RADIUS = 0.09
 KINEMATIC_WHEEL_RADIUS = 0.027
 KINEMATIC_MAX_WHEEL_SPEED = 120.0
 
+KINEMATIC_N_RODAS_REAL = 3
+KINEMATIC_WHEELS_ANGLES_REAL = [
+    math.radians(60),
+    math.radians(180),
+    math.radians(270)
+]
+KINEMATIC_GAMMA_REAL = [0, 0, 0]
+KINEMATIC_ROBOT_RADIUS_REAL = 0.09
+KINEMATIC_WHEEL_RADIUS_REAL = 0.027
+
 # ===================================================#
 # ==== GANHOS DE CONTROLE GLOBAIS                 ====#
 # ===================================================#

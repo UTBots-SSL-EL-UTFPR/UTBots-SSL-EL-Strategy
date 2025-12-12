@@ -23,9 +23,9 @@ class StateMachine(Observer):
     def __init__(self):
         super().__init__()
         self.events = {
-            EventEnum.FOES_HAS_BALL: EventClass(EventEnum.FOES_HAS_BALL, None),
+            EventEnum.FOES_HAS_BALL: EventClass(EventEnum.FOES_HAS_BALL, False),
             EventEnum.PASSA_MEIO: EventClass(EventEnum.PASSA_MEIO, None),
-            EventEnum.TEAM_HAS_BALL: EventClass(EventEnum.TEAM_HAS_BALL, None),
+            EventEnum.TEAM_HAS_BALL: EventClass(EventEnum.TEAM_HAS_BALL, False),
             EventEnum.FOES_FREE_KICK: EventClass(EventEnum.FOES_FREE_KICK, None),
             EventEnum.TEAM_FREE_KICK: EventClass(EventEnum.TEAM_FREE_KICK, None),
             EventEnum.FOES_PENALTY: EventClass(EventEnum.FOES_PENALTY, None),
@@ -127,6 +127,7 @@ class StateMachine(Observer):
 
     def notify(self, event: EventClass):
         self.expUpdate(event)
+        print(event.name, event.value)
         ev = self.events.get(event.name)
 
         if ev is None:
