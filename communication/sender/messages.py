@@ -1,16 +1,16 @@
 import struct
 from dataclasses import dataclass
 
-# IDs (ajuste se o firmware usar outros)
+#IDs 
 MSG_ID_CMD  = 100
 MSG_ID_PING = 101
 
-# Protocolo binário (11 bytes, little-endian), compatível com o firmware
+# protocolo binario do ian (11 bytes)
 PACK_FMT = '<BBhhhh?'
 PACK_SIZE = struct.calcsize(PACK_FMT)  # 11
 
 # ====== CONFIG ======
-# Alcance esperado PELO FIRMWARE (mantenha 4095 para 12-bit; mude para 255 se 8-bit)
+# PWM do firmware é 12 bits
 FW_ABS_MAX = 4095
 # ====================
 
@@ -21,7 +21,7 @@ class Movement:
     v1: int
     v2: int
     v3: int
-    v4: int  # mantido por compatibilidade; para 3 rodas, envie 0
+    v4: int  
     kicker: bool
 
     def pack(self) -> bytes:
@@ -42,8 +42,7 @@ class Movement:
     @staticmethod
     def scale_from_source(x: float, src_abs_max: float, dst_abs_max: int = FW_ABS_MAX) -> int:
         """
-        Converte um valor |x|<=src_abs_max para a escala do firmware (|.|<=dst_abs_max).
-        Útil se sua estratégia produz -1..1, m/s normalizado, ou ±255.
+        converte um valor |x|<=src_abs_max para a escala do pwm do firmware (|.|<=dst_abs_max).
         """
         if src_abs_max <= 0:
             return 0
