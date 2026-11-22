@@ -68,5 +68,22 @@
             {
             }
         }
+    },
+    "Robot_real":
+    {
+        "_comment": "mode: sim (só grSim), real (só robôs físicos) ou both. robots: id na estratégia -> IP e id no firmware",
+        "mode": "sim",
+        "port": 4210,
+        "robots":
+        {
+            "1": {"ip": "10.50.0.175", "id": 1}
+        },
+        "wheel_map": [1, 2, 3],
+        "pwm_per_rad_s": 200,
+        "max_pwm": 4095,
+        "send_hz": 20,
+        "timeout_ms": 300,
+        "kick_ms": 300,
+        "kick_cooldown_ms": 600
     }
 }

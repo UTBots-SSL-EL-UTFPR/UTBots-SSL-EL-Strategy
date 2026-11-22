@@ -45,6 +45,9 @@ class Configuration:
         self.threshould_arrived_target = None
         self.distance_to_press_opponent = None
 
+        # robôs físicos (communication/sender/command_sender_robot.py)
+        self.robot_real = None
+
     def get_side_sign(self):
         if self.is_left_team:
             return 1
@@ -116,5 +119,7 @@ class Configuration:
             instance.threshould_arrived_target = data["Motion"][
                 "threshould_arrived_target"
             ]
+
+            instance.robot_real = data.get("Robot_real", {"mode": "sim"})
 
         return Configuration._instance
