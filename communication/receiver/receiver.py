@@ -16,7 +16,13 @@ class Receiver(ABC):    #classe base que configura o socket UDP generico
 
         # Criação da estrutura binária mreq exigida pela opção IP_ADD_MEMBERSHIP
         mreq = struct.pack("=4s4s", socket.inet_aton(self.multicast_ip), socket.inet_aton(self.interface_ip)) #inet_aton() converte um endereço IP para o formato binário necessário.
-        sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq) # Adiciona o socket ao grupo multicast definido em mreq, permitindo que ele receba os pacotes enviados ao grupo.
+        try:
+            sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq) # Adiciona o socket ao grupo multicast definido em mreq, permitindo que ele receba os pacotes enviados ao grupo.
+        except OSError as e:
+            # interface_ip inexistente nesta máquina (ex.: 172.17.0.1 sem o docker): usa qualquer interface
+            print(f"[Receiver] interface {self.interface_ip} indisponível ({e}); usando 0.0.0.0 para {self.multicast_ip}:{self.port}")
+            mreq = struct.pack("=4s4s", socket.inet_aton(self.multicast_ip), socket.inet_aton("0.0.0.0"))
+            sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
         return sock
 
